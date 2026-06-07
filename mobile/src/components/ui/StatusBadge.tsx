@@ -1,35 +1,36 @@
-import React from 'react';
-import { Text, View } from 'react-native';
+import React from "react";
+import { Text, View } from "react-native";
 
-import type { StuntStatus } from '@/features/children/types/child.types';
+import type { StuntStatus } from "@/features/children/types/child.types";
+
+function cn(...inputs: (string | undefined | null | false)[]) {
+  return inputs.filter(Boolean).join(" ")
+}
 
 type StatusBadgeProps = {
   status: StuntStatus;
 };
 
-const STATUS_CONFIG: Record<
-  StuntStatus,
-  { label: string; containerClass: string; textClass: string }
-> = {
+const STATUS_CONFIG: Record<StuntStatus, { label: string; containerClass: string; textClass: string }> = {
   NORMAL: {
-    label: 'Normal',
-    containerClass: 'bg-success-light dark:bg-success-dark/20',
-    textClass: 'text-success dark:text-success/90',
+    label: "Normal",
+    containerClass: "bg-success-light",
+    textClass: "text-success",
   },
   AT_RISK: {
-    label: 'Berisiko',
-    containerClass: 'bg-warning-light dark:bg-warning-dark/20',
-    textClass: 'text-warning dark:text-warning/90',
+    label: "Berisiko",
+    containerClass: "bg-warning-light",
+    textClass: "text-warning",
   },
   STUNTED: {
-    label: 'Stunting',
-    containerClass: 'bg-danger-light dark:bg-danger-dark/20',
-    textClass: 'text-danger dark:text-danger/90',
+    label: "Stunting",
+    containerClass: "bg-danger-light",
+    textClass: "text-danger",
   },
   SEVERELY_STUNTED: {
-    label: 'Stunting Berat',
-    containerClass: 'bg-danger-light dark:bg-danger-dark/30',
-    textClass: 'text-danger-dark dark:text-danger/95',
+    label: "Stunting Berat",
+    containerClass: "bg-danger-light",
+    textClass: "text-danger-dark",
   },
 };
 
@@ -37,10 +38,8 @@ export const StatusBadge = React.memo(({ status }: StatusBadgeProps) => {
   const config = STATUS_CONFIG[status];
 
   return (
-    <View className={`px-2.5 py-1 rounded-full self-start ${config.containerClass}`}>
-      <Text className={`text-xs font-bold tracking-wide ${config.textClass}`}>
-        {config.label}
-      </Text>
+    <View className={cn("px-3 py-1.5 rounded-full self-start", config.containerClass)}>
+      <Text className={cn("text-xs font-bold tracking-wide", config.textClass)}>{config.label}</Text>
     </View>
   );
 });

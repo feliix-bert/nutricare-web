@@ -1,8 +1,7 @@
 import { Alert, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AppButton } from '@/components/ui/AppButton';
-import { AppCard } from '@/components/ui/AppCard';
+import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -14,9 +13,9 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const InfoRow = ({ label, value }: { label: string; value: string }) => (
-  <View className="flex-row justify-between items-center py-0.5">
-    <Text className="text-sm text-gray-500 dark:text-gray-400">{label}</Text>
-    <Text className="text-sm font-semibold text-gray-900 dark:text-gray-100">{value}</Text>
+  <View className="flex-row justify-between items-center py-2">
+    <Text className="text-sm text-gray-500">{label}</Text>
+    <Text className="text-sm font-semibold text-gray-900">{value}</Text>
   </View>
 );
 
@@ -40,50 +39,48 @@ export const ProfileScreen = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-gray-950">
-      <ScrollView contentContainerStyle={{ padding: 24 }} className="gap-4" showsVerticalScrollIndicator={false}>
+    <SafeAreaView className="flex-1 bg-white">
+      <ScrollView contentContainerStyle={{ padding: 24 }} className="gap-5" showsVerticalScrollIndicator={false}>
         {/* Page Title */}
-        <Text className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100 mb-2">Profil</Text>
+        <Text className="text-3xl font-extrabold tracking-tight text-gray-900 mb-4">Profil</Text>
 
         {/* User Card */}
-        <AppCard pressable={false}>
-          <View className="flex-row items-center gap-4">
-            <View className="w-16 h-16 rounded-full items-center justify-center bg-primary-light dark:bg-primary-dark/20 flex-shrink-0">
-              <Text className="text-2xl font-extrabold text-primary dark:text-primary-light">{initials}</Text>
-            </View>
-            <View className="flex-1 gap-1">
-              <Text className="text-lg font-bold text-gray-900 dark:text-gray-100" numberOfLines={1}>
-                {user?.name ?? '-'}
+        <View className="flex-row items-center gap-5 py-5 px-5 bg-white rounded-2xl">
+          <View className="w-16 h-16 rounded-full items-center justify-center bg-primary-light flex-shrink-0">
+            <Text className="text-2xl font-extrabold text-primary">{initials}</Text>
+          </View>
+          <View className="flex-1 gap-1.5">
+            <Text className="text-lg font-bold text-gray-900" numberOfLines={1}>
+              {user?.name ?? '-'}
+            </Text>
+            <Text className="text-xs text-gray-500" numberOfLines={1}>
+              {user?.email ?? '-'}
+            </Text>
+            <View className="px-3 py-1 rounded-full bg-primary-light self-start">
+              <Text className="text-[11px] font-bold text-primary">
+                {ROLE_LABELS[user?.role ?? ''] ?? user?.role ?? '-'}
               </Text>
-              <Text className="text-xs text-gray-500 dark:text-gray-400" numberOfLines={1}>
-                {user?.email ?? '-'}
-              </Text>
-              <View className="px-2.5 py-1 rounded-full bg-primary-light dark:bg-primary-dark/20 self-start mt-0.5">
-                <Text className="text-[11px] font-bold text-primary dark:text-primary-light">
-                  {ROLE_LABELS[user?.role ?? ''] ?? user?.role ?? '-'}
-                </Text>
-              </View>
             </View>
           </View>
-        </AppCard>
+        </View>
 
-        {/* Info Section (placeholder for future settings) */}
-        <AppCard pressable={false} className="gap-3">
-          <Text className="text-base font-bold text-gray-900 dark:text-gray-100">Informasi Akun</Text>
-          <View className="h-[1px] bg-gray-100 dark:bg-gray-800 my-1" />
+        {/* Info Section */}
+        <View className="py-5 px-5 bg-white rounded-2xl gap-2">
+          <Text className="text-base font-bold text-gray-900">Informasi Akun</Text>
+          <View className="h-[1px] bg-gray-100 my-1" />
           <InfoRow label="Email" value={user?.email ?? '-'} />
           <InfoRow label="Role" value={ROLE_LABELS[user?.role ?? ''] ?? '-'} />
-        </AppCard>
+        </View>
 
         {/* Logout */}
-        <AppButton
+        <Button
           onPress={handleLogout}
           variant="outline"
-          className="mt-4 border-danger dark:border-danger/80"
-          textClassName="text-danger dark:text-danger/90"
+          className="mt-2 border-danger"
+          textClassName="text-danger"
         >
           Keluar dari Aplikasi
-        </AppButton>
+        </Button>
       </ScrollView>
     </SafeAreaView>
   );

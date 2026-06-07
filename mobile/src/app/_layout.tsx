@@ -52,7 +52,7 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <RootNavigator />
-      <StatusBar style="auto" />
+      <StatusBar style="dark" />
     </QueryClientProvider>
   );
 }

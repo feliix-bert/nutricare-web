@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AppCard } from '@/components/ui/AppCard';
+import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay';
 import { StatusBadge } from '@/components/ui/StatusBadge';
@@ -17,27 +17,27 @@ const GenderIcon = React.memo(({ gender }: { gender: Child['gender'] }) => (
 
 const ChildCard = React.memo(({ child }: { child: Child }) => {
   return (
-    <AppCard onPress={() => router.push(`/(app)/children/${child.id}`)} className="p-3">
+    <Card onPress={() => router.push(`/(app)/children/${child.id}`)}>
       <View className="flex-row items-center gap-4">
-        <View className="w-13 h-13 rounded-full items-center justify-center bg-primary-light dark:bg-primary-dark/20 flex-shrink-0">
+        <View className="w-14 h-14 rounded-full items-center justify-center bg-primary-light flex-shrink-0">
           <GenderIcon gender={child.gender} />
         </View>
-
         <View className="flex-1 gap-1">
-          <Text className="text-base font-bold text-gray-900 dark:text-gray-100" numberOfLines={1}>
+          <Text className="text-base font-bold text-gray-900" numberOfLines={1}>
             {child.name}
           </Text>
-          <Text className="text-xs text-gray-500 dark:text-gray-400">{child.ageMonths} bulan</Text>
+          <Text className="text-xs text-gray-500">{child.ageMonths} bulan</Text>
           {child.latestPrediction ? (
             <StatusBadge status={child.latestPrediction.status} />
           ) : (
-            <Text className="text-xs text-gray-500 dark:text-gray-400">Belum ada assessment</Text>
+            <Text className="text-xs text-gray-400">Belum ada assessment</Text>
           )}
         </View>
-
-        <Text className="text-2xl font-light text-gray-400 dark:text-gray-600">›</Text>
+        <View className="w-7 h-7 rounded-full bg-gray-50 items-center justify-center">
+          <Text className="text-base font-light text-gray-400">›</Text>
+        </View>
       </View>
-    </AppCard>
+    </Card>
   );
 });
 
@@ -51,12 +51,15 @@ export const HomeScreen = () => {
   if (isLoading) return <LoadingOverlay />;
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-gray-950">
+    <SafeAreaView className="flex-1 bg-white">
       {/* Header */}
-      <View className="flex-row justify-between items-center px-6 pt-4 pb-2">
+      <View className="flex-row justify-between items-center px-6 pt-6 pb-3">
         <View>
-          <Text className="text-sm text-gray-500 dark:text-gray-400 font-medium">Halo,</Text>
-          <Text className="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-gray-100">{firstName}! 👋</Text>
+          <Text className="text-sm text-gray-500 font-medium">Halo,</Text>
+          <Text className="text-2xl font-extrabold tracking-tight text-gray-900">
+            {firstName}{' '}
+            <Text className="text-2xl">🌸</Text>
+          </Text>
         </View>
         <Pressable
           onPress={() => router.push('/(app)/children/new')}
@@ -68,9 +71,12 @@ export const HomeScreen = () => {
       </View>
 
       {/* Section Title */}
-      <View className="flex-row justify-between items-center px-6 pb-2 mt-2">
-        <Text className="text-lg font-bold text-gray-900 dark:text-gray-100">Data Anak</Text>
-        <Text className="text-xs text-gray-500 dark:text-gray-400">{children.length} anak</Text>
+      <View className="flex-row justify-between items-center px-6 pb-3 mt-1">
+        <Text className="text-lg font-bold text-gray-900">Data Anak</Text>
+        <View className="flex-row items-center gap-1.5">
+          <View className="w-2 h-2 rounded-full bg-primary" />
+          <Text className="text-xs text-gray-500">{children.length} anak</Text>
+        </View>
       </View>
 
       {/* List */}
@@ -85,8 +91,8 @@ export const HomeScreen = () => {
           <RefreshControl
             refreshing={isRefetching}
             onRefresh={refetch}
-            tintColor="#0a7ea4"
-            colors={['#0a7ea4']}
+            tintColor="#0A7E6E"
+            colors={['#0A7E6E']}
           />
         }
         ListEmptyComponent={

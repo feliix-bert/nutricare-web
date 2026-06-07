@@ -412,123 +412,153 @@ web/
 
 ---
 
-## 4. Struktur Folder — React Native
+## 4. Struktur Folder — React Native (Expo)
 
 ```
 mobile/
-├── assets/
-│   ├── fonts/
-│   └── images/
+├── assets/                                         # Aset gambar, ikon, dan font bawaan
+├── app/                                            # File-based routing (Thin Wrapper Entry Points)
+│   ├── _layout.tsx                                 # Root layout: Setup QueryClient, secure store hydration, & Auth Gate
+│   ├── sign-in.tsx                                 # import { SignInScreen } from '@/features/auth'
+│   ├── register.tsx                                # import { RegisterScreen } from '@/features/auth'
+│   └── (app)/                                      # Route group terproteksi (auth guard)
+│       ├── _layout.tsx                             # Layout tumpukan (Stack) halaman terproteksi
+│       ├── (tabs)/                                 # Bottom Tab Navigation (Tab Bar bawah)
+│       │   ├── _layout.tsx                         # Pengaturan ikon tab, active state tint
+│       │   ├── index.tsx                           # import { HomeScreen } from '@/features/home'
+│       │   ├── scan.tsx                            # Kamera / galeri foto makanan (log gizi)
+│       │   ├── chat.tsx                            # Chatbot AI konsultasi stunting
+│       │   └── profile.tsx                         # import { ProfileScreen } from '@/features/profile'
+│       │
+│       ├── children/                               # Sub-rute manajemen data anak
+│       │   ├── [childId].tsx                       # import { ChildDetailScreen } from '@/features/children'
+│       │   └── new.tsx                             # import { AddChildScreen } from '@/features/children'
+│       │
+│       ├── assessment/                             # Sub-rute untuk penilaian stunting
+│       │   ├── new.tsx                             # Flow assessment multi-step (Step 1-5 & review)
+│       │   └── [assessmentId].tsx                  # Halaman hasil prediksi stunting & z-score
+│       │
+│       ├── nutrition/                              # Sub-rute gizi & makanan
+│       │   ├── result.tsx                          # Tampilan hasil analisis nutrisi foto makanan
+│       │   └── history.tsx                         # Riwayat log gizi lengkap
+│       │
+│       ├── growth/                                 # Sub-rute visualisasi tumbuh kembang anak
+│       │   └── chart.tsx                           # Grafik kurva tumbuh kembang vs WHO
+│       │
+│       └── map/                                    # Sub-rute geolokasi faskes
+│           └── faskes.tsx                          # Peta faskes terdekat terintegrasi GPS
 │
-├── src/
-│   ├── navigation/
-│   │   ├── RootNavigator.tsx                      # Entry navigator — cek auth lalu arahkan
-│   │   ├── AuthNavigator.tsx                      # Stack: Login, Register
-│   │   ├── AppNavigator.tsx                       # Bottom Tab: Home, Scan, Chat, Profile
-│   │   └── stacks/
-│   │       ├── HomeStack.tsx                      # Home → ChildDetail → Assessment → Prediction
-│   │       ├── ScanStack.tsx                      # Scan Camera → NutritionResult
-│   │       └── ProfileStack.tsx                   # Profile → Settings
+│   ├── features/                                       # Domain Logic & UI per Fitur (Feature-Based)
+│   │   ├── auth/                                       # Modul Autentikasi (Parent Login & Register)
+│   │   │   ├── screens/
+│   │   │   │   ├── SignInScreen.tsx
+│   │   │   │   └── RegisterScreen.tsx
+│   │   │   ├── hooks/
+│   │   │   │   └── useAuth.ts
+│   │   │   ├── services/
+│   │   │   │   └── auth.service.ts
+│   │   │   ├── types/
+│   │   │   │   └── auth.types.ts
+│   │   │   └── index.ts                                # Entry point modul auth
+│   │   │
+│   │   ├── children/                                   # Modul Manajemen Anak
+│   │   │   ├── screens/
+│   │   │   │   ├── AddChildScreen.tsx
+│   │   │   │   └── ChildDetailScreen.tsx
+│   │   │   ├── components/
+│   │   │   │   └── ChildCard.tsx                       # Item baris anak di dashboard
+│   │   │   ├── hooks/
+│   │   │   │   └── useChildren.ts
+│   │   │   ├── services/
+│   │   │   │   └── children.service.ts
+│   │   │   ├── types/
+│   │   │   │   └── child.types.ts
+│   │   │   └── index.ts                                # Entry point modul children
+│   │   │
+│   │   ├── home/                                       # Modul Dashboard/Beranda
+│   │   │   ├── screens/
+│   │   │   │   └── HomeScreen.tsx
+│   │   │   └── index.ts
+│   │   │
+│   │   ├── profile/                                    # Modul Profil Orang Tua
+│   │   │   ├── screens/
+│   │   │   │   └── ProfileScreen.tsx
+│   │   │   └── index.ts
+│   │   │
+│   │   ├── assessment/                                 # Modul Pemeriksaan & Prediksi Stunting
+│   │   │   ├── components/
+│   │   │   │   ├── StepIndicator.tsx
+│   │   │   │   ├── AssessmentCard.tsx
+│   │   │   │   ├── PredictionCard.tsx
+│   │   │   │   ├── ZScoreBadge.tsx
+│   │   │   │   └── DisclaimerText.tsx
+│   │   │   ├── hooks/
+│   │   │   │   ├── useAssessment.ts
+│   │   │   │   └── usePrediction.ts
+│   │   │   ├── services/
+│   │   │   │   ├── assessment.service.ts
+│   │   │   │   └── prediction.service.ts
+│   │   │   └── types/
+│   │   │       ├── assessment.types.ts
+│   │   │       └── prediction.types.ts
+│   │   │
+│   │   ├── nutrition/                                  # Modul Gemini Vision Deteksi Makanan
+│   │   │   ├── components/
+│   │   │   │   ├── NutritionCard.tsx
+│   │   │   │   └── FoodTagList.tsx
+│   │   │   ├── hooks/
+│   │   │   │   └── useNutrition.ts
+│   │   │   ├── services/
+│   │   │   │   └── nutrition.service.ts
+│   │   │   └── types/
+│   │   │       └── nutrition.types.ts
+│   │   │
+│   │   ├── chat/                                       # Modul Chatbot AI Konsultasi
+│   │   │   ├── components/
+│   │   │   │   ├── ChatBubble.tsx
+│   │   │   │   ├── ChatInput.tsx
+│   │   │   │   └── SuggestedChips.tsx
+│   │   │   ├── hooks/
+│   │   │   │   └── useChat.ts
+│   │   │   ├── services/
+│   │   │   │   └── chat.service.ts
+│   │   │   └── types/
+│   │   │       └── chat.types.ts
+│   │   │
+│   │   ├── growth/                                     # Modul Kurva Grafik WHO (Soon)
+│   │   └── map/                                        # Modul Peta Faskes Terdekat (Soon)
 │   │
-│   ├── screens/
-│   │   ├── auth/
-│   │   │   ├── LoginScreen.tsx
-│   │   │   └── RegisterScreen.tsx
-│   │   │
-│   │   ├── home/
-│   │   │   └── HomeScreen.tsx                     # Daftar anak
-│   │   │
-│   │   ├── children/
-│   │   │   ├── AddChildScreen.tsx
-│   │   │   └── ChildDetailScreen.tsx              # Info anak + tab riwayat
-│   │   │
-│   │   ├── assessment/
-│   │   │   ├── AssessmentFlowScreen.tsx           # Container multi-step
-│   │   │   ├── steps/
-│   │   │   │   ├── Step1Screen.tsx
-│   │   │   │   ├── Step2Screen.tsx
-│   │   │   │   ├── Step3Screen.tsx
-│   │   │   │   ├── Step4Screen.tsx
-│   │   │   │   └── Step5ReviewScreen.tsx
-│   │   │   └── AssessmentResultScreen.tsx         # Hasil prediksi
-│   │   │
-│   │   ├── nutrition/
-│   │   │   ├── CameraScreen.tsx                   # Kamera / galeri foto makanan
-│   │   │   ├── NutritionResultScreen.tsx
-│   │   │   └── NutritionHistoryScreen.tsx
-│   │   │
-│   │   ├── chat/
-│   │   │   └── ChatScreen.tsx
-│   │   │
-│   │   ├── growth/
-│   │   │   └── GrowthChartScreen.tsx
-│   │   │
-│   │   ├── map/
-│   │   │   └── FaskesMapScreen.tsx                # Lokasi faskes terdekat
-│   │   │
-│   │   └── profile/
-│   │       └── ProfileScreen.tsx
-│   │
-│   ├── components/
+│   ├── components/                                     # Shared UI Components (Global Atomik)
 │   │   ├── ui/
 │   │   │   ├── AppButton.tsx
 │   │   │   ├── AppInput.tsx
 │   │   │   ├── AppCard.tsx
+│   │   │   ├── StatusBadge.tsx
 │   │   │   ├── LoadingOverlay.tsx
 │   │   │   ├── EmptyState.tsx
 │   │   │   └── ErrorState.tsx
-│   │   │
-│   │   ├── assessment/
-│   │   │   ├── StepIndicator.tsx
-│   │   │   └── AssessmentCard.tsx
-│   │   │
-│   │   ├── prediction/
-│   │   │   ├── PredictionCard.tsx
-│   │   │   ├── ZScoreBadge.tsx
-│   │   │   └── DisclaimerText.tsx
-│   │   │
-│   │   ├── nutrition/
-│   │   │   ├── NutritionCard.tsx
-│   │   │   └── FoodTagList.tsx
-│   │   │
-│   │   └── chat/
-│   │       ├── ChatBubble.tsx
-│   │       ├── ChatInput.tsx
-│   │       └── SuggestedChips.tsx
+│   │   ├── haptic-tab.tsx
+│   │   └── icon-symbol.tsx
 │   │
-│   ├── hooks/
-│   │   ├── useAuth.ts
-│   │   ├── useChildren.ts
-│   │   ├── useAssessment.ts
-│   │   ├── usePrediction.ts
-│   │   ├── useNutrition.ts
-│   │   └── useChat.ts
+│   ├── hooks/                                          # Shared Hooks
+│   │   └── use-color-scheme.ts
 │   │
-│   ├── stores/
+│   ├── stores/                                         # Global State Management
 │   │   ├── authStore.ts
 │   │   └── assessmentFormStore.ts
 │   │
-│   ├── services/
-│   │   ├── api.ts                                 # Axios instance + interceptor token
-│   │   ├── auth.service.ts
-│   │   ├── children.service.ts
-│   │   ├── assessment.service.ts
-│   │   ├── prediction.service.ts
-│   │   ├── nutrition.service.ts
-│   │   └── chat.service.ts
+│   ├── services/                                       # Shared Networking
+│   │   ├── api.ts                                      # Axios base client
+│   │   └── mock.ts                                     # Mock database & delay
 │   │
-│   └── types/
-│       ├── auth.types.ts
-│       ├── child.types.ts
-│       ├── assessment.types.ts
-│       ├── prediction.types.ts
-│       ├── nutrition.types.ts
-│       └── chat.types.ts
+│   ├── types/                                          # Shared Common Types
+│   │   └── api.types.ts                                # Standard paginated/error API response
 │
-├── app.json
-├── .env
-├── tsconfig.json
-└── package.json
+├── tailwind.config.js                              # Konfigurasi utility Tailwind CSS
+├── babel.config.js                                 # Babel presets: expo & nativewind/babel
+├── metro.config.js                                 # Metro bundler wrap withNativeWind
+├── tsconfig.json                                   # Konfigurasi compiler TypeScript
+└── package.json                                    # Dependensi library & scripts
 ```
 
 ---

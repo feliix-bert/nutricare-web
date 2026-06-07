@@ -1,4 +1,4 @@
-# TASKS.md — Stunting AI Platform
+# TASKS.md — Tumbuh Sehat
 
 ## Pembagian Tim Developer
 
@@ -256,6 +256,54 @@
 
 ---
 
+## PHASE 7 — Blockchain & Verifiable Credential
+
+### Backend Dev
+
+| ID | Task | Prioritas | Dependensi |
+|----|------|-----------|-----------|
+| BE-701 | Setup Web3j dependency + Polygon RPC config | 🔴 Critical | BE-001 |
+| BE-702 | Deploy smart contracts GiziChainRegistry + VCRegistry ke testnet | 🔴 Critical | — |
+| BE-703 | Implementasi BlockchainService (anchorRecord + verifyRecord) | 🔴 Critical | BE-701, BE-702 |
+| BE-704 | Implementasi `POST /api/blockchain/anchor` (internal, dipanggil server) | 🔴 Critical | BE-703, BE-303 |
+| BE-705 | Implementasi `GET /api/blockchain/verify/{assessmentId}` | 🟡 High | BE-703 |
+| BE-706 | Setup Pinata client + IpfsService (upload & pin JSON) | 🟡 High | — |
+| BE-707 | Implementasi VcService (build VC document, sign, issue, revoke) | 🔴 Critical | BE-706, BE-702 |
+| BE-708 | Implementasi `POST /api/vc/issue` | 🔴 Critical | BE-707 |
+| BE-709 | Implementasi `GET /api/vc/{vcId}` | 🟡 High | BE-707 |
+| BE-710 | Implementasi `POST /api/vc/revoke` | 🟡 High | BE-707 |
+| BE-711 | QR code generator + offline signature verification | 🟡 High | BE-707 |
+| BE-712 | Implementasi `GET /api/verify` (publik, verifikasi QR) | 🟡 High | BE-711 |
+| BE-713 | Migration DB: tambah kolom `wallet_address` di users | 🔴 Critical | BE-004 |
+| BE-714 | Migration DB: tambah kolom `anon_id` di children | 🔴 Critical | BE-004 |
+| BE-715 | Migration DB: buat tabel `blockchain_anchors` | 🔴 Critical | BE-004 |
+| BE-716 | Migration DB: buat tabel `verifiable_credentials` | 🔴 Critical | BE-004 |
+| BE-717 | Buat enums: `anchor_status_enum`, `vc_type_enum` | 🔴 Critical | BE-004 |
+| BE-718 | Retry job untuk anchor PENDING (Vercel Cron / scheduler tiap 5 menit) | 🟢 Medium | BE-704 |
+| BE-719 | Alert system jika saldo MATIC wallet di bawah threshold | 🟢 Medium | BE-703 |
+| BE-720 | Unit test: BlockchainService (mock RPC) | 🟡 High | BE-703 |
+| BE-721 | Unit test: VcService (mock IPFS + blockchain) | 🟡 High | BE-707 |
+
+### Web Dev
+
+| ID | Task | Prioritas | Dependensi |
+|----|------|-----------|-----------|
+| WEB-701 | Badge "✓ Terverifikasi di Blockchain" + link Polygonscan di hasil prediksi | 🔴 Critical | WEB-307, BE-704 |
+| WEB-702 | Halaman verifikasi VC publik (`/verify`) — input QR / scan | 🟡 High | BE-712 |
+| WEB-703 | Tampilkan status VC anak di detail anak (active / revoked) | 🟡 High | WEB-203, BE-709 |
+| WEB-704 | Dashboard ADMIN — statistik blockchain (total anchor, VC aktif) | 🟢 Medium | WEB-603, BE-604 |
+
+### Mobile Dev
+
+| ID | Task | Prioritas | Dependensi |
+|----|------|-----------|-----------|
+| MOB-701 | QR code scanner untuk verifikasi VC | 🟡 High | MOB-203, BE-712 |
+| MOB-702 | Screen hasil verifikasi QR (valid / revoked / expired) | 🟡 High | MOB-701 |
+| MOB-703 | Tampilkan status VC anak di detail anak | 🟢 Medium | MOB-203, BE-709 |
+| MOB-704 | Cache VC terakhir untuk verifikasi offline | 🟢 Medium | MOB-702 |
+
+---
+
 ## Legenda Prioritas
 
 | Simbol | Level | Keterangan |
@@ -274,4 +322,5 @@ Sprint 1  →  Phase 0 (setup) + Phase 1 (auth)
 Sprint 2  →  Phase 2 (data anak) + Phase 3 (assessment & prediksi)
 Sprint 3  →  Phase 4 (foto gizi) + Phase 5 (chatbot)
 Sprint 4  →  Phase 6 (laporan, dashboard, notifikasi)
+Sprint 5  →  Phase 7 (blockchain & VC) — deploy contract, migration, anchor, VC issue/verify
 ```

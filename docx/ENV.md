@@ -1,4 +1,4 @@
-# ENV.md — Stunting AI Platform
+# ENV.md — Tumbuh Sehat
 
 ## Aturan Umum
 
@@ -53,6 +53,21 @@ gemini.api.url=your-gemini-api-url
 # Rencana: tambah gemini.text-model dan gemini.vision-model saat multi-model diimplementasi
 # Rencana: tambah gemini.timeout-seconds=10 untuk fallback ke PENDING
 
+# ─── Polygon Blockchain ───────────────────────────────────
+polygon.rpc-url=https://polygon-mumbai.g.alchemy.com/v2/your-alchemy-key
+# Testnet: Mumbai (chainId=80001) | Mainnet: Polygon PoS (chainId=137)
+polygon.chain-id=80001
+polygon.registry-contract=0xAddressGiziChainRegistry
+polygon.vc-registry-contract=0xAddressVCRegistry
+polygon.anchor-private-key=0xYourAnchorWalletPrivateKey
+# Dedicated hot wallet dengan saldo MATIC cukup untuk gas
+
+# ─── IPFS / Pinata ────────────────────────────────────────
+pinata.api-key=your-pinata-api-key
+pinata.secret-key=your-pinata-secret-key
+pinata.api-url=https://api.pinata.cloud
+pinata.gateway-url=https://gateway.pinata.cloud/ipfs
+
 # ─── File Upload ──────────────────────────────────────────
 spring.servlet.multipart.max-file-size=10MB
 spring.servlet.multipart.max-request-size=10MB
@@ -73,6 +88,9 @@ app.cors.allowed-origins=http://localhost:3000,https://stunting-ai.vercel.app
 - `supabase.key` — verifikasi apakah service role key atau anon key; service role key memberi akses penuh, jangan expose ke client
 - `gemini.api.url` — isi dengan URL endpoint Gemini yang dipakai (termasuk model dan method)
 - `spring.servlet.multipart` — batas upload file foto makanan, max 10MB per file dan per request
+- `polygon.*` — gunakan testnet Mumbai untuk development, mainnet Polygon PoS untuk production
+- `polygon.anchor-private-key` adalah **dedicated hot wallet** — jangan pakai wallet pribadi. Pastikan saldo MATIC cukup.
+- `pinata.*` — API key dari dashboard Pinata. `pinata.gateway-url` untuk akses publik file IPFS
 
 ---
 
@@ -147,6 +165,12 @@ EXPO_PUBLIC_SENTRY_DSN=your-sentry-dsn
 | `app.jwt.secret`                  | Server  | 🔴 Ya     | Kunci signing JWT                                    |
 | `supabase.key`                    | Server  | 🔴 Ya     | Akses Supabase (verifikasi: service role atau anon?) |
 | `gemini.api.key`                  | Server  | 🔴 Ya     | Google AI API key                                    |
+| `polygon.rpc-url`                 | Server  | 🟡 Aman   | URL RPC provider (bisa public)                       |
+| `polygon.anchor-private-key`      | Server  | 🔴 Ya     | Private key wallet Polygon untuk gas                 |
+| `polygon.registry-contract`       | Server  | 🟡 Aman   | Address smart contract GiziChainRegistry             |
+| `polygon.vc-registry-contract`    | Server  | 🟡 Aman   | Address smart contract VCRegistry                    |
+| `pinata.api-key`                  | Server  | 🟡 Batasi | API key Pinata (rate limit by IP)                    |
+| `pinata.secret-key`               | Server  | 🔴 Ya     | Secret key Pinata                                    |
 | `SENTRY_AUTH_TOKEN`               | Web     | 🔴 Ya     | Upload source maps                                   |
 | `NEXT_PUBLIC_API_URL`             | Web     | 🟡 Aman   | URL publik API (port 8085)                           |
 | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Web     | 🟡 Batasi | Batasi di Google Console                             |
@@ -198,3 +222,8 @@ npx expo start
 - [ ] `gemini.api.url` sudah mengarah ke endpoint production yang benar
 - [ ] Google Maps API key dibatasi per domain/bundleId di Google Console
 - [ ] Semua variabel server tidak memiliki prefix `NEXT_PUBLIC_` atau `EXPO_PUBLIC_`
+- [ ] `polygon.anchor-private-key` adalah dedicated hot wallet dengan saldo MATIC cukup untuk gas
+- [ ] Smart contract address `GiziChainRegistry` dan `VCRegistry` sudah di-deploy dan tercatat
+- [ ] Polygon chain ID sudah sesuai (80001 testnet / 137 mainnet)
+- [ ] `pinata.api-key` dan `pinata.secret-key` valid — test upload file ke IPFS
+- [ ] `pinata.gateway-url` dapat diakses publik untuk verifikasi VC offline

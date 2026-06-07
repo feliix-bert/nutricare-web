@@ -1,4 +1,4 @@
-# ERD.md — Stunting AI Platform
+# ERD.md — Tumbuh Sehat
 
 ## Diagram Relasi Entitas
 
@@ -56,6 +56,26 @@
                │  messages (JSON) │
                │  updated_at      │
                └──────────────────┘
+
+               ┌──────────────────────────┐
+               │   blockchain_anchors     │
+               │  id (PK)                 │
+               │  assessment_id (FK,UNQ)  │
+               │  record_hash             │
+               │  tx_hash                 │
+               │  block_number            │
+               │  contract_address        │
+               │  anchor_status           │
+               │  anchored_at             │
+               └──────────────────────────┘
+
+┌──────────────────────────────────────────────────────┐
+│              verifiable_credentials                  │
+│  id (PK) │ child_id (FK) │ issuer_id (FK → users)   │
+│  vc_type │ ipfs_cid │ tx_hash                        │
+│  is_revoked │ revoke_tx_hash │ expires_at            │
+│  created_at                                          │
+└──────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -70,6 +90,7 @@
 | `password_hash` | `VARCHAR(255)` | NOT NULL | BCrypt hash |
 | `name` | `VARCHAR(100)` | NOT NULL | Nama lengkap |
 | `role` | `role_enum` | NOT NULL, DEFAULT 'PARENT' | Role akses |
+| `wallet_address` | `VARCHAR(42)` | UNIQUE, NULLABLE | Ethereum address — untuk MEDIC & POSYANDU yang sign VC |
 | `is_active` | `BOOLEAN` | NOT NULL, DEFAULT true | Soft disable oleh ADMIN |
 | `created_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT now() | — |
 | `updated_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT now() | — |
@@ -84,6 +105,7 @@
 | `name` | `VARCHAR(100)` | NOT NULL | Nama anak |
 | `birth_date` | `DATE` | NOT NULL | Tanggal lahir |
 | `gender` | `gender_enum` | NOT NULL | MALE / FEMALE |
+| `anon_id` | `VARCHAR(30)` | UNIQUE, NOT NULL, DEFAULT CUID | ID publik untuk VC — menggantikan nama/PII di dokumen on-chain |
 | `created_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT now() | — |
 | `updated_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT now() | — |
 
@@ -185,10 +207,40 @@
 
 ---
 
+### `blockchain_anchors`
+| Kolom | Tipe | Constraint | Keterangan |
+|-------|------|-----------|------------|
+| `id` | `VARCHAR(30)` | PK | CUID |
+| `assessment_id` | `VARCHAR(30)` | FK → assessments.id, UNIQUE, NOT NULL | One-to-one |
+| `record_hash` | `VARCHAR(66)` | NOT NULL | keccak256 hash dari data assessment |
+| `tx_hash` | `VARCHAR(66)` | NULLABLE | Transaction hash di Polygon |
+| `block_number` | `INTEGER` | NULLABLE | Block number konfirmasi |
+| `contract_address` | `VARCHAR(42)` | NOT NULL | Address GiziChainRegistry contract |
+| `anchor_status` | `anchor_status_enum` | NOT NULL, DEFAULT 'PENDING' | Status proses anchoring |
+| `anchored_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT now() | — |
+
+---
+
+### `verifiable_credentials`
+| Kolom | Tipe | Constraint | Keterangan |
+|-------|------|-----------|------------|
+| `id` | `VARCHAR(30)` | PK | CUID |
+| `child_id` | `VARCHAR(30)` | FK → children.id, NOT NULL | — |
+| `issuer_id` | `VARCHAR(30)` | FK → users.id, NOT NULL | MEDIC yang menerbitkan VC |
+| `vc_type` | `vc_type_enum` | NOT NULL | Tipe credential |
+| `ipfs_cid` | `VARCHAR(100)` | NOT NULL | CID dokumen VC di IPFS via Pinata |
+| `tx_hash` | `VARCHAR(66)` | NOT NULL | TX pencatatan CID di VCRegistry contract |
+| `is_revoked` | `BOOLEAN` | NOT NULL, DEFAULT false | Status revokasi |
+| `revoke_tx_hash` | `VARCHAR(66)` | NULLABLE | TX revokasi on-chain |
+| `expires_at` | `TIMESTAMPTZ` | NULLABLE | — |
+| `created_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT now() | — |
+
+---
+
 ## Enum Types
 
 ```sql
-CREATE TYPE role_enum AS ENUM ('PARENT', 'MEDIC', 'ADMIN');
+CREATE TYPE role_enum AS ENUM ('PARENT', 'MEDIC', 'POSYANDU', 'ADMIN');
 
 CREATE TYPE gender_enum AS ENUM ('MALE', 'FEMALE');
 
@@ -203,6 +255,19 @@ CREATE TYPE prediction_status_enum AS ENUM (
   'PENDING',    -- Menunggu proses Gemini
   'COMPLETED',  -- Prediksi berhasil
   'FAILED'      -- Gemini gagal setelah retry
+);
+
+CREATE TYPE anchor_status_enum AS ENUM (
+  'PENDING',       -- Menunggu konfirmasi tx
+  'CONFIRMED',     -- Tx terkonfirmasi di chain
+  'PENDING_GAS',   -- Saldo MATIC tidak cukup
+  'FAILED'         -- Gagal setelah retry
+);
+
+CREATE TYPE vc_type_enum AS ENUM (
+  'IMMUNIZATION_COMPLETE',
+  'NUTRITION_STATUS',
+  'GROWTH_MILESTONE'
 );
 ```
 
@@ -226,6 +291,13 @@ CREATE INDEX idx_predictions_status ON predictions(prediction_status)
 
 -- Refresh token lookup
 CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens(user_id);
+
+-- Blockchain anchor PENDING (untuk retry job)
+CREATE INDEX idx_blockchain_anchors_status ON blockchain_anchors(anchor_status)
+  WHERE anchor_status IN ('PENDING', 'PENDING_GAS');
+
+-- VC per anak
+CREATE INDEX idx_verifiable_credentials_child_id ON verifiable_credentials(child_id);
 ```
 
 ---

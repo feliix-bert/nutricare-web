@@ -1,4 +1,4 @@
-# API.md — Stunting AI Platform
+# API.md — Tumbuh Sehat
 
 ## Konvensi
 
@@ -81,11 +81,12 @@ Login dan dapatkan JWT.
   "accessToken": "eyJhbGci...",
   "refreshToken": "eyJhbGci...",
   "user": {
-    "id": "clx1234567890",
-    "email": "orang.tua@email.com",
-    "name": "Budi Santoso",
-    "role": "PARENT"
-  }
+  "id": "clx1234567890",
+  "email": "orang.tua@email.com",
+  "name": "Budi Santoso",
+  "role": "PARENT",
+  "walletAddress": null
+}
 }
 ```
 
@@ -300,11 +301,12 @@ Submit assessment baru. Prediksi AI di-generate otomatis secara async.
   "weight": 9.5,
   "height": 74.0,
   "createdAt": "2025-07-24T10:00:00Z",
-  "prediction": {
+    "prediction": {
     "id": "clx_pred_001",
     "status": "PENDING",
     "message": "Prediksi sedang diproses, harap tunggu."
-  }
+  },
+  "blockchain": null
 }
 ```
 
@@ -348,6 +350,16 @@ Ambil detail assessment beserta prediksinya.
     ],
     "nextAssessmentDate": "2025-10-24",
     "disclaimer": "Hasil ini bersifat skrining awal dan bukan diagnosis medis. Konsultasikan dengan dokter atau tenaga kesehatan."
+  },
+  "blockchain": {
+    "id": "clx_anchor_001",
+    "anchored": true,
+    "recordHash": "0xabc123...def456",
+    "txHash": "0xabc123...def456",
+    "blockNumber": 48291034,
+    "anchorStatus": "CONFIRMED",
+    "explorerUrl": "https://polygonscan.com/tx/0xabc123...def456",
+    "verifyUrl": "/api/blockchain/verify/clx_assessment_001"
   }
 }
 ```
@@ -472,6 +484,180 @@ Ambil riwayat percakapan untuk prediksi tertentu.
   "updatedAt": "2025-07-24T10:00:05Z"
 }
 ```
+
+---
+
+## Blockchain — `/api/blockchain`
+> Endpoint untuk meng-anchor hash data assessment ke Polygon dan memverifikasi integritasnya.
+
+### POST `/api/blockchain/anchor`
+Anchor hash assessment ke blockchain Polygon. Dipanggil otomatis oleh server setelah prediksi selesai.
+
+**Auth**: ✅ SERVER (internal, tidak dipanggil langsung oleh client)
+
+**Response `200 OK`**:
+```json
+{
+  "id": "clx_anchor_001",
+  "assessmentId": "clx_assessment_001",
+  "recordHash": "0xabc123...def456",
+  "txHash": "0xabc123...def456",
+  "blockNumber": 48291034,
+  "contractAddress": "0xGiziChainRegistryAddress",
+  "anchorStatus": "CONFIRMED",
+  "anchoredAt": "2025-07-24T10:00:00Z"
+}
+```
+
+**Errors**: `500` RPC timeout atau gas insufficient
+
+---
+
+### GET `/api/blockchain/verify/{assessmentId}`
+Verifikasi integritas data assessment dengan membandingkan hash on-chain.
+
+**Auth**: ✅ ANY (publik, endpoint read-only)
+
+**Response `200 OK`**:
+```json
+{
+  "assessmentId": "clx_assessment_001",
+  "isValid": true,
+  "recordHash": "0xabc123...def456",
+  "anchoredAt": "2025-07-24T10:00:00Z",
+  "txHash": "0xabc123...def456",
+  "blockNumber": 48291034,
+  "explorerUrl": "https://polygonscan.com/tx/0xabc123...def456"
+}
+```
+
+**Errors**: `404` assessment tidak ditemukan atau belum di-anchor
+
+---
+
+## Verifiable Credential — `/api/vc`
+> Kelola Verifiable Credential (W3C) untuk status gizi dan imunisasi anak. VC disimpan di IPFS via Pinata dan dicatat di smart contract.
+
+### POST `/api/vc/issue`
+Terbitkan Verifiable Credential baru untuk seorang anak.
+
+**Auth**: ✅ MEDIC, ADMIN
+
+**Request Body**:
+```json
+{
+  "childId": "clx_child_001",
+  "vcType": "NUTRITION_STATUS",
+  "expiresAt": "2026-07-24T10:00:00Z"
+}
+```
+
+**Response `201 Created`**:
+```json
+{
+  "id": "clx_vc_001",
+  "childId": "clx_child_001",
+  "childAnonId": "clx_anon_001",
+  "issuerId": "clx_medic_001",
+  "issuerWallet": "did:polygon:0xMedicWalletAddress",
+  "vcType": "NUTRITION_STATUS",
+  "ipfsCid": "bafybeig...abc123",
+  "txHash": "0xabc123...def456",
+  "expiresAt": "2026-07-24T10:00:00Z",
+  "createdAt": "2025-07-24T10:00:00Z",
+  "qrPayload": "eyJhbGciOiJFUzI1NksifQ..."
+}
+```
+
+**Errors**: `400` childId tidak valid, `403` issuer belum punya wallet terdaftar
+
+---
+
+### GET `/api/vc/{vcId}`
+Ambil detail VC (publik, data anonim — tanpa PII).
+
+**Auth**: ✅ ANY
+
+**Response `200 OK`**:
+```json
+{
+  "id": "clx_vc_001",
+  "@context": ["https://www.w3.org/2018/credentials/v1"],
+  "type": ["VerifiableCredential", "ChildHealthCredential"],
+  "issuer": {
+    "id": "did:polygon:0xMedicWalletAddress",
+    "name": "Puskesmas Ilir Timur I Palembang"
+  },
+  "issuanceDate": "2025-07-24T10:00:00Z",
+  "expirationDate": "2026-07-24T10:00:00Z",
+  "credentialSubject": {
+    "id": "urn:gizichain:child:clx_anon_001",
+    "ageMonths": 18,
+    "gender": "MALE",
+    "nutritionStatus": "AT_RISK",
+    "immunizationComplete": true
+  },
+  "isRevoked": false,
+  "ipfsCid": "bafybeig...abc123",
+  "txHash": "0xabc123...def456"
+}
+```
+
+---
+
+### POST `/api/vc/revoke`
+Cabut (revoke) VC yang sudah diterbitkan. Hanya issuer yang bisa revoke.
+
+**Auth**: ✅ MEDIC, ADMIN
+
+**Request Body**:
+```json
+{
+  "vcId": "clx_vc_001"
+}
+```
+
+**Response `200 OK`**:
+```json
+{
+  "id": "clx_vc_001",
+  "isRevoked": true,
+  "revokeTxHash": "0xdef789...abc012",
+  "revokedAt": "2025-07-25T10:00:00Z"
+}
+```
+
+**Errors**: `403` bukan issuer VC ini, `400` VC sudah di-revoke sebelumnya
+
+---
+
+### GET `/api/verify`
+Verifikasi QR code VC. Endpoint publik tanpa auth — bisa diakses oleh faskes manapun.
+
+**Auth**: ❌ Tidak diperlukan (publik)
+
+**Query Params**:
+| Param | Tipe | Wajib | Keterangan |
+|-------|------|-------|-----------|
+| `qr` | String | ✅ | Encoded payload dari QR code (base64 JSON) |
+
+**Response `200 OK`**:
+```json
+{
+  "valid": true,
+  "vcId": "clx_vc_001",
+  "vcType": "NUTRITION_STATUS",
+  "childAnonId": "clx_anon_001",
+  "issuerName": "Puskesmas Ilir Timur I Palembang",
+  "issuedAt": "2025-07-24T10:00:00Z",
+  "expiresAt": "2026-07-24T10:00:00Z",
+  "isRevoked": false,
+  "verificationMethod": "offline_signature + online_ipfs_chain",
+  "ipfsCid": "bafybeig...abc123"
+}
+```
+
+**Errors**: `400` QR payload tidak valid, `422` VC telah di-revoke atau expired
 
 ---
 
@@ -622,6 +808,6 @@ Statistik agregat stunting (untuk peta sebaran dan dashboard).
 | `403` | Forbidden — role tidak punya akses |
 | `404` | Not Found |
 | `409` | Conflict — data duplikat (email sudah ada) |
-| `422` | Unprocessable Entity — data valid tapi tidak bisa diproses (misal foto tidak dikenali Gemini) |
+| `422` | Unprocessable Entity — data valid tapi tidak bisa diproses (misal foto tidak dikenali Gemini, VC expired) |
 | `500` | Internal Server Error |
-| `503` | Service Unavailable — Gemini atau Supabase tidak bisa dijangkau |
+| `503` | Service Unavailable — Gemini, Supabase, atau blockchain RPC tidak bisa dijangkau |

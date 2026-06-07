@@ -1,11 +1,14 @@
-# CONTEXT.md — Stunting AI Platform
+# CONTEXT.md — Tumbuh Sehat
 
 ## Gambaran Proyek
 
-**Stunting AI** adalah platform kesehatan anak berbasis web dan mobile yang membantu orang tua
-dan tenaga medis mendeteksi risiko stunting secara dini. Sistem ini menggabungkan standar klinis
-WHO dengan kecerdasan buatan (Google Gemini) untuk memberikan skrining, analisis gizi, dan
-konsultasi yang mudah diakses.
+**GiziChain** (Gizi + Chain) adalah platform kesehatan anak berbasis web dan mobile yang membantu
+orang tua dan tenaga medis mendeteksi risiko stunting secara dini. Sistem ini menggabungkan standar
+klinis WHO dengan kecerdasan buatan (Google Gemini) untuk memberikan skrining, analisis gizi, dan
+konsultasi yang mudah diakses — sekaligus menjamin integritas data rekam medis anak melalui
+blockchain Polygon dan Verifiable Credentials (W3C VC).
+
+Tagline: *"Data Gizi Anak: Teranalisis oleh AI, Dijamin oleh Blockchain."*
 
 Platform ini bukan pengganti diagnosis medis. Setiap output AI wajib disertai disclaimer
 dan anjuran konsultasi ke tenaga kesehatan.
@@ -74,11 +77,27 @@ Tenaga medis (dokter, bidan, ahli gizi).
 - Dashboard daftar semua pasien yang terdaftar
 - Melihat detail assessment dan prediksi semua anak
 - Menambahkan catatan klinis pada assessment
+- **Menerbitkan Verifiable Credential** untuk anak (butuh `walletAddress`)
+- **Mencabut (revoke) VC** yang sudah diterbitkan
 - Melihat ringkasan statistik populasi
 
 **Batasan:**
 - Tidak bisa mengubah data akun pengguna
 - Tidak bisa mengakses fitur manajemen sistem
+
+---
+
+### POSYANDU
+Petugas posyandu atau kader kesehatan.
+
+**Akses:**
+- Input data berat/tinggi rutin anak
+- Scan QR untuk verifikasi VC anak
+- Update status imunisasi
+
+**Batasan:**
+- Tidak bisa menerbitkan VC
+- Tidak bisa melihat laporan prediksi AI lengkap
 
 ---
 
@@ -91,6 +110,8 @@ Administrator sistem.
 - Peta sebaran stunting agregat per wilayah
 - Laporan statistik agregat nasional/regional
 - Konfigurasi sistem (jadwal imunisasi, threshold notifikasi)
+- Dashboard transparansi blockchain (total anchor, total VC aktif)
+- Monitor kesehatan chain (saldo wallet MATIC, status retry queue)
 
 ---
 
@@ -104,37 +125,48 @@ Form multi-step (5 langkah) yang mengumpulkan:
 4. Riwayat penyakit — infeksi berulang, diare, ISPA
 5. Review & submit
 
-### 2. Prediksi AI
+### 2. Prediksi AI + Blockchain Anchoring
 - Hitung z-score di backend berdasarkan standar WHO
 - Kirim ke Gemini untuk interpretasi dan rekomendasi
 - Hasilkan: status, risk level, ringkasan, rekomendasi, jadwal assessment berikutnya
+- **Setelah prediksi selesai, hash SHA-256 dari data assessment di-anchor ke Polygon**
+- Badge "✓ Terverifikasi di Blockchain" + link Polygonscan ditampilkan di hasil
 
-### 3. Deteksi Gizi Foto Makanan
+### 3. Verifiable Credential (VC)
+- Diterbitkan oleh MEDIC untuk anak setelah assessment
+- Format: W3C Verifiable Credential JSON-LD
+- Ditandatangani kriptografis, disimpan di IPFS (Pinata), CID dicatat di smart contract
+- Orang tua mendapat QR code yang encode `{ vcCid, issuerDID, signature }`
+- Mendukung verifikasi offline (validasi signature dari cache) dan online (query IPFS + chain)
+- VC dapat dicabut (revoke) oleh issuer
+
+### 4. Deteksi Gizi Foto Makanan
 - Upload foto makanan via mobile atau web
 - Foto disimpan ke Supabase Storage
 - Gemini Vision menganalisis kandungan gizi
 - Output: daftar makanan terdeteksi, estimasi kalori & makronutrien, rekomendasi
 
-### 4. Chatbot Konsultasi
+### 5. Chatbot Konsultasi
 - Konteks berbasis data prediksi terakhir anak
 - Riwayat percakapan disimpan di database
 - Maksimal 10 pesan terakhir dikirim ke Gemini per request
 
-### 5. Grafik Tumbuh Kembang
+### 6. Grafik Tumbuh Kembang
 - Visualisasi BB, TB, lingkar kepala vs kurva WHO
 - Filter per periode waktu
 - Tersedia di web (Recharts) dan mobile
 
-### 6. Laporan PDF
+### 7. Laporan PDF
 - Generate otomatis dari data assessment + prediksi
+- **QR code VC tertanam** di laporan (jika VC tersedia)
 - Bisa diunduh oleh PARENT, diakses MEDIC
 
-### 7. Notifikasi Jadwal
+### 8. Notifikasi Jadwal
 - Pengingat jadwal assessment berikutnya
 - Pengingat jadwal imunisasi
 - Push notification di mobile, email di web
 
-### 8. Lokasi Faskes Terdekat
+### 9. Lokasi Faskes Terdekat
 - Integrasi Maps API
 - Deteksi lokasi via GPS (mobile)
 - Tampilkan puskesmas/posyandu terdekat
@@ -146,10 +178,15 @@ Form multi-step (5 langkah) yang mengumpulkan:
 1. Satu akun PARENT bisa mendaftarkan lebih dari satu anak
 2. Assessment bersifat append-only — tidak bisa diedit setelah submit, hanya bisa ditambah assessment baru
 3. Prediksi di-generate otomatis setelah assessment tersimpan (async)
-4. Foto makanan maksimal 5 MB, format JPEG/PNG/WebP
-5. Chatbot hanya bisa diakses jika anak sudah memiliki minimal 1 prediksi
-6. Data agregat di dashboard ADMIN tidak boleh mengekspos data individu
-7. Akun MEDIC dan ADMIN hanya bisa dibuat oleh ADMIN, tidak bisa self-register
+4. Blockchain anchoring dilakukan async — tidak memblokir UI
+5. Foto makanan maksimal 5 MB, format JPEG/PNG/WebP
+6. Chatbot hanya bisa diakses jika anak sudah memiliki minimal 1 prediksi COMPLETED
+7. Data agregat di dashboard ADMIN tidak boleh mengekspos data individu
+8. Akun MEDIC dan ADMIN hanya bisa dibuat oleh ADMIN, tidak bisa self-register
+9. **PII tidak pernah masuk ke chain** — chain hanya menyimpan hash & CID IPFS
+10. **VC hanya boleh diterbitkan oleh MEDIC** yang memiliki `walletAddress` terdaftar
+11. **QR VC tidak boleh diterbitkan** sebelum tx blockchain terkonfirmasi dan CID IPFS tersedia
+12. VC dapat dicabut (revoke) oleh issuer — status revoke dicatat on-chain
 
 ---
 

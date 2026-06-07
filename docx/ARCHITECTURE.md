@@ -1,8 +1,8 @@
-# ARCHITECTURE.md — Stunting AI Platform
+# ARCHITECTURE.md — Tumbuh Sehat
 
 ## 1. Gambaran Sistem
 
-Platform ini terdiri dari **3 service utama** yang berkomunikasi via REST API:
+Platform ini terdiri dari **3 service utama** yang berkomunikasi via REST API, ditambah **layer blockchain** untuk verifikasi integritas data:
 
 ```
 ┌───────────────────────────────────────────────────────────────────────────────┐
@@ -46,9 +46,23 @@ Platform ini terdiri dari **3 service utama** yang berkomunikasi via REST API:
 │   │                           │          └──────────────────────────┘    │  │
 │   │                           │                                          │  │
 │   │                           │          ┌──────────────────────────┐    │  │
-│   │                           └─────────>│    Google Gemini API     │    │  │
-│   │                                      │    (Flash + Pro Vision)  │    │  │
+│   │                           ├─────────>│    Google Gemini API     │    │  │
+│   │                           │          │    (Flash + Pro Vision)  │    │  │
+│   │                           │          └──────────────────────────┘    │  │
+│   │                           │                                          │  │
+│   │                           │          ┌──────────────────────────┐    │  │
+│   │                           └─────────>│    IPFS / Pinata         │    │  │
+│   │                                      │    (VC document storage) │    │  │
 │   │                                      └──────────────────────────┘    │  │
+│   └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                               │
+│   ┌───────────────────────────────────────────────────────────────────────┐  │
+│   │                     BLOCKCHAIN LAYER (Polygon)                        │  │
+│   │                                                                       │  │
+│   │   ┌──────────────────────────┐    ┌──────────────────────────────┐   │  │
+│   │   │  GiziChainRegistry.sol  │    │    VCRegistry.sol            │   │  │
+│   │   │  (Health record hash)   │    │    (VC credential CID)       │   │  │
+│   │   └──────────────────────────┘    └──────────────────────────────┘   │  │
 │   └───────────────────────────────────────────────────────────────────────┘  │
 └───────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -78,19 +92,23 @@ server/
 │   │   │   │
 │   │   │   ├── domain/
 │   │   │   │   ├── enums/
-│   │   │   │   │   ├── Role.java                   # PARENT, MEDIC, ADMIN
+│   │   │   │   │   ├── Role.java                   # PARENT, MEDIC, POSYANDU, ADMIN
 │   │   │   │   │   ├── Gender.java                 # MALE, FEMALE
 │   │   │   │   │   ├── StuntStatus.java            # NORMAL, AT_RISK, STUNTED, SEVERELY_STUNTED
-│   │   │   │   │   └── PredictionStatus.java       # PENDING, COMPLETED, FAILED
+│   │   │   │   │   ├── PredictionStatus.java       # PENDING, COMPLETED, FAILED
+│   │   │   │   │   ├── AnchorStatus.java           # PENDING, CONFIRMED, PENDING_GAS, FAILED
+│   │   │   │   │   └── VcType.java                 # IMMUNIZATION_COMPLETE, NUTRITION_STATUS, GROWTH_MILESTONE
 │   │   │   │   │
 │   │   │   │   └── entities/
-│   │   │   │       ├── User.java                   # @Entity users
-│   │   │   │       ├── Child.java                  # @Entity children
+│   │   │   │       ├── User.java                   # @Entity users (+ wallet_address)
+│   │   │   │       ├── Child.java                  # @Entity children (+ anon_id)
 │   │   │   │       ├── Assessment.java             # @Entity assessments
 │   │   │   │       ├── Prediction.java             # @Entity predictions
 │   │   │   │       ├── NutritionLog.java           # @Entity nutrition_logs
 │   │   │   │       ├── ChatSession.java            # @Entity chat_sessions
-│   │   │   │       └── RefreshToken.java           # @Entity refresh_tokens
+│   │   │   │       ├── RefreshToken.java           # @Entity refresh_tokens
+│   │   │   │       ├── BlockchainAnchor.java       # @Entity blockchain_anchors
+│   │   │   │       └── VerifiableCredential.java   # @Entity verifiable_credentials
 │   │   │   │
 │   │   │   ├── repository/
 │   │   │   │   ├── UserRepository.java
@@ -99,7 +117,9 @@ server/
 │   │   │   │   ├── PredictionRepository.java
 │   │   │   │   ├── NutritionLogRepository.java
 │   │   │   │   ├── ChatSessionRepository.java
-│   │   │   │   └── RefreshTokenRepository.java
+│   │   │   │   ├── RefreshTokenRepository.java
+│   │   │   │   ├── BlockchainAnchorRepository.java
+│   │   │   │   └── VerifiableCredentialRepository.java
 │   │   │   │
 │   │   │   ├── dto/
 │   │   │   │   ├── request/
@@ -116,6 +136,12 @@ server/
 │   │   │   │   │   └── chat/
 │   │   │   │   │       └── ChatRequest.java
 │   │   │   │   │
+│   │   │   │   │   ├── blockchain/
+│   │   │   │   │   │   └── AnchorRequest.java
+│   │   │   │   │   └── vc/
+│   │   │   │   │       ├── IssueVcRequest.java
+│   │   │   │   │       └── RevokeVcRequest.java
+│   │   │   │   │
 │   │   │   │   └── response/
 │   │   │   │       ├── auth/
 │   │   │   │       │   ├── AuthResponse.java       # { accessToken, refreshToken, user }
@@ -123,13 +149,20 @@ server/
 │   │   │   │       ├── child/
 │   │   │   │       │   └── ChildResponse.java
 │   │   │   │       ├── assessment/
-│   │   │   │       │   └── AssessmentResponse.java
+│   │   │   │       │   └── AssessmentResponse.java  # + blockchain field
 │   │   │   │       ├── prediction/
 │   │   │   │       │   └── PredictionResponse.java
 │   │   │   │       ├── nutrition/
 │   │   │   │       │   └── NutritionResponse.java
 │   │   │   │       ├── chat/
 │   │   │   │       │   └── ChatResponse.java
+│   │   │   │       ├── blockchain/
+│   │   │   │       │   ├── AnchorResponse.java
+│   │   │   │       │   └── VerifyResponse.java
+│   │   │   │       ├── vc/
+│   │   │   │       │   ├── IssueVcResponse.java
+│   │   │   │       │   ├── VcDetailResponse.java
+│   │   │   │       │   └── VerifyQrResponse.java
 │   │   │   │       ├── PageResponse.java           # Generic wrapper pagination
 │   │   │   │       └── ErrorResponse.java          # { status, error, message, timestamp, path }
 │   │   │   │
@@ -141,7 +174,9 @@ server/
 │   │   │   │   ├── ChatController.java             # /api/chat/**
 │   │   │   │   ├── ReportController.java           # /api/reports/**
 │   │   │   │   ├── MedicController.java            # /api/medic/**
-│   │   │   │   └── AdminController.java            # /api/admin/**
+│   │   │   │   ├── AdminController.java            # /api/admin/**
+│   │   │   │   ├── BlockchainController.java       # /api/blockchain/**
+│   │   │   │   └── VcController.java               # /api/vc/**, /api/verify
 │   │   │   │
 │   │   │   ├── service/
 │   │   │   │   ├── AuthService.java
@@ -152,7 +187,10 @@ server/
 │   │   │   │   ├── ChatService.java
 │   │   │   │   ├── ReportService.java              # Generate PDF
 │   │   │   │   ├── StorageService.java             # Supabase Storage REST client
-│   │   │   │   └── GeminiService.java              # Wrapper Gemini API calls
+│   │   │   │   ├── GeminiService.java              # Wrapper Gemini API calls
+│   │   │   │   ├── BlockchainService.java          # Web3j — anchor & verify ke Polygon
+│   │   │   │   ├── VcService.java                  # Issue, revoke, verify VC
+│   │   │   │   └── IpfsService.java                # Pinata client — upload & pin JSON
 │   │   │   │
 │   │   │   ├── util/
 │   │   │   │   ├── ZScoreCalculator.java           # Kalkulasi z-score standar WHO
@@ -164,7 +202,9 @@ server/
 │   │   │       ├── ResourceNotFoundException.java  # 404
 │   │   │       ├── ForbiddenException.java         # 403
 │   │   │       ├── DuplicateResourceException.java # 409
-│   │   │       └── GeminiException.java            # AI-related errors
+│   │   │       ├── GeminiException.java            # AI-related errors
+│   │   │       ├── BlockchainException.java        # RPC timeout, revert, gas insufficient
+│   │   │       └── VcException.java                # VC already revoked, invalid issuer
 │   │   │
 │   │   └── resources/
 │   │       ├── application.yml                     # Config utama
@@ -180,17 +220,24 @@ server/
 │   │               ├── V6__create_nutrition_logs.sql
 │   │               ├── V7__create_chat_sessions.sql
 │   │               ├── V8__create_refresh_tokens.sql
-│   │               └── V9__create_indexes.sql
+│   │               ├── V9__create_indexes.sql
+│   │               ├── V10__add_wallet_and_anon_id.sql
+│   │               ├── V11__create_blockchain_anchors.sql
+│   │               └── V12__create_verifiable_credentials.sql
 │   │
 │   └── test/
 │       └── java/com/stuntingai/
 │           ├── service/
 │           │   ├── AuthServiceTest.java
 │           │   ├── ZScoreCalculatorTest.java
-│           │   └── PredictionServiceTest.java
+│           │   ├── PredictionServiceTest.java
+│           │   ├── BlockchainServiceTest.java
+│           │   └── VcServiceTest.java
 │           └── controller/
 │               ├── AuthControllerTest.java
-│               └── AssessmentControllerTest.java
+│               ├── AssessmentControllerTest.java
+│               ├── BlockchainControllerTest.java
+│               └── VcControllerTest.java
 │
 ├── pom.xml
 └── .env
@@ -562,42 +609,50 @@ Client                          JwtAuthFilter              Controller
 
 ---
 
-## 6. Data Flow — Assessment & Prediksi
+## 6. Data Flow — Assessment & Prediksi + Blockchain Anchor
 
 ```
-Client                         AssessmentController          PredictionService
-  │                                    │                            │
-  │── POST /api/assessments ──────────>│                            │
-  │   { childId, weight, height, ... } │                            │
-  │                                    │ 1. @Valid — validasi input  │
-  │                                    │ 2. Cek childId milik user  │
-  │                                    │ 3. Simpan Assessment ke DB │
-  │                                    │ 4. Buat Prediction(PENDING)│
-  │                                    │ 5. @Async trigger ─────────>│
-  │<── 201 Created ───────────────────-│                            │
-  │   { assessmentId,                  │                            │ 6. Ambil data anak
-  │     prediction: { PENDING } }      │                            │ 7. Hitung usia dalam bulan
-  │                                    │                            │ 8. ZScoreCalculator:
-  │                                    │                            │    - z-score BB/U (WHO tabel)
-  │                                    │                            │    - z-score TB/U
-  │                                    │                            │    - z-score BB/TB
-  │                                    │                            │ 9. Tentukan StuntStatus
-  │                                    │                            │ 10. PromptBuilder.buildPredictionPrompt()
-  │                                    │                            │ 11. GeminiService.generateText(prompt)
-  │                                    │                            │     ┌──────────────────────┐
-  │                                    │                            │     │   Gemini API         │
-  │                                    │                            │     │   model: flash       │
-  │                                    │                            │     │   return JSON        │
-  │                                    │                            │     └──────────────────────┘
-  │                                    │                            │ 12. Parse JSON response
-  │                                    │                            │ 13. Update Prediction:
-  │                                    │                            │     status=COMPLETED
-  │                                    │                            │     zscore, summary,
-  │                                    │                            │     recommendations,
-  │                                    │                            │     nextAssessmentDate
-  │                                    │                            │
-  │── GET /api/assessments/{id} ──────>│                            │
-  │<── 200 OK + full result ──────────│                            │
+Client                         AssessmentController          PredictionService          BlockchainService
+  │                                    │                            │                           │
+  │── POST /api/assessments ──────────>│                            │                           │
+  │   { childId, weight, height, ... } │                            │                           │
+  │                                    │ 1. @Valid — validasi input  │                           │
+  │                                    │ 2. Cek childId milik user  │                           │
+  │                                    │ 3. Simpan Assessment ke DB │                           │
+  │                                    │ 4. Buat Prediction(PENDING)│                           │
+  │                                    │ 5. @Async trigger ─────────>│                           │
+  │<── 201 Created ───────────────────-│                            │                           │
+  │   { assessmentId,                  │                            │ 6. Ambil data anak        │
+  │     prediction: { PENDING } }      │                            │ 7. Hitung usia dalam bulan │
+  │                                    │                            │ 8. ZScoreCalculator:       │
+  │                                    │                            │    - z-score BB/U (WHO)    │
+  │                                    │                            │    - z-score TB/U         │
+  │                                    │                            │    - z-score BB/TB        │
+  │                                    │                            │ 9. Tentukan StuntStatus   │
+  │                                    │                            │ 10. PromptBuilder.build() │
+  │                                    │                            │ 11. GeminiService.call()  │
+  │                                    │                            │     ┌──────────────┐      │
+  │                                    │                            │     │  Gemini API  │      │
+  │                                    │                            │     │  return JSON  │      │
+  │                                    │                            │     └──────────────┘      │
+  │                                    │                            │ 12. Parse JSON response   │
+  │                                    │                            │ 13. Update Prediction:    │
+  │                                    │                            │     status=COMPLETED      │
+  │                                    │                            │     zscore, summary,      │
+  │                                    │                            │     recommendations       │
+  │                                    │                            │ 14. @Async anchor ───────>│
+  │                                    │                            │                           │ 15. Buat recordHash = keccak256(
+  │                                    │                            │                           │     childId + assessmentId + zscore + timestamp )
+  │                                    │                            │                           │ 16. Call GiziChainRegistry.anchorRecord()
+  │                                    │                            │                           │     ┌──────────────────────┐
+  │                                    │                            │                           │     │  Polygon Blockchain  │
+  │                                    │                            │                           │     │  GiziChainRegistry   │
+  │                                    │                            │                           │     └──────────────────────┘
+  │                                    │                            │                           │ 17. Simpan BlockchainAnchor
+  │                                    │                            │                           │     ke DB (status=CONFIRMED)
+  │                                    │                            │                           │
+  │── GET /api/assessments/{id} ──────>│                            │                           │
+  │<── 200 OK + full result + blockchain ──────────────────────────────────────────────────────│
 ```
 
 ---
@@ -654,12 +709,43 @@ Client                            ChatController              GeminiService
   │                                     │    ke ChatSession.messages│
   │                                     │ 7. Simpan ke DB          │
   │<── 200 OK ──────────────────────────│                          │
-  │    { reply, suggestedQuestions }    │                          │
+   │    { reply, suggestedQuestions }    │                          │
 ```
 
 ---
 
-## 9. RBAC — Role-Based Access Control
+## 9. Data Flow — Verifiable Credential Issuance
+
+```
+Client (MEDIC)                    VcController               VcService              IpfsService           BlockchainService
+  │                                     │                        │                       │                       │
+  │── POST /api/vc/issue ──────────────>│                        │                       │                       │
+  │   { childId, vcType, expiresAt }    │                        │                       │                       │
+  │                                     │ 1. Validasi child + issuer wallet              │                       │
+  │                                     │ 2. @Async trigger ───>│                       │                       │
+  │<── 202 Accepted ────────────────────│                        │                       │                       │
+  │                                     │                        │ 3. Build VC JSON-LD   │                       │
+  │                                     │                        │    document           │                       │
+  │                                     │                        │ 4. Sign dgn EIP-712   │                       │
+  │                                     │                        │    (issuer privateKey)│                       │
+  │                                     │                        │                       │                       │
+  │                                     │                        │── upload ke IPFS ────>│                       │
+  │                                     │                        │                       │ pin JSON ke Pinata   │
+  │                                     │                        │<── return IpfsCid ────│                       │
+  │                                     │                        │                       │                       │
+  │                                     │                        │── anchor CID ─────────────────────────────────>│
+  │                                     │                        │                       │                       │ Call VCRegistry
+  │                                     │                        │                       │                       │ .issueVC()
+  │                                     │                        │<── return txHash ──────────────────────────────│
+  │                                     │                        │                       │                       │
+  │                                     │                        │ 5. Simpan VC ke DB    │                       │
+  │                                     │                        │ 6. Generate QR payload│                       │
+  │                                     │                        │    (base64 JWT)       │                       │
+```
+
+---
+
+## 10. RBAC — Role-Based Access Control
 
 Spring Security dikonfigurasi dengan `@PreAuthorize` di level method:
 
@@ -700,10 +786,16 @@ Controller Method
 | `GET /api/medic/**` | ❌ | ✅ | ✅ | 403 untuk PARENT |
 | `GET /api/admin/**` | ❌ | ❌ | ✅ | 403 untuk PARENT & MEDIC |
 | `POST /api/admin/users` | ❌ | ❌ | ✅ | Buat akun MEDIC/ADMIN |
+| `POST /api/blockchain/anchor` | ❌ | ❌ | ❌ | Internal server-only, bukan client |
+| `GET /api/blockchain/verify/**` | ✅ | ✅ | ✅ | Publik read-only |
+| `POST /api/vc/issue` | ❌ | ✅ | ✅ | MEDIC dengan wallet terdaftar |
+| `GET /api/vc/**` | ✅ | ✅ | ✅ | Publik, anonim |
+| `POST /api/vc/revoke` | ❌ | ✅ | ✅ | Hanya issuer VC |
+| `GET /api/verify` | ✅ | ✅ | ✅ | Publik, tanpa auth |
 
 ---
 
-## 10. Error Handling
+## 11. Error Handling
 
 ### Format Respons Error (Konsisten)
 ```json
@@ -728,6 +820,8 @@ Controller Method
 | `ResourceNotFoundException` | 404 | Entity tidak ditemukan di DB |
 | `DuplicateResourceException` | 409 | Email sudah terdaftar |
 | `GeminiException` | 422 | Gemini tidak bisa proses input |
+| `BlockchainException` | 500 | RPC timeout, gas insufficient, contract revert |
+| `VcException` | 400 | VC sudah di-revoke, issuer tidak valid |
 | `StorageException` | 500 | Supabase Storage error |
 | `Exception` (fallback) | 500 | Error tidak terduga |
 
@@ -744,13 +838,30 @@ GeminiService.call()
      ├── Invalid JSON response
      │       └── retry 1x → jika masih gagal → set Prediction(FAILED)
      │
-     └── Rate limit / quota habis
-             └── set Prediction(FAILED) → alert log ERROR → notifikasi admin
+      └── Rate limit / quota habis
+              └── set Prediction(FAILED) → alert log ERROR → notifikasi admin
+```
+
+### Strategi Blockchain Failure
+
+```
+BlockchainService.anchorRecord()
+     │
+     ├── Success → update BlockchainAnchor(CONFIRMED)
+     │
+     ├── RPC timeout (>15 detik)
+     │       └── set BlockchainAnchor(PENDING) → retry job tiap 5 menit
+     │
+     ├── Gas insufficient (low MATIC balance)
+     │       └── set BlockchainAnchor(PENDING_GAS) → alert admin via email
+     │
+     └── Smart contract revert
+             └── parse revert reason → log Sentry → set BlockchainAnchor(FAILED)
 ```
 
 ---
 
-## 11. Komunikasi Client ↔ Server
+## 12. Komunikasi Client ↔ Server
 
 ### Headers Wajib
 ```

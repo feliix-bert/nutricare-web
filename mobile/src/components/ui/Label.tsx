@@ -1,26 +1,14 @@
-import { Text, TextProps } from "react-native";
+import { Text, type TextProps } from "react-native";
+import { cn } from "@/utils/cn";
 
-function cn(...inputs: (string | undefined | null | false)[]) {
-  return inputs.filter(Boolean).join(" ")
-}
-
-interface LabelProps extends TextProps {
-  disabled?: boolean;
-}
-
-const Label = ({ children, className = "", disabled, ...props }: LabelProps) => {
+function Label({ className, ...props }: TextProps & { className?: string }) {
   return (
     <Text
-      className={cn(
-        "text-sm font-medium select-none text-gray-900",
-        disabled && "opacity-50",
-        className,
-      )}
+      data-slot="label"
+      className={cn("flex flex-row items-center gap-2 text-sm font-medium", className)}
       {...props}
-    >
-      {children}
-    </Text>
+    />
   );
-};
+}
 
 export { Label };

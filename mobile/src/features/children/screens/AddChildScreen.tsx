@@ -4,7 +4,7 @@ import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, Vie
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { InputField } from "@/components/common/InputField";
 import { useCreateChild } from "@/features/children/hooks/useChildren";
 import type { Gender } from "@/features/children/types/child.types";
 
@@ -61,7 +61,7 @@ export const AddChildScreen = () => {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Input
+          <InputField
             label="Nama Anak"
             defaultValue=""
             onChangeText={(t) => {
@@ -72,7 +72,7 @@ export const AddChildScreen = () => {
             error={formErrors.name}
           />
 
-          <Input
+          <InputField
             label="Tanggal Lahir"
             defaultValue=""
             onChangeText={(t) => {

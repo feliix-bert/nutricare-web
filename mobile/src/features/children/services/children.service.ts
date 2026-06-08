@@ -4,6 +4,7 @@ import {
   delay,
   getMockChildren,
   updateMockChild,
+  getMockAssessments,
   USE_MOCK,
 } from '@/services/mock';
 import type { PageResponse } from '@/types/api.types';
@@ -33,7 +34,21 @@ const mockGetChild = async (childId: string): Promise<ChildDetail> => {
   await delay();
   const child = getMockChildren().find((c) => c.id === childId);
   if (!child) throw { response: { status: 404, data: { message: 'Anak tidak ditemukan.' } } };
-  return { ...child, assessments: [] };
+  
+  const assessments = getMockAssessments()
+    .filter((a) => a.child.id === childId)
+    .map((a) => ({
+      id: a.id,
+      weight: a.weight,
+      height: a.height,
+      createdAt: a.createdAt,
+      prediction: {
+        status: a.prediction.status,
+        riskLevel: a.prediction.riskLevel,
+      },
+    }));
+
+  return { ...child, assessments };
 };
 
 const mockCreateChild = async (data: ChildRequest): Promise<Child> => {

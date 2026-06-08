@@ -417,38 +417,38 @@ web/
 ```
 mobile/
 ├── assets/                                         # Aset gambar, ikon, dan font bawaan
-├── app/                                            # File-based routing (Thin Wrapper Entry Points)
-│   ├── _layout.tsx                                 # Root layout: Setup QueryClient, secure store hydration, & Auth Gate
-│   ├── sign-in.tsx                                 # import { SignInScreen } from '@/features/auth'
-│   ├── register.tsx                                # import { RegisterScreen } from '@/features/auth'
-│   └── (app)/                                      # Route group terproteksi (auth guard)
-│       ├── _layout.tsx                             # Layout tumpukan (Stack) halaman terproteksi
-│       ├── (tabs)/                                 # Bottom Tab Navigation (Tab Bar bawah)
-│       │   ├── _layout.tsx                         # Pengaturan ikon tab, active state tint
-│       │   ├── index.tsx                           # import { HomeScreen } from '@/features/home'
-│       │   ├── scan.tsx                            # Kamera / galeri foto makanan (log gizi)
-│       │   ├── chat.tsx                            # Chatbot AI konsultasi stunting
-│       │   └── profile.tsx                         # import { ProfileScreen } from '@/features/profile'
-│       │
-│       ├── children/                               # Sub-rute manajemen data anak
-│       │   ├── [childId].tsx                       # import { ChildDetailScreen } from '@/features/children'
-│       │   └── new.tsx                             # import { AddChildScreen } from '@/features/children'
-│       │
-│       ├── assessment/                             # Sub-rute untuk penilaian stunting
-│       │   ├── new.tsx                             # Flow assessment multi-step (Step 1-5 & review)
-│       │   └── [assessmentId].tsx                  # Halaman hasil prediksi stunting & z-score
-│       │
-│       ├── nutrition/                              # Sub-rute gizi & makanan
-│       │   ├── result.tsx                          # Tampilan hasil analisis nutrisi foto makanan
-│       │   └── history.tsx                         # Riwayat log gizi lengkap
-│       │
-│       ├── growth/                                 # Sub-rute visualisasi tumbuh kembang anak
-│       │   └── chart.tsx                           # Grafik kurva tumbuh kembang vs WHO
-│       │
-│       └── map/                                    # Sub-rute geolokasi faskes
-│           └── faskes.tsx                          # Peta faskes terdekat terintegrasi GPS
-│
-│   ├── features/                                       # Domain Logic & UI per Fitur (Feature-Based)
+├── src/
+│   ├── app/                                        # File-based routing (Thin Wrapper Entry Points)
+│   │   ├── _layout.tsx                             # Root layout: Setup QueryClient, secure store hydration, & Auth Gate
+│   │   ├── sign-in.tsx                             # import { SignInScreen } from '@/features/auth'
+│   │   ├── register.tsx                            # import { RegisterScreen } from '@/features/auth'
+│   │   └── (app)/                                  # Route group terproteksi (auth guard)
+│   │       ├── _layout.tsx                         # Layout tumpukan (Stack) halaman terproteksi
+│   │       ├── (tabs)/                             # Bottom Tab Navigation (Tab Bar bawah)
+│   │       │   ├── _layout.tsx                     # Pengaturan ikon tab, active state tint
+│   │       │   ├── index.tsx                       # import { HomeScreen } from '@/features/home'
+│   │       │   ├── scanner.tsx                     # Kamera / galeri foto makanan (log gizi)
+│   │       │   ├── consult.tsx                     # Chatbot AI konsultasi stunting
+│   │       │   ├── vault.tsx                       # Riwayat blockchain ledger anak (Vault)
+│   │       │   └── profile.tsx                     # import { ProfileScreen } from '@/features/profile'
+│   │       │
+│   │       ├── children/                           # Sub-rute manajemen data anak
+│   │       │   ├── [childId].tsx                   # import { ChildDetailScreen } from '@/features/children'
+│   │       │   ├── new.tsx                         # import { AddChildScreen } from '@/features/children'
+│   │       │   └── [childId]/
+│   │       │       └── assessment/                 # Flow assessment stunting 5-langkah
+│   │       │           ├── body-size.tsx           # Step 2: Ukuran tubuh (antropometri)
+│   │       │           ├── feeding-history.tsx     # Step 3: Riwayat makan
+│   │       │           ├── illness-history.tsx     # Step 4: Riwayat penyakit
+│   │       │           ├── review.tsx              # Step 5: Tanda tangan & Review
+│   │       │           └── results.tsx             # Hasil deteksi AI stunting & z-score
+│   │       │
+│   │       └── scanner/                            # Sub-rute log makanan gizi
+│   │           ├── scan.tsx                        # Tampilan bidikan kamera gizi
+│   │           ├── manual.tsx                      # Tampilan cari makanan manual
+│   │           └── analysis.tsx                    # Tampilan proses analisis Gemini AI Vision
+│   │
+│   ├── features/                                   # Domain Logic & UI per Fitur (Feature-Based)
 │   │   ├── auth/                                       # Modul Autentikasi (Parent Login & Register)
 │   │   │   ├── screens/
 │   │   │   │   ├── SignInScreen.tsx

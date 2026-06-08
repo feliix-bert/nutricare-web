@@ -1,6 +1,6 @@
 # Evaluasi Fatal: Masalah Resolusi Versi Dependensi di React Native / Expo
 
-Dokumen ini mencatat evaluasi insiden kegagalan runtime (crash) akibat ketidakcocokan versi Babel Preset dengan Expo SDK setelah proses restrukturisasi folder.
+Dokumen ini mencatat kesalahan kegagalan selama proses build project mobile, jadikan pelajaran ketika membuat code agar tidak mengulangi hal yang sama
 
 ---
 
@@ -48,4 +48,23 @@ Untuk mencegah insiden serupa terulang kembali, wajib mematuhi aturan berikut sa
      # atau
      npx expo start --clear
      ```
-   - Ini memastikan bundler tidak menyajikan file JavaScript lama yang rusak dari cache.
+    - Ini memastikan bundler tidak menyajikan file JavaScript lama yang rusak dari cache.
+
+---
+
+## 4. FlashList v2 — API Breaking Change: `estimatedItemSize` Dihapus
+
+- **Kronologi**: Menginstal `@shopify/flash-list` via `npx expo install @shopify/flash-list` untuk optimalisasi list. Versi yang terinstall adalah **v2.0.2**.
+- **Masalah**: TypeScript error: `Property 'estimatedItemSize' does not exist on type 'FlashListProps<T>'` di 3 file yang menggunakan FlashList.
+- **Root Cause**: FlashList v2 menghapus prop `estimatedItemSize` yang ada di FlashList v1. Versi baru menggunakan auto-sizing internal — tidak perlu estimasi ukuran manual.
+- **Tindakan Perbaikan**: Menghapus seluruh `estimatedItemSize={...}` dari semua pemanggilan FlashList.
+- **Pelajaran**: Periksa dokumentasi/type definitions versi mayor baru sebelum menggunakan prop yang tidak familiar. Gunakan `npx tsc --noEmit` setelah instalasi paket baru untuk deteksi dini API mismatch.
+- **Perubahan tipe ref**: FlashList v2 menggunakan tipe `FlashListRef<T>` untuk `ref`, bukan langsung `FlashList<T>`. Wajib import `FlashListRef` dari `@shopify/flash-list` untuk type-safe refs.
+    ```typescript
+    // ❌ Salah (v1 API)
+    const ref = useRef<FlashList<Message>>(null);
+    
+    // ✅ Benar (v2 API)
+    import { FlashList, FlashListRef } from "@shopify/flash-list";
+    const ref = useRef<FlashListRef<Message> | null>(null);
+    ```

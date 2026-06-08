@@ -4,7 +4,7 @@ import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, Vie
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { InputField } from "@/components/common/InputField";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 
 type FormErrors = { name?: string; email?: string; password?: string };
@@ -47,7 +47,7 @@ export const RegisterScreen = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-background">
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1">
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
@@ -60,8 +60,8 @@ export const RegisterScreen = () => {
             <Pressable onPress={() => router.back()} className="self-start mb-1" hitSlop={12}>
               <Text className="text-base font-semibold text-primary">← Kembali</Text>
             </Pressable>
-            <Text className="text-3xl font-extrabold tracking-tight text-gray-900">Buat Akun</Text>
-            <Text className="text-sm text-gray-500">
+            <Text className="text-3xl font-extrabold tracking-tight text-on-surface">Buat Akun</Text>
+            <Text className="text-sm text-outline">
               Daftar untuk mulai memantau tumbuh kembang anak
             </Text>
           </View>
@@ -74,7 +74,7 @@ export const RegisterScreen = () => {
               </View>
             )}
 
-            <Input
+            <InputField
               label="Nama Lengkap"
               defaultValue=""
               onChangeText={(t) => {
@@ -85,7 +85,7 @@ export const RegisterScreen = () => {
               error={formErrors.name}
             />
 
-            <Input
+            <InputField
               label="Email"
               defaultValue=""
               onChangeText={(t) => {
@@ -98,7 +98,7 @@ export const RegisterScreen = () => {
               error={formErrors.email}
             />
 
-            <Input
+            <InputField
               label="Password"
               defaultValue=""
               onChangeText={(t) => {
@@ -117,7 +117,7 @@ export const RegisterScreen = () => {
 
           {/* Login link */}
           <View className="flex-row justify-center items-center mt-8 gap-1.5">
-            <Text className="text-sm text-gray-500">Sudah punya akun?</Text>
+            <Text className="text-sm text-outline">Sudah punya akun?</Text>
             <Pressable onPress={() => router.replace("/sign-in")} hitSlop={8}>
               <Text className="text-sm font-bold text-primary">Masuk</Text>
             </Pressable>

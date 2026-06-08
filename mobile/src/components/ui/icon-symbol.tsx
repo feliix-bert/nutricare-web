@@ -5,7 +5,7 @@ import { SymbolWeight, SymbolViewProps } from 'expo-symbols';
 import { ComponentProps } from 'react';
 import { OpaqueColorValue, type StyleProp, type TextStyle } from 'react-native';
 
-type IconMapping = Record<SymbolViewProps['name'], ComponentProps<typeof MaterialIcons>['name']>;
+type IconMapping = Partial<Record<SymbolViewProps['name'], ComponentProps<typeof MaterialIcons>['name']>>;
 type IconSymbolName = keyof typeof MAPPING;
 
 /**
@@ -18,6 +18,28 @@ const MAPPING = {
   'paperplane.fill': 'send',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
+  'chevron.left': 'chevron-left',
+  'doc.text.fill': 'description',
+  'bubble.left.fill': 'chat',
+  'wallet.pass.fill': 'account-balance-wallet',
+  'qrcode.viewfinder': 'photo-camera',
+  'shield.fill': 'shield',
+  'chart.bar.fill': 'bar-chart',
+  'arrow.right': 'arrow-forward',
+  'arrow.left': 'arrow-back',
+  'camera.fill': 'camera-alt',
+  'info.circle': 'info',
+  'plus': 'add',
+  'plus.circle': 'add-circle',
+  'checkmark.circle.fill': 'check-circle',
+  'exclamationmark.triangle.fill': 'warning',
+  'person.fill': 'person',
+  'dumbbell.fill': 'fitness-center',
+  'ruler.fill': 'straighten',
+  'fork.knife': 'restaurant',
+  'magnifyingglass': 'search',
+  'bell': 'notifications',
+  'checkmark': 'check'
 } as IconMapping;
 
 /**

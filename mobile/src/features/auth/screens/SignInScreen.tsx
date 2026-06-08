@@ -3,7 +3,7 @@ import { useRef, useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { InputField } from "@/components/common/InputField";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 
 type FormErrors = { email?: string; password?: string };
@@ -36,7 +36,7 @@ export const SignInScreen = () => {
   const handleRegisterPress = () => router.push("/register");
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-background">
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1">
         <ScrollView
           contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
@@ -47,15 +47,15 @@ export const SignInScreen = () => {
           {/* Brand Header */}
           <View className="items-center gap-3 mb-10">
             <View className="w-24 h-24 rounded-full items-center justify-center bg-primary-light mb-1">
-              <Text className="text-5xl">🌱</Text>
+              <Text className="text-5xl">🧬</Text>
             </View>
-            <Text className="text-3xl font-extrabold tracking-tight text-primary">Tumbuh Sehat</Text>
-            <Text className="text-sm text-gray-500">Pantau tumbuh kembang si kecil</Text>
+            <Text className="text-3xl font-extrabold tracking-tight text-primary">GiziChain AI</Text>
+            <Text className="text-sm text-outline">Pencegahan Stunting Berbasis Blockchain & AI</Text>
           </View>
 
           {/* Form */}
           <View className="gap-5">
-            <Text className="text-2xl font-bold text-gray-900">Masuk</Text>
+            <Text className="text-2xl font-bold text-on-surface">Masuk</Text>
 
             {error && (
               <View className="p-3.5 rounded-xl bg-danger-light">
@@ -63,7 +63,7 @@ export const SignInScreen = () => {
               </View>
             )}
 
-            <Input
+            <InputField
               label="Email"
               defaultValue=""
               onChangeText={(t) => {
@@ -76,7 +76,7 @@ export const SignInScreen = () => {
               error={formErrors.email}
             />
 
-            <Input
+            <InputField
               label="Password"
               defaultValue=""
               onChangeText={(t) => {
@@ -95,7 +95,7 @@ export const SignInScreen = () => {
 
           {/* Register link */}
           <View className="flex-row justify-center items-center mt-8 gap-1.5">
-            <Text className="text-sm text-gray-500">Belum punya akun?</Text>
+            <Text className="text-sm text-outline">Belum punya akun?</Text>
             <Pressable onPress={handleRegisterPress} hitSlop={8}>
               <Text className="text-sm font-bold text-primary">Daftar sekarang</Text>
             </Pressable>

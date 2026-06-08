@@ -1,50 +1,45 @@
-import { ActivityIndicator, Pressable, Text } from "react-native";
-
-function cn(...inputs: (string | undefined | null | false)[]) {
-  return inputs.filter(Boolean).join(" ");
-}
+import { cn } from "@/utils/cn";
+import { ActivityIndicator, Pressable, PressableProps, Text } from "react-native";
+import { ReactNode } from "react";
 
 type Variant = "primary" | "secondary" | "outline" | "ghost";
 type Size = "sm" | "md" | "lg";
 
-type ButtonProps = {
+type ButtonProps = PressableProps & {
   variant?: Variant;
   size?: Size;
   loading?: boolean;
-  disabled?: boolean;
-  onPress?: () => void;
-  className?: string;
   textClassName?: string;
-  children: React.ReactNode;
+  children: ReactNode;
 };
 
 const VARIANT_STYLES = {
   primary: {
-    container: "bg-primary",
-    text: "text-white",
-    indicator: "#FFFFFF",
+    container: "bg-primary-container",
+    text: "text-on-surface",
+    indicator: "#1c1b1b",
   },
   secondary: {
-    container: "bg-primary-light",
-    text: "text-primary",
-    indicator: "#0A7E6E",
+    container: "bg-secondary-container",
+    text: "text-secondary",
+    indicator: "#506444",
   },
   outline: {
-    container: "bg-transparent border-2 border-primary",
+    container: "bg-transparent border border-primary",
     text: "text-primary",
-    indicator: "#0A7E6E",
+    indicator: "#3e646a",
   },
   ghost: {
     container: "bg-transparent",
     text: "text-primary",
-    indicator: "#0A7E6E",
+    indicator: "#3e646a",
   },
 };
 
 const SIZE_STYLES = {
-  sm: { container: "py-2.5 px-5 rounded-xl", text: "text-sm" },
-  md: { container: "py-4 px-8 rounded-xl", text: "text-base" },
-  lg: { container: "py-5 px-10 rounded-xl", text: "text-lg" },
+  sm: { container: "py-2.5 px-5 rounded-full", text: "text-sm" },
+  md: { container: "py-4 px-8 rounded-full", text: "text-base" },
+  lg: { container: "py-5 px-10 rounded-full", text: "text-lg" },
 };
 
 export const Button = ({

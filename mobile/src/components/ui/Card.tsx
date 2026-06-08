@@ -1,5 +1,6 @@
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text, TextProps, View, ViewProps } from "react-native";
 import { cn } from "@/utils/cn";
+import { type ComponentProps } from "react";
 
 function Card({
   className,
@@ -7,14 +8,14 @@ function Card({
   pressable,
   onPress,
   ...props
-}: React.ComponentProps<typeof View> & {
+}: ViewProps & {
   size?: "default" | "sm";
   pressable?: boolean;
   onPress?: () => void;
 }) {
   const cardClass = cn(
-    "flex flex-col gap-4 overflow-hidden rounded-xl bg-white py-4",
-    size === "sm" && "gap-3 py-3",
+    "flex flex-col gap-4 overflow-hidden rounded-[32px] bg-surface-lowest p-6 border border-outline-variant/15 shadow-[0_4px_20px_-2px_rgba(62,100,106,0.04)]",
+    size === "sm" && "gap-3 p-4",
     className
   );
 
@@ -25,31 +26,32 @@ function Card({
   return <View className={cardClass} {...props} />;
 }
 
-function CardHeader({ className, ...props }: React.ComponentProps<typeof View>) {
-  return <View className={cn("flex flex-col gap-1 rounded-t-xl px-4", className)} {...props} />;
+function CardHeader({ className, ...props }: ViewProps) {
+  return <View className={cn("flex flex-col gap-1 rounded-t-[32px] pb-2", className)} {...props} />;
 }
 
-function CardTitle({ className, ...props }: React.ComponentProps<typeof Text>) {
-  return <Text className={cn("text-base leading-snug font-bold text-gray-900", className)} {...props} />;
+function CardTitle({ className, ...props }: TextProps) {
+  return <Text className={cn("text-lg font-bold text-on-surface", className)} {...props} />;
 }
 
-function CardDescription({ className, ...props }: React.ComponentProps<typeof Text>) {
-  return <Text className={cn("text-sm text-gray-500", className)} {...props} />;
+// ... CardDescription and CardAction ...
+function CardDescription({ className, ...props }: TextProps) {
+  return <Text className={cn("text-sm text-outline", className)} {...props} />;
 }
 
-function CardAction({ className, ...props }: React.ComponentProps<typeof View>) {
+function CardAction({ className, ...props }: ViewProps) {
   return <View className={cn("self-start justify-self-end ml-auto", className)} {...props} />;
 }
 
-function CardContent({ className, ...props }: React.ComponentProps<typeof View>) {
-  return <View className={cn("px-4", className)} {...props} />;
+function CardContent({ className, ...props }: ViewProps) {
+  return <View className={cn("pt-1", className)} {...props} />;
 }
 
-function CardFooter({ className, ...props }: React.ComponentProps<typeof View>) {
+function CardFooter({ className, ...props }: ViewProps) {
   return (
     <View
       className={cn(
-        "flex flex-row items-center rounded-b-xl border-t border-gray-100 bg-gray-50/50 px-4 pt-4",
+        "flex flex-row items-center rounded-b-[32px] border-t border-surface-container bg-surface-low px-6 pt-4 pb-2 -mx-6 -mb-6",
         className
       )}
       {...props}

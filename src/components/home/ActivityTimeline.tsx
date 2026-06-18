@@ -2,134 +2,124 @@
 
 import { motion } from "motion/react";
 import { Card } from "@/components/ui/Card";
-import { Activity, MessageSquare, Camera, ShieldCheck, TrendingUp, ArrowRight } from "lucide-react";
+import { Plus, Activity, HeartPulse, Scale, Ruler, Star, Clock } from "lucide-react";
 
 type ActivityItem = {
   id: string;
-  type: string;
   title: string;
-  timestamp: string;
+  datetime: string;
+  duration: string;
+  stat1: string;
+  stat1Icon: React.ElementType;
+  stat1Color: string;
+  stat2: string;
+  stat2Icon: React.ElementType;
+  stat2Color: string;
+  score: string;
   icon: React.ElementType;
-  colorClass: string;
-  bgClass: string;
-  chipColor: string;
 };
 
 const ACTIVITIES: ActivityItem[] = [
   {
     id: "a1",
-    type: "Assessment",
-    title: "Assessment bulan ini selesai",
-    timestamp: "2 hari lalu",
+    title: "Pemantauan Status Gizi",
+    datetime: "Hari ini, 10:00 AM",
+    duration: "Selesai",
+    stat1: "12.5 kg",
+    stat1Icon: Scale,
+    stat1Color: "text-orange-500",
+    stat2: "85 cm",
+    stat2Icon: Ruler,
+    stat2Color: "text-blue-500",
+    score: "+2 Poin",
     icon: Activity,
-    colorClass: "text-primary",
-    bgClass: "bg-primary-container/60",
-    chipColor: "bg-primary-container/80 text-primary",
   },
   {
     id: "a2",
-    type: "Status Gizi",
-    title: "Status gizi berubah ke Optimal",
-    timestamp: "2 hari lalu",
-    icon: TrendingUp,
-    colorClass: "text-secondary-on-container",
-    bgClass: "bg-secondary-container/60",
-    chipColor: "bg-secondary-container/80 text-secondary-on-container",
-  },
-  {
-    id: "a3",
-    type: "MPASI",
-    title: "Makan siang: Nasi Tim Ayam",
-    timestamp: "4 hari lalu",
-    icon: Camera,
-    colorClass: "text-tertiary-on-container",
-    bgClass: "bg-tertiary-container/60",
-    chipColor: "bg-tertiary-container/80 text-tertiary-on-container",
-  },
-  {
-    id: "a4",
-    type: "Konsultasi",
-    title: "Sesi konsultasi demam ringan",
-    timestamp: "1 minggu lalu",
-    icon: MessageSquare,
-    colorClass: "text-primary",
-    bgClass: "bg-primary-container/40",
-    chipColor: "bg-primary-container/60 text-primary",
-  },
-  {
-    id: "a5",
-    type: "Credential",
-    title: "VC Bulan April diterbitkan",
-    timestamp: "3 minggu lalu",
-    icon: ShieldCheck,
-    colorClass: "text-secondary-on-container",
-    bgClass: "bg-surface-high",
-    chipColor: "bg-surface-high text-on-surface-variant",
+    title: "Konsultasi Dokter AI",
+    datetime: "Kemarin, 08:30 AM",
+    duration: "15 min",
+    stat1: "Demam & Ruam",
+    stat1Icon: HeartPulse,
+    stat1Color: "text-red-500",
+    stat2: "Resep Obat",
+    stat2Icon: Activity,
+    stat2Color: "text-green-500",
+    score: "+5 Poin",
+    icon: Activity,
   },
 ];
 
 export function ActivityTimeline() {
   return (
-    <Card variant="default" className="p-0 h-full overflow-hidden">
+    <Card variant="default" className="p-0 h-full overflow-hidden bg-white shadow-card">
       {/* Header */}
-      <div className="px-5 pt-5 pb-4 border-b border-outline-variant/8">
-        <div className="flex items-center justify-between">
+      <div className="px-6 pt-6 pb-4">
+        <div className="flex items-start justify-between">
           <div>
-            <h3 className="text-base font-bold text-on-surface tracking-tight">Riwayat Aktivitas</h3>
-            <p className="text-xs text-on-surface-variant/60 font-medium mt-0.5">
-              {ACTIVITIES.length} aktivitas terkini
+            <h3 className="text-[28px] font-extrabold text-[#1c1c1c] tracking-tight leading-none mb-1.5">
+              2 dari 5
+            </h3>
+            <p className="text-[14px] text-on-surface-variant font-medium">
+              Selesaikan 3 aktivitas lagi minggu ini.
             </p>
           </div>
-          <button className="group flex items-center gap-1 text-xs font-bold text-primary hover:text-primary-hover transition-colors duration-200 px-3 py-1.5 rounded-full hover:bg-primary-container/30">
-            Semua Riwayat
-            <ArrowRight size={12} className="transition-transform duration-200 group-hover:translate-x-0.5" />
+          <button className="w-10 h-10 rounded-full border border-blue-100 flex items-center justify-center text-blue-500 hover:bg-blue-50 transition-colors">
+            <Plus size={20} strokeWidth={2} />
           </button>
         </div>
       </div>
 
-      {/* Timeline */}
-      <div className="p-4 flex flex-col gap-1">
+      {/* Timeline List */}
+      <div className="flex flex-col">
         {ACTIVITIES.map((activity, index) => {
           const Icon = activity.icon;
           const isLast = index === ACTIVITIES.length - 1;
+          const Stat1Icon = activity.stat1Icon;
+          const Stat2Icon = activity.stat2Icon;
+          
           return (
-            <motion.div
+            <div
               key={activity.id}
-              initial={{ opacity: 0, x: -10 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-10px" }}
-              transition={{ duration: 0.35, delay: index * 0.07 }}
-              className="group relative flex items-start gap-3.5 py-3 px-3 rounded-xl hover:bg-surface-warm transition-all duration-300 cursor-default"
+              className={`p-6 ${!isLast ? 'border-b border-gray-100' : ''}`}
             >
-              {/* Timeline connector */}
-              {!isLast && (
-                <div
-                  className="absolute left-[2.125rem] top-[3.25rem] w-px h-[calc(100%-1.5rem)] z-0"
-                  style={{ background: "linear-gradient(180deg, rgba(45,138,126,0.2) 0%, rgba(212,164,84,0.1) 100%)" }}
-                  aria-hidden
-                />
-              )}
-
-              {/* Icon dot */}
-              <div
-                className={`relative z-10 w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${activity.bgClass} ${activity.colorClass} shadow-sm transition-all duration-300 group-hover:scale-110 group-hover:shadow-card`}
-              >
-                <Icon size={14} strokeWidth={2.5} />
-              </div>
-
-              {/* Content */}
-              <div className="flex-1 min-w-0 pt-0.5">
-                <p className="text-sm font-bold text-on-surface leading-tight mb-1.5 group-hover:text-primary transition-colors duration-200">
-                  {activity.title}
-                </p>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className={`inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full ${activity.chipColor}`}>
-                    {activity.type}
-                  </span>
-                  <span className="text-[11px] font-medium text-on-surface-variant/50">{activity.timestamp}</span>
+              <div className="flex items-start gap-4 mb-4">
+                <div className="mt-0.5 text-[#1c1c1c]">
+                  <Icon size={24} strokeWidth={2.5} />
+                </div>
+                <div className="flex-1 flex items-center justify-between">
+                  <div>
+                    <h4 className="text-[16px] font-bold text-[#1c1c1c] mb-0.5">{activity.title}</h4>
+                    <p className="text-[13px] text-gray-500 font-medium">{activity.datetime}</p>
+                  </div>
+                  <button className="text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg width="8" height="14" viewBox="0 0 8 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M1 1L7 7L1 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
                 </div>
               </div>
-            </motion.div>
+
+              {/* Stats Grid */}
+              <div className="pl-10 grid grid-cols-2 gap-y-2 gap-x-4">
+                <div className="flex items-center gap-2">
+                  <Clock size={14} className="text-gray-400" strokeWidth={2.5} />
+                  <span className="text-[13px] font-medium text-gray-600">{activity.duration}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Stat1Icon size={14} className={activity.stat1Color} strokeWidth={2.5} />
+                  <span className="text-[13px] font-medium text-gray-600">{activity.stat1}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Stat2Icon size={14} className={activity.stat2Color} strokeWidth={2.5} />
+                  <span className="text-[13px] font-medium text-gray-600">{activity.stat2}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Star size={14} className="text-yellow-500" strokeWidth={2.5} />
+                  <span className="text-[13px] font-medium text-gray-600">{activity.score}</span>
+                </div>
+              </div>
+            </div>
           );
         })}
       </div>

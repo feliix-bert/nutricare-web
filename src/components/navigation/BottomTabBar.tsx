@@ -22,7 +22,7 @@ export function BottomTabBar() {
 
   return (
     <div className="fixed bottom-0 inset-x-0 z-50 md:hidden px-4 pb-4 pt-2 bg-gradient-to-t from-background via-background/95 to-transparent">
-      <div className="h-[4.5rem] bg-white/90 backdrop-blur-xl rounded-[1.75rem] shadow-nav border border-outline-variant/10 flex items-center justify-around px-2">
+      <div className="h-[4.5rem] bg-white rounded-[1.75rem] shadow-[0_4px_24px_rgba(0,0,0,0.08)] border border-outline-variant/10 flex items-center justify-around px-2">
         {TABS.map((tab) => {
           const isActive =
             pathname === tab.path ||

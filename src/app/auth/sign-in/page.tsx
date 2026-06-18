@@ -42,9 +42,75 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-white">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-white relative overflow-hidden lg:overflow-auto">
+      
+      {/* ── Mobile UI (Ref Image 2) ── */}
+      <div className="lg:hidden flex flex-col min-h-screen bg-white">
+        {/* Top curved header */}
+        <div className="bg-[#2a4d3f] rounded-bl-[4rem] flex flex-col items-center justify-center pb-12 pt-20 relative overflow-hidden z-10 shadow-md">
+           <div className="absolute top-10 right-10 w-8 h-8 bg-yellow-400 rounded-full opacity-50 blur-sm" />
+           <div className="absolute bottom-10 -left-4 w-12 h-12 bg-yellow-400 rounded-full opacity-50 blur-sm" />
+           <div className="w-20 h-20 bg-[#ffc529] rounded-full flex items-center justify-center mb-6 shadow-lg shadow-yellow-500/20">
+             <div className="flex gap-1.5 transform rotate-12">
+               <div className="w-1.5 h-6 bg-white rounded-full" />
+               <div className="w-1.5 h-8 bg-white rounded-full -mt-1" />
+               <div className="w-1.5 h-6 bg-white rounded-full" />
+             </div>
+           </div>
+           <h1 className="text-2xl font-extrabold text-white tracking-tight">Welcome Back!</h1>
+        </div>
 
-      {/* ── Left panel — image + brand ── */}
+        {/* Form area */}
+        <div className="flex-1 px-8 pt-10 pb-8 flex flex-col justify-center relative z-20 -mt-4 bg-white rounded-tr-[3rem]">
+          <form onSubmit={handleLogin} className="flex flex-col gap-6">
+            {error && <p className="text-xs text-red-500 font-bold">{error.message}</p>}
+            
+            <div className="flex flex-col">
+              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Email Address</label>
+              <input 
+                type="email" 
+                placeholder="johnwilliams@gmail.com"
+                className="border-b border-[#ffc529] py-1.5 text-sm font-extrabold text-gray-900 focus:outline-none placeholder-gray-300"
+                onChange={(e) => { emailRef.current = e.target.value; }}
+              />
+              {formErrors.email && <span className="text-[10px] text-red-500 mt-1">{formErrors.email}</span>}
+            </div>
+
+            <div className="flex flex-col">
+              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Password</label>
+              <input 
+                type="password" 
+                className="border-b border-gray-200 focus:border-[#ffc529] py-1.5 text-sm font-extrabold text-gray-900 focus:outline-none transition-colors"
+                onChange={(e) => { passwordRef.current = e.target.value; }}
+              />
+              {formErrors.password && <span className="text-[10px] text-red-500 mt-1">{formErrors.password}</span>}
+            </div>
+
+            <div className="flex items-center justify-between mt-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <div className="w-4 h-4 border border-gray-300 rounded flex items-center justify-center">
+                   {/* checkmark placeholder */}
+                </div>
+                <span className="text-xs font-bold text-gray-600">Remember me</span>
+              </label>
+              <span className="text-xs font-bold text-gray-600">Forgot Password?</span>
+            </div>
+
+            <button type="submit" className="w-full bg-[#6a9071] text-white font-bold py-4 rounded-2xl shadow-lg shadow-[#6a9071]/30 mt-4 active:scale-[0.98] transition-transform">
+              {isLoading ? "LOADING..." : "LOGIN"}
+            </button>
+          </form>
+
+          <p className="text-center text-xs font-bold text-gray-500 mt-auto pt-8">
+            Don&apos;t have an account? <Link href="/auth/register" className="text-gray-900">SIGN UP</Link>
+          </p>
+        </div>
+        
+        {/* Decorative background circles */}
+        <div className="fixed inset-0 pointer-events-none z-0 hidden lg:hidden">
+          <div className="absolute top-1/4 -right-20 w-80 h-80 bg-[#ffc529] rounded-full" />
+        </div>
+      </div>
       <div className="hidden lg:flex lg:w-[48%] xl:w-[52%] relative overflow-hidden flex-shrink-0">
         {/* Photo */}
         <Image
@@ -73,47 +139,29 @@ export default function SignInPage() {
 
           {/* Copy — bottom */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut", delay: 0.1 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
           >
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/60 mb-4">
-              Platform Gizi Anak Terpercaya
-            </p>
-            <h2 className="text-3xl xl:text-4xl font-extrabold text-white leading-[1.2] tracking-tight mb-5">
-              Pantau Tumbuh Kembang<br />
-              Si Kecil Setiap Hari
+            <h2 className="text-3xl xl:text-[40px] font-medium text-white leading-[1.2] tracking-tight mb-3">
+              Kami siap mendampingi tumbuh kembang si kecil.
             </h2>
-            <div className="flex flex-col gap-3">
-              {FEATURES.map((feat) => (
-                <div key={feat} className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded-full bg-primary/80 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Check size={11} strokeWidth={3} className="text-white" />
-                  </div>
-                  <span className="text-sm text-white/80 leading-relaxed">{feat}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Testimonial chip */}
-            <div className="mt-8 inline-flex items-center gap-2.5 bg-white/10 backdrop-blur-md border border-white/15 px-4 py-2.5 rounded-full">
-              <div className="flex -space-x-2">
-                {["A","B","C"].map((l) => (
-                  <div key={l} className="w-6 h-6 rounded-full bg-primary-light flex items-center justify-center text-[9px] font-bold text-primary border-2 border-white/20">{l}</div>
-                ))}
-              </div>
-              <span className="text-xs text-white/80 font-medium">10.000+ keluarga sudah bergabung</span>
+            <div className="flex items-center gap-2">
+              <div className="w-0.5 h-3.5 bg-primary rounded-full" />
+              <p className="text-[15px] font-medium text-white/80">
+                Menghadirkan layanan gizi terbaik untuk keluarga.
+              </p>
             </div>
           </motion.div>
         </div>
       </div>
 
       {/* ── Right panel — form ── */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 md:px-12 bg-white">
+      <div className="hidden lg:flex flex-1 flex-col items-center justify-center px-6 py-12 md:px-12 bg-white">
         <motion.div
-          initial={{ opacity: 0, y: 14 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.1 }}
+          transition={{ duration: 0.3 }}
           className="w-full max-w-[380px]"
         >
           {/* Mobile logo */}

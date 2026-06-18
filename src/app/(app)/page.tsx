@@ -121,7 +121,7 @@ export default function HomePage() {
     : [{ label: "Protein", value: "38g", color: "#2d8a7e" }, { label: "Lemak", value: "18g", color: "#6b9e6b" }, { label: "Karbo", value: "32g", color: "#d4a454" }];
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.4 }}>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
       <PageShell
         header={
           <div className="flex flex-col gap-4">
@@ -197,9 +197,9 @@ export default function HomePage() {
 
             {/* Growth card */}
             <motion.div
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.05 }}
+              transition={{ duration: 0.3 }}
               className="md:col-span-5"
             >
               <div
@@ -253,9 +253,9 @@ export default function HomePage() {
 
               {/* Weight */}
               <motion.div
-                initial={{ opacity: 0, y: 16 }}
+                initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.12 }}
+                transition={{ duration: 0.3, delay: 0.05 }}
                 className="bg-white rounded-2xl p-4 border border-outline-variant/8 shadow-card hover:shadow-card-hover transition-shadow duration-200"
               >
                 <div className="flex items-center justify-between mb-3">
@@ -275,9 +275,9 @@ export default function HomePage() {
 
               {/* Height */}
               <motion.div
-                initial={{ opacity: 0, y: 16 }}
+                initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.18 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
                 className="bg-white rounded-2xl p-4 border border-outline-variant/8 shadow-card hover:shadow-card-hover transition-shadow duration-200"
               >
                 <div className="flex items-center justify-between mb-3">
@@ -297,9 +297,9 @@ export default function HomePage() {
 
               {/* Nutrition */}
               <motion.div
-                initial={{ opacity: 0, y: 16 }}
+                initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.24 }}
+                transition={{ duration: 0.3, delay: 0.15 }}
                 className="col-span-2 md:col-span-1 bg-white rounded-2xl p-4 border border-outline-variant/8 shadow-card hover:shadow-card-hover transition-shadow duration-200"
               >
                 <div className="flex items-center justify-between mb-3">
@@ -347,9 +347,9 @@ export default function HomePage() {
 
           {/* ══ ROW 2 — Quick Stats (desktop) ══ */}
           <motion.div
-            initial={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.3 }}
+            transition={{ duration: 0.3, delay: 0.15 }}
             className="hidden lg:grid grid-cols-4 gap-3"
           >
             {[
@@ -374,9 +374,9 @@ export default function HomePage() {
 
           {/* ══ ROW 3 — Assessment CTA ══ */}
           <motion.button
-            initial={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.35 }}
+            transition={{ duration: 0.3, delay: 0.2 }}
             onClick={() => router.push(`/children/${activeChild.id}/assessment/body-size`)}
             className="group w-full flex items-center justify-between p-4 rounded-2xl bg-white border border-outline-variant/8 shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-300 text-left"
           >
@@ -395,16 +395,16 @@ export default function HomePage() {
           {/* ══ ROW 4 — Reminders + Activity ══ */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-5">
             <motion.div
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.4 }}
+              transition={{ duration: 0.3, delay: 0.25 }}
             >
               <ReminderCard />
             </motion.div>
             <motion.div
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.47 }}
+              transition={{ duration: 0.3, delay: 0.3 }}
             >
               <ActivityTimeline />
             </motion.div>

@@ -39,14 +39,14 @@ export function PageShell({
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
         className={cn("mx-auto w-full relative z-10", maxWMap[maxWidth], flush ? "px-0 py-0" : "px-4 py-6 md:px-8 md:py-10")}
       >
         {header ?? (title ? (
           <motion.header
-            initial={{ opacity: 0, y: 12 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
             className="flex flex-col gap-2 mb-6 md:flex-row md:items-end md:justify-between md:gap-4 md:mb-10"
           >
             <div>

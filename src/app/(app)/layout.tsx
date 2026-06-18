@@ -5,7 +5,6 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
 import { BottomTabBar } from "@/components/navigation/BottomTabBar";
 import { SideNavBar } from "@/components/navigation/SideNavBar";
-import { SplashScreen } from "@/components/ui/SplashScreen";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -26,7 +25,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [isHydrated, isAuthenticated, router]);
 
   if (!isHydrated) {
-    return <SplashScreen />;
+    // Return null to avoid a flashy double-animation sequence. 
+    // This allows the app to feel like it loads instantly once hydrated.
+    return null;
   }
 
   const shouldHideNav =

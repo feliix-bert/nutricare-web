@@ -2,129 +2,112 @@
 
 import { motion } from "motion/react";
 import { Card } from "@/components/ui/Card";
-import { Calendar, Syringe, ClipboardList, ShieldAlert, ChevronRight, ArrowRight } from "lucide-react";
+import { Calendar, Syringe, ClipboardList, ShieldAlert, Check } from "lucide-react";
 
 type ReminderItem = {
   id: string;
   title: string;
-  description: string;
-  icon: React.ElementType;
-  accentColor: string;
-  accentBg: string;
-  borderColor: string;
-  priority?: "high" | "medium" | "low";
+  date: string;
+  status: string;
   actionText?: string;
+  icon: React.ElementType;
+  iconBg: string;
+  iconColor: string;
 };
 
 const REMINDERS: ReminderItem[] = [
   {
     id: "r1",
     title: "Assessment Bulan Ini",
-    description: "Jadwal pemantauan rutin — segera lakukan",
-    icon: Calendar,
-    accentColor: "text-primary",
-    accentBg: "bg-primary-container/60",
-    borderColor: "border-l-primary",
-    priority: "high",
+    date: "Segera lakukan",
+    status: "Mendesak",
     actionText: "Mulai",
+    icon: Calendar,
+    iconBg: "bg-red-50",
+    iconColor: "text-red-500",
   },
   {
     id: "r2",
     title: "Jadwal Imunisasi",
-    description: "Vaksin Polio (OPV) belum dicatat",
-    icon: Syringe,
-    accentColor: "text-secondary-on-container",
-    accentBg: "bg-secondary-container/60",
-    borderColor: "border-l-secondary",
-    priority: "medium",
+    date: "Vaksin Polio (OPV)",
+    status: "Penting",
     actionText: "Cek",
+    icon: Syringe,
+    iconBg: "bg-orange-50",
+    iconColor: "text-orange-500",
   },
   {
     id: "r3",
-    title: "Assessment Belum Lengkap",
-    description: "Upload foto MPASI minggu ini belum diisi",
-    icon: ClipboardList,
-    accentColor: "text-tertiary-on-container",
-    accentBg: "bg-tertiary-container/60",
-    borderColor: "border-l-tertiary",
-    priority: "medium",
+    title: "Upload Foto MPASI",
+    date: "Belum lengkap",
+    status: "Tertunda",
     actionText: "Lengkapi",
+    icon: ClipboardList,
+    iconBg: "bg-blue-50",
+    iconColor: "text-blue-500",
   },
   {
     id: "r4",
     title: "Verifiable Credential",
-    description: "VC bulan lalu sedang diproses validator",
+    date: "Bulan lalu",
+    status: "Diproses",
     icon: ShieldAlert,
-    accentColor: "text-on-surface-variant",
-    accentBg: "bg-surface-high",
-    borderColor: "border-l-outline-variant",
-    priority: "low",
+    iconBg: "bg-gray-50",
+    iconColor: "text-gray-500",
   },
 ];
 
-const priorityDot = {
-  high: "bg-danger",
-  medium: "bg-tertiary",
-  low: "bg-outline-variant",
-};
-
 export function ReminderCard() {
   return (
-    <Card variant="default" className="p-0 h-full overflow-hidden">
-      {/* Header band */}
-      <div className="px-5 pt-5 pb-4 border-b border-outline-variant/8">
+    <Card variant="default" className="p-0 h-full overflow-hidden flex flex-col bg-white">
+      {/* Header */}
+      <div className="px-5 pt-6 pb-2">
         <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-base font-bold text-on-surface tracking-tight">
-              Pengingat &amp; Notifikasi
-            </h3>
-            <p className="text-xs text-on-surface-variant/60 font-medium mt-0.5">
-              {REMINDERS.filter(r => r.priority === "high").length} tugas mendesak
-            </p>
-          </div>
-          <button className="group flex items-center gap-1 text-xs font-bold text-primary hover:text-primary-hover transition-colors duration-200 px-3 py-1.5 rounded-full hover:bg-primary-container/30">
-            Lihat Semua
-            <ArrowRight size={12} className="transition-transform duration-200 group-hover:translate-x-0.5" />
+          <h3 className="text-[17px] font-bold text-on-surface">Pengingat</h3>
+          <button className="text-[13px] font-bold text-on-surface-variant hover:text-primary transition-colors">
+            Lihat semua
           </button>
         </div>
       </div>
 
       {/* Reminder list */}
-      <div className="p-3 flex flex-col gap-2">
+      <div className="p-3 flex-1 flex flex-col gap-1">
         {REMINDERS.map((reminder, index) => {
           const Icon = reminder.icon;
           return (
             <motion.div
               key={reminder.id}
-              initial={{ opacity: 0, x: -12 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.35, delay: index * 0.07 }}
-              className={`group flex items-center gap-3.5 p-3.5 rounded-xl bg-surface-warm border border-outline-variant/8 border-l-[3px] ${reminder.borderColor} hover:bg-white hover:shadow-card cursor-pointer transition-all duration-300`}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, delay: index * 0.05 }}
+              className="group flex items-center justify-between p-3 rounded-2xl hover:bg-surface-warm cursor-pointer transition-colors"
             >
-              <div
-                className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${reminder.accentBg} ${reminder.accentColor} transition-all duration-300 group-hover:scale-110`}
-              >
-                <Icon size={16} strokeWidth={2} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <p className="text-sm font-bold text-on-surface truncate group-hover:text-primary transition-colors duration-200">
+              <div className="flex items-center gap-3.5">
+                <div
+                  className={`w-[42px] h-[42px] rounded-full flex items-center justify-center flex-shrink-0 ${reminder.iconBg} ${reminder.iconColor}`}
+                >
+                  <Icon size={18} strokeWidth={2} />
+                </div>
+                <div>
+                  <p className="text-[14px] font-bold text-on-surface leading-tight mb-0.5 group-hover:text-primary transition-colors">
                     {reminder.title}
                   </p>
-                  {reminder.priority && (
-                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${priorityDot[reminder.priority]}`} />
-                  )}
+                  <p className="text-[12px] font-medium text-on-surface-variant">
+                    {reminder.date}
+                  </p>
                 </div>
-                <p className="text-xs text-on-surface-variant font-medium line-clamp-1">
-                  {reminder.description}
-                </p>
               </div>
-              {reminder.actionText && (
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300 -translate-x-1 group-hover:translate-x-0">
-                  <span className="text-xs font-bold text-primary whitespace-nowrap">{reminder.actionText}</span>
-                  <ChevronRight size={13} className="text-primary" strokeWidth={2.5} />
-                </div>
-              )}
+
+              <div className="text-right">
+                <p className={`text-[13px] font-bold ${reminder.actionText ? 'text-on-surface' : 'text-on-surface-variant'}`}>
+                  {reminder.actionText || reminder.status}
+                </p>
+                {reminder.actionText && (
+                  <p className="text-[11px] font-medium text-on-surface-variant mt-0.5">
+                    {reminder.status}
+                  </p>
+                )}
+              </div>
             </motion.div>
           );
         })}

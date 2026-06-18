@@ -25,10 +25,10 @@ export function BrandLogo({
   onDark = false,
 }: BrandLogoProps) {
   const showWordmark = showText ?? (variant !== "icon-only");
-  const iconSize = variant === "full" ? "w-9 h-9" : "w-8 h-8";
+  const iconSize = variant === "full" ? "w-[56px] h-[56px]" : "w-9 h-9";
 
   const content = (
-    <div className={cn("flex items-center gap-2.5 select-none", className)}>
+    <div className={cn("flex items-center gap-3.5 select-none", className)}>
       {/* Icon mark */}
       <div className={cn("relative flex-shrink-0", iconSize)}>
         <Image
@@ -36,7 +36,7 @@ export function BrandLogo({
           alt="TumbuhSehat"
           fill
           priority={priority}
-          sizes="40px"
+          sizes="56px"
           className="object-contain"
         />
       </div>
@@ -46,7 +46,7 @@ export function BrandLogo({
         <span
           className={cn(
             "font-extrabold leading-none tracking-tight",
-            variant === "full" ? "text-[22px]" : "text-[17px]"
+            variant === "full" ? "text-[21px]" : "text-[20px]"
           )}
         >
           <span className={onDark ? "text-white" : "text-primary"}>Tumbuh</span>

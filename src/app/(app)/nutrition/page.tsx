@@ -3,7 +3,7 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Flame, Droplet, Wheat, Search, Plus, Check, Beef, Camera } from "lucide-react";
+import { Flame, Droplet, Wheat, Search, Plus, Check, Beef, Camera, FileText } from "lucide-react";
 import { motion } from "motion/react";
 import { Card } from "@/components/ui/Card";
 import { Avatar } from "@/components/common/Avatar";
@@ -139,9 +139,22 @@ export default function NutritionPage() {
 
   return (
     <PageShell
-      title="Log Nutrisi Anak"
-      subtitle="Pantau gizi harian si kecil"
-      actions={<Avatar seed="Ibu Ani" variant="parent" size="sm" />}
+      header={
+        <div className="flex items-center justify-between mb-6 md:mb-10">
+          <div className="flex items-center gap-3 md:gap-4">
+            <div className="w-11 h-11 md:w-14 md:h-14 rounded-full bg-[#cce8e4] flex items-center justify-center flex-shrink-0">
+              <FileText className="text-[#2a7a6f] w-5 h-5 md:w-6 md:h-6" strokeWidth={2.5} />
+            </div>
+            <h1 className="text-xl md:text-3xl font-extrabold text-[#3a5a55] md:text-on-surface tracking-tight">
+              Log Nutrisi Anak
+            </h1>
+          </div>
+          <div>
+            <div className="lg:hidden"><Avatar seed="Ibu Ani" variant="parent" size="sm" /></div>
+            <div className="hidden lg:block"><Avatar seed="Ibu Ani" variant="parent" size="md" /></div>
+          </div>
+        </div>
+      }
     >
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
 

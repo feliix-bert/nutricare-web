@@ -9,7 +9,7 @@ import { InputField } from "@/components/common/InputField";
 import { useAuth } from "@/features/auth/hooks/useAuth";
 import Link from "next/link";
 import { BrandLogo } from "@/components/brand/BrandLogo";
-import { Check, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 type FormErrors = { name?: string; email?: string; password?: string };
 
@@ -22,12 +22,6 @@ const validate = (name: string, email: string, password: string): FormErrors => 
   else if (password.length < 8) errs.password = "Password minimal 8 karakter.";
   return errs;
 };
-
-const BENEFITS = [
-  "Pemantauan berat & tinggi badan dengan grafik WHO",
-  "Scan & analisis MPASI otomatis berbasis AI",
-  "Konsultasi gizi kapan saja langsung dari aplikasi",
-];
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -56,71 +50,110 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-white relative overflow-hidden lg:overflow-auto">
 
-      {/* ── Mobile UI (Ref Image 2) ── */}
+      {/* ── Mobile UI ── */}
       <div className="lg:hidden flex flex-col min-h-screen bg-white">
-        {/* Top curved header */}
-        <div className="bg-[#2a4d3f] rounded-bl-[4rem] flex items-center px-6 pb-12 pt-16 relative overflow-hidden z-10 shadow-md">
-           <div className="absolute top-8 right-12 w-10 h-10 bg-yellow-400 rounded-full opacity-50 blur-sm" />
-           <div className="absolute -bottom-2 -left-4 w-12 h-12 bg-yellow-400 rounded-full opacity-50 blur-sm" />
-           <button onClick={() => router.back()} className="w-8 h-8 flex items-center justify-center bg-[#ffc529] rounded-full text-[#2a4d3f] shadow-sm active:scale-95 transition-transform z-10">
-             <ArrowLeft size={16} strokeWidth={3} />
-           </button>
-           <h1 className="text-[22px] font-extrabold text-white tracking-tight ml-4 z-10">Create Account</h1>
+
+        {/* Hero image with overlay */}
+        <div className="relative h-[38vh] min-h-[220px] flex-shrink-0 overflow-hidden">
+          <Image
+            src="/image1.png"
+            alt="TumbuhSehat"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-center"
+          />
+          {/* Overlay gradient */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: "linear-gradient(to bottom, rgba(10,35,30,0.55) 0%, rgba(10,35,30,0.28) 40%, rgba(10,35,30,0.78) 80%, rgba(10,35,30,0.96) 100%)",
+            }}
+          />
+          {/* Back button top-left */}
+          <button
+            onClick={() => router.back()}
+            className="absolute top-10 left-6 w-9 h-9 flex items-center justify-center bg-white/20 backdrop-blur-sm rounded-full text-white border border-white/30 active:scale-90 transition-transform z-10"
+          >
+            <ArrowLeft size={18} strokeWidth={2.5} />
+          </button>
+          {/* Brand centered top */}
+          <div className="absolute top-10 left-0 right-0 flex justify-center">
+            <BrandLogo variant="compact" priority onDark />
+          </div>
+          {/* Tagline bottom */}
+          <div className="absolute bottom-0 left-0 right-0 px-7 pb-7">
+            <p className="text-white/80 text-sm font-medium leading-snug">
+              Daftar gratis &amp; mulai pantau gizi si kecil hari ini
+            </p>
+          </div>
         </div>
 
-        {/* Form area */}
-        <div className="flex-1 px-8 pt-10 pb-8 flex flex-col relative z-20 -mt-4 bg-white rounded-tr-[3rem]">
-          <form onSubmit={handleRegister} className="flex flex-col gap-6">
-            {error && <p className="text-xs text-red-500 font-bold">{error.message}</p>}
-            
-            <div className="flex flex-col">
-              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Name</label>
-              <input 
-                type="text" 
-                placeholder="John Williams"
-                className="border-b border-[#ffc529] py-1.5 text-sm font-extrabold text-gray-900 focus:outline-none placeholder-gray-300"
+        {/* Form card */}
+        <div className="flex-1 bg-white rounded-t-[2.5rem] -mt-8 relative z-10 px-7 pt-8 pb-10 flex flex-col shadow-[0_-8px_30px_rgba(0,0,0,0.08)]">
+          <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight mb-1">Buat Akun</h2>
+          <p className="text-sm font-medium text-gray-500 mb-7">
+            Bergabung dengan <span className="font-bold text-primary">TumbuhSehat</span> sekarang
+          </p>
+
+          <form onSubmit={handleRegister} className="flex flex-col gap-4 flex-1">
+            {error && (
+              <p className="text-xs text-red-500 font-semibold bg-red-50 px-4 py-2.5 rounded-xl border border-red-100">
+                {error.message}
+              </p>
+            )}
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Nama Lengkap</label>
+              <input
+                type="text"
+                placeholder="Nama kamu"
+                className="w-full bg-gray-50 border border-gray-200 focus:border-primary/50 focus:bg-white rounded-2xl px-4 py-3.5 text-sm font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all placeholder-gray-400"
                 onChange={(e) => { nameRef.current = e.target.value; }}
               />
-              {formErrors.name && <span className="text-[10px] text-red-500 mt-1">{formErrors.name}</span>}
+              {formErrors.name && <span className="text-[11px] text-red-500 font-medium mt-0.5">{formErrors.name}</span>}
             </div>
 
-            <div className="flex flex-col">
-              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Email</label>
-              <input 
-                type="email" 
-                className="border-b border-gray-200 focus:border-[#ffc529] py-1.5 text-sm font-extrabold text-gray-900 focus:outline-none transition-colors"
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Email</label>
+              <input
+                type="email"
+                placeholder="contoh@email.com"
+                className="w-full bg-gray-50 border border-gray-200 focus:border-primary/50 focus:bg-white rounded-2xl px-4 py-3.5 text-sm font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all placeholder-gray-400"
                 onChange={(e) => { emailRef.current = e.target.value; }}
               />
-              {formErrors.email && <span className="text-[10px] text-red-500 mt-1">{formErrors.email}</span>}
+              {formErrors.email && <span className="text-[11px] text-red-500 font-medium mt-0.5">{formErrors.email}</span>}
             </div>
 
-            <div className="flex flex-col">
-              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Password</label>
-              <input 
-                type="password" 
-                className="border-b border-gray-200 focus:border-[#ffc529] py-1.5 text-sm font-extrabold text-gray-900 focus:outline-none transition-colors"
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Password</label>
+              <input
+                type="password"
+                placeholder="Minimal 8 karakter"
+                className="w-full bg-gray-50 border border-gray-200 focus:border-primary/50 focus:bg-white rounded-2xl px-4 py-3.5 text-sm font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all placeholder-gray-400"
                 onChange={(e) => { passwordRef.current = e.target.value; }}
               />
-              {formErrors.password && <span className="text-[10px] text-red-500 mt-1">{formErrors.password}</span>}
+              {formErrors.password && <span className="text-[11px] text-red-500 font-medium mt-0.5">{formErrors.password}</span>}
             </div>
 
-            <button type="submit" className="w-full bg-[#6a9071] text-white font-bold py-4 rounded-2xl shadow-lg shadow-[#6a9071]/30 mt-6 active:scale-[0.98] transition-transform">
-              {isLoading ? "LOADING..." : "LOGIN"}
+            <button
+              type="submit"
+              className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-2xl shadow-lg shadow-primary/25 mt-3 active:scale-[0.98] transition-all text-sm tracking-wide"
+            >
+              {isLoading ? "Memuat..." : "Daftar Sekarang"}
             </button>
           </form>
 
-          <p className="text-center text-xs font-bold text-gray-500 mt-auto pt-8">
-            Already have an account? <Link href="/auth/sign-in" className="text-gray-900">LOGIN</Link>
+          <p className="text-center text-xs font-semibold text-gray-500 mt-8">
+            Sudah punya akun?{" "}
+            <Link href="/auth/sign-in" className="font-bold text-primary">
+              Masuk
+            </Link>
           </p>
-        </div>
-
-        {/* Decorative background circles */}
-        <div className="fixed inset-0 pointer-events-none z-0 hidden lg:hidden">
-          <div className="absolute top-1/3 -right-20 w-[350px] h-[350px] bg-[#ffc529] rounded-full" />
         </div>
       </div>
 
-      {/* ── Left panel ── */}
+      {/* ── Desktop: Left panel ── */}
       <div className="hidden lg:flex lg:w-[48%] xl:w-[52%] relative overflow-hidden flex-shrink-0">
         <Image
           src="/image1.png"
@@ -156,7 +189,7 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      {/* ── Right panel ── */}
+      {/* ── Desktop: Right panel ── */}
       <div className="hidden lg:flex flex-1 flex-col items-center justify-center px-6 py-12 md:px-12 bg-white">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
@@ -164,12 +197,6 @@ export default function RegisterPage() {
           transition={{ duration: 0.3 }}
           className="w-full max-w-[380px]"
         >
-          {/* Mobile logo */}
-          <div className="mb-6 lg:hidden flex justify-center">
-            <BrandLogo variant="full" priority />
-          </div>
-
-          {/* Back */}
           <button
             onClick={() => router.back()}
             className="group inline-flex items-center gap-1.5 text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors mb-6"
@@ -178,7 +205,6 @@ export default function RegisterPage() {
             Kembali
           </button>
 
-          {/* Heading */}
           <div className="mb-7">
             <h1 className="text-[26px] font-extrabold text-on-surface tracking-tight leading-tight">
               Buat Akun TumbuhSehat

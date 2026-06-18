@@ -71,44 +71,43 @@ function MobileProgressCard({ title, current, max, icon: Icon, bgClass, textClas
   );
 }
 
-// ── Log Item row (Ref Image 3 Medication Tracker) ──
+// ── Log Item row ──
 function MealTrackerRow({ item, onRemove }: { item: NutritionLog; onRemove: () => void }) {
   const foodAvatar = getAvatarUri(item.foodDetected.join("-"), "food");
   
   return (
-    <div className="group flex items-center justify-between py-4 border-b border-gray-100 last:border-0 hover:bg-gray-50/50 px-2 rounded-xl transition-colors">
-      <div className="flex items-center gap-4 flex-1">
-        {/* Status / Check circle */}
-        <div className="w-6 h-6 rounded-full border-2 border-green-500 flex items-center justify-center flex-shrink-0">
+    <div className="group flex items-center py-4 border-b border-gray-100 last:border-0 hover:bg-gray-50/50 px-2 rounded-xl transition-colors gap-2">
+      {/* Col 1: Menu & Porsi — 40% */}
+      <div className="flex items-start gap-3 w-[40%] min-w-0">
+        <div className="w-6 h-6 rounded-full border-2 border-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
           <Check size={12} className="text-green-500" strokeWidth={3} />
         </div>
-        
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="w-10 h-10 rounded-xl overflow-hidden relative flex-shrink-0 bg-gray-100">
-             {item.photoUrl ? (
-                <Image src={item.photoUrl} alt="Food" fill sizes="40px" className="object-cover" />
-              ) : (
-                <Image src={foodAvatar} alt="Food" fill sizes="40px" className="object-cover" />
-              )}
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm font-bold text-gray-900 truncate">{item.foodDetected.join(", ")}</p>
-            <p className="text-xs text-gray-500 font-medium">{item.portionEstimate}</p>
-          </div>
+        <div className="w-10 h-10 rounded-xl overflow-hidden relative flex-shrink-0 bg-gray-100">
+          {item.photoUrl ? (
+            <Image src={item.photoUrl} alt="Food" fill sizes="40px" className="object-cover" />
+          ) : (
+            <Image src={foodAvatar} alt="Food" fill sizes="40px" className="object-cover" />
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-bold text-gray-900 break-words whitespace-normal leading-snug">{item.foodDetected.join(", ")}</p>
+          <p className="text-xs text-gray-500 font-medium mt-0.5">{item.portionEstimate}</p>
         </div>
       </div>
 
-      <div className="hidden sm:block flex-1 text-center">
+      {/* Col 2: Kalori — 25%, hidden on mobile */}
+      <div className="hidden sm:flex w-[25%] justify-center">
         <p className="text-sm font-semibold text-gray-700">{item.calories} <span className="text-xs text-gray-400 font-medium">kkal</span></p>
       </div>
 
-      <div className="flex-1 text-right flex items-center justify-end gap-3">
-        <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+      {/* Col 3: Waktu — 35% */}
+      <div className="w-[35%] flex items-center justify-end gap-2">
+        <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-3 py-1 rounded-full whitespace-nowrap">
           {formatTimeLocal(item.createdAt)}
         </span>
         <button 
           onClick={onRemove}
-          className="opacity-0 group-hover:opacity-100 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all"
+          className="opacity-0 group-hover:opacity-100 p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-all text-xs flex-shrink-0"
         >
           Hapus
         </button>
@@ -222,9 +221,9 @@ export default function NutritionPage() {
                 <div className="flex flex-col">
                   {/* Table Header (hidden on mobile) */}
                   <div className="hidden sm:flex items-center justify-between py-2 border-b border-gray-100 mb-2">
-                    <span className="flex-1 text-xs font-bold text-gray-400 uppercase tracking-wider px-2">Menu & Porsi</span>
-                    <span className="flex-1 text-center text-xs font-bold text-gray-400 uppercase tracking-wider">Kalori</span>
-                    <span className="flex-1 text-right text-xs font-bold text-gray-400 uppercase tracking-wider px-2">Waktu</span>
+                    <span className="w-[40%] text-xs font-bold text-gray-400 uppercase tracking-wider px-2">Menu &amp; Porsi</span>
+                    <span className="w-[25%] text-center text-xs font-bold text-gray-400 uppercase tracking-wider">Kalori</span>
+                    <span className="w-[35%] text-right text-xs font-bold text-gray-400 uppercase tracking-wider px-2">Waktu</span>
                   </div>
                   {/* Table Body */}
                   {logs.map((log) => (

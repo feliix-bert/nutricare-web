@@ -40,7 +40,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       <main
         className={`flex-1 min-h-screen w-full transition-all duration-300 ${
-          !shouldHideNav ? "md:ml-64" : ""
+          !shouldHideNav ? "md:ml-[272px]" : ""
         }`}
       >
         <div className="min-h-screen pb-24 md:pb-0">{children}</div>

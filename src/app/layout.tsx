@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
-import { Quicksand, Geist_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/providers/QueryProvider";
 
-const quicksand = Quicksand({
-  variable: "--font-quicksand",
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 const geistMono = Geist_Mono({
@@ -14,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GiziChain - Tumbuh Sehat",
-  description: "Aplikasi pantau tumbuh kembang dan gizi MPASI anak dengan AI.",
+  title: "GiziChain — Tumbuh Sehat",
+  description: "Pantau tumbuh kembang dan gizi MPASI anak dengan AI — dijamin aman oleh blockchain.",
 };
 
 export default function RootLayout({
@@ -25,8 +26,8 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
-      className={`${quicksand.variable} ${geistMono.variable} h-full antialiased`}
+      lang="id"
+      className={`${jakarta.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col font-sans" suppressHydrationWarning>

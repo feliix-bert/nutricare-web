@@ -34,7 +34,7 @@ export function Avatar({
   return (
     <div
       className={cn(
-        "relative rounded-full overflow-hidden bg-white border-2 border-white shadow-sm flex-shrink-0",
+        "relative rounded-full overflow-hidden bg-primary-container/20 border-2 border-white shadow-[0_2px_8px_rgba(45,138,126,0.1)] flex-shrink-0 transition-shadow duration-300 hover:shadow-[0_4px_16px_rgba(45,138,126,0.15)]",
         className
       )}
       style={{ width: px, height: px }}

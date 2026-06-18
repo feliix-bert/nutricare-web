@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
+
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -24,6 +26,7 @@ import java.util.List;
 @Entity
 @Table(name = "users")
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class User implements UserDetails {
@@ -43,7 +46,7 @@ public class User implements UserDetails {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, columnDefinition = "role_enum")
-    private Role role = Role.PARENT;
+    private Role role = Role.PARENT; // Mengacu langsung ke file Role.java di folder yang sama
 
     // Hanya diisi untuk MEDIC & POSYANDU (Ethereum address, 42 karakter)
     @Column(name = "wallet_address", unique = true, length = 42)
@@ -88,12 +91,5 @@ public class User implements UserDetails {
     @Override public boolean isCredentialsNonExpired() { return true; }
     @Override public boolean isEnabled()               { return isActive; }
 
-    // ── Enum Role ─────────────────────────────────────────────────────────────
-
-    public enum Role {
-        PARENT,    // Orang tua
-        MEDIC,     // Dokter / bidan
-        POSYANDU,  // Kader posyandu
-        ADMIN
-    }
+    // FIX: "public enum Role" yang menduplikasi file Role.java sudah dihapus dari sini!
 }

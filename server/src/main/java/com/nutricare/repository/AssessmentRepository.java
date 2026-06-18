@@ -1,5 +1,5 @@
-package com.stuntingai.repository;
-import com.stuntingai.domain.entities.Assessment;
+package com.nutricare.repository;
+import com.nutricare.domain.entity.Assessment;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

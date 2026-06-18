@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
+
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -30,6 +32,7 @@ import java.util.List;
 @Entity
 @Table(name = "predictions")
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Prediction {

@@ -1,5 +1,5 @@
-package com.stuntingai.repository;
-import com.stuntingai.domain.entities.Child;
+package com.nutricare.repository;
+import com.nutricare.domain.entity.Child;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import java.util.List;

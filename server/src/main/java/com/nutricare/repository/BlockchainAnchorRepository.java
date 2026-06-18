@@ -1,6 +1,6 @@
-package com.stuntingai.repository;
-import com.stuntingai.domain.entities.BlockchainAnchor;
-import com.stuntingai.domain.enums.AnchorStatus;
+package com.nutricare.repository;
+import com.nutricare.domain.entity.BlockchainAnchor;
+import com.nutricare.domain.enums.AnchorStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;

@@ -28,7 +28,7 @@ export function BrandLogo({
   const iconSize = variant === "full" ? "w-[56px] h-[56px]" : "w-9 h-9";
 
   const content = (
-    <div className={cn("flex items-center gap-3.5 select-none", className)}>
+    <div className={cn("flex items-center gap-2 select-none", className)}>
       {/* Icon mark */}
       <div className={cn("relative flex-shrink-0", iconSize)}>
         <Image

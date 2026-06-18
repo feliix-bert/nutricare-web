@@ -148,55 +148,87 @@ export default function NutritionPage() {
         {/* ══════════════════════════════════
             MOBILE LAYOUT
         ══════════════════════════════════ */}
-        <div className="lg:hidden flex flex-col gap-4 pb-6">
+        <div className="lg:hidden flex flex-col gap-5 pb-8">
 
-          {/* 1. Total Nutrition Card */}
-          <div className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Total Nutrisi Hari Ini</p>
-            <div className="flex items-end justify-between mb-4">
+          {/* 1. Hero Nutrition Card — elegant gradient */}
+          <div className="relative overflow-hidden rounded-[2rem] p-6"
+            style={{ background: "linear-gradient(145deg, #1e5c54 0%, #2d8a7e 55%, #3aa394 100%)" }}
+          >
+            {/* Decorative blobs */}
+            <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/5" />
+            <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-white/5" />
+            <div className="absolute top-1/2 right-4 -translate-y-1/2 w-20 h-20 rounded-full bg-white/5" />
+
+            {/* Top label */}
+            <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest mb-5 relative z-10">Total Nutrisi Hari Ini</p>
+
+            {/* Main row: big number + circular ring */}
+            <div className="flex items-center justify-between mb-6 relative z-10">
               <div>
-                <p className="text-5xl font-black text-gray-900 leading-none tracking-tight">{totalCalories}</p>
-                <p className="text-xs font-medium text-gray-500 mt-1">Kalori Terpenuhi (kkal)</p>
+                <div className="flex items-end gap-2">
+                  <span className="text-[52px] font-black text-white leading-none tracking-tight">{totalCalories}</span>
+                  <span className="text-sm font-semibold text-white/60 mb-2">kkal</span>
+                </div>
+                <p className="text-xs font-medium text-white/60 mt-1">Kalori Terpenuhi</p>
+                {/* Target badge */}
+                <span className="inline-block mt-3 bg-white/15 text-white text-[11px] font-semibold px-3 py-1 rounded-full backdrop-blur-sm">
+                  Target: {goals.Calories} kkal
+                </span>
               </div>
-              <span className="bg-[#e0f4f3] text-[#2a7a6f] text-xs font-bold px-3 py-1.5 rounded-full">
-                Target: {goals.Calories} kkal
-              </span>
+
+              {/* Circular progress */}
+              <div className="relative w-[88px] h-[88px] flex-shrink-0">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 88 88">
+                  <circle cx="44" cy="44" r="36" fill="transparent" stroke="rgba(255,255,255,0.15)" strokeWidth="8" />
+                  <circle
+                    cx="44" cy="44" r="36"
+                    fill="transparent"
+                    stroke="rgba(255,255,255,0.85)"
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                    strokeDasharray={`${2 * Math.PI * 36}`}
+                    strokeDashoffset={`${2 * Math.PI * 36 * (1 - Math.min(totalCalories / goals.Calories, 1))}`}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                  <span className="text-base font-black text-white leading-none">
+                    {Math.round(Math.min(totalCalories / goals.Calories, 1) * 100)}%
+                  </span>
+                  <span className="text-[9px] font-semibold text-white/60 uppercase mt-0.5">tercapai</span>
+                </div>
+              </div>
             </div>
-            {/* Macro row */}
-            <div className="grid grid-cols-4 gap-2 pt-3 border-t border-gray-100">
-              <div className="flex flex-col items-center">
-                <p className="text-sm font-extrabold text-gray-900">{totalProtein}g</p>
-                <p className="text-[10px] text-gray-500 font-medium mt-0.5">Protein</p>
-              </div>
-              <div className="flex flex-col items-center">
-                <p className="text-sm font-extrabold text-gray-900">{totalFat}g</p>
-                <p className="text-[10px] text-gray-500 font-medium mt-0.5">Lemak</p>
-              </div>
-              <div className="flex flex-col items-center">
-                <p className="text-sm font-extrabold text-gray-900">{totalCarbs}g</p>
-                <p className="text-[10px] text-gray-500 font-medium mt-0.5">Karbohidrat</p>
-              </div>
-              <div className="flex flex-col items-center">
-                <p className="text-sm font-extrabold text-gray-900">{totalFiber}g</p>
-                <p className="text-[10px] text-gray-500 font-medium mt-0.5">Serat</p>
-              </div>
+
+            {/* Macro pills row */}
+            <div className="grid grid-cols-4 gap-2 relative z-10">
+              {[
+                { label: "Protein", value: totalProtein, unit: "g" },
+                { label: "Lemak", value: totalFat, unit: "g" },
+                { label: "Karbo", value: totalCarbs, unit: "g" },
+                { label: "Serat", value: totalFiber, unit: "g" },
+              ].map(({ label, value, unit }) => (
+                <div key={label} className="bg-white/10 rounded-2xl py-2.5 px-2 flex flex-col items-center gap-0.5 backdrop-blur-sm">
+                  <span className="text-[13px] font-extrabold text-white leading-none">{value}{unit}</span>
+                  <span className="text-[9px] font-semibold text-white/60">{label}</span>
+                </div>
+              ))}
             </div>
           </div>
 
           {/* 2. Action Cards — 2 columns */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             {/* AI Vision Scan */}
             <div
               onClick={() => router.push("/scanner")}
-              className="bg-[#b8dede] rounded-3xl p-5 flex flex-col gap-3 cursor-pointer active:scale-[0.97] transition-transform"
+              className="bg-primary-container rounded-[1.75rem] p-5 flex flex-col gap-4 cursor-pointer active:scale-[0.97] transition-transform shadow-card hover-lift"
             >
-              <div className="w-12 h-12 bg-white/60 rounded-2xl flex items-center justify-center">
-                <Camera size={22} className="text-[#2a7a6f]" strokeWidth={2} />
+              <div className="w-11 h-11 bg-primary/15 rounded-2xl flex items-center justify-center">
+                <Camera size={22} className="text-primary" strokeWidth={2} />
               </div>
               <div>
-                <p className="text-[15px] font-extrabold text-[#1a4a45]">AI Vision Scan</p>
-                <p className="text-[11px] text-[#2a5a55] font-medium leading-snug mt-1">
-                  Foto makanan bayi Anda, Gemini AI hitung gizinya secara otomatis.
+                <p className="text-[14px] font-extrabold text-on-surface tracking-tight">AI Vision Scan</p>
+                <p className="text-[11px] text-on-surface-variant font-medium leading-relaxed mt-1">
+                  Foto makanan bayi, Gemini AI hitung gizinya otomatis.
                 </p>
               </div>
             </div>
@@ -204,15 +236,15 @@ export default function NutritionPage() {
             {/* Input Manual */}
             <div
               onClick={() => router.push("/scanner")}
-              className="bg-gray-50 border border-gray-200 rounded-3xl p-5 flex flex-col gap-3 cursor-pointer active:scale-[0.97] transition-transform"
+              className="bg-surface rounded-[1.75rem] p-5 flex flex-col gap-4 cursor-pointer active:scale-[0.97] transition-transform shadow-card hover-lift border border-outline-variant/20"
             >
-              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center border border-gray-200 shadow-sm">
-                <Plus size={22} className="text-gray-600" strokeWidth={2} />
+              <div className="w-11 h-11 bg-surface-dim rounded-2xl flex items-center justify-center">
+                <Plus size={22} className="text-on-surface-variant" strokeWidth={2} />
               </div>
               <div>
-                <p className="text-[15px] font-extrabold text-gray-900">Input Manual</p>
-                <p className="text-[11px] text-gray-500 font-medium leading-snug mt-1">
-                  Cari dari ribuan database makanan lokal dan MPASI buatan rumah.
+                <p className="text-[14px] font-extrabold text-on-surface tracking-tight">Input Manual</p>
+                <p className="text-[11px] text-on-surface-variant font-medium leading-relaxed mt-1">
+                  Cari dari database makanan lokal &amp; MPASI buatan rumah.
                 </p>
               </div>
             </div>
@@ -220,33 +252,36 @@ export default function NutritionPage() {
 
           {/* 3. Saran Menu MPASI — horizontal scroll */}
           <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-extrabold text-gray-900">Saran Menu MPASI</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[15px] font-extrabold text-on-surface">Saran Menu MPASI</h3>
               <button className="text-xs font-bold text-primary">Lihat Semua</button>
             </div>
-            {/* Scroll container — negative margin to allow full bleed scroll */}
+            {/* Scroll container — bleed to page edge */}
             <div className="-mx-4 px-4">
-              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+              <div className="flex gap-3 overflow-x-auto pb-3 no-scrollbar">
                 {SUGGESTIONS.map((item) => (
-                  <div key={item.id} className="flex-shrink-0 w-40 bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 cursor-pointer active:scale-[0.97] transition-transform">
+                  <div
+                    key={item.id}
+                    className="flex-shrink-0 w-[148px] bg-white rounded-[1.5rem] overflow-hidden shadow-card border border-gray-100/80 cursor-pointer active:scale-[0.97] transition-transform"
+                  >
                     {/* Image */}
-                    <div className="relative w-full h-[120px] bg-gray-100">
+                    <div className="relative w-full h-[110px] bg-gray-100">
                       <Image
                         src={item.image || getAvatarUri(item.seed, "food")}
                         alt={item.name}
                         fill
-                        sizes="160px"
+                        sizes="148px"
                         className="object-cover"
                       />
                       {/* Age badge */}
-                      <span className="absolute top-2 left-2 bg-[#b8dede] text-[#1a4a45] text-[9px] font-bold px-2 py-0.5 rounded-full">
+                      <span className="absolute top-2 left-2 bg-primary-container text-primary-on-container text-[9px] font-bold px-2 py-0.5 rounded-full">
                         {item.ageRange}
                       </span>
                     </div>
                     {/* Text */}
-                    <div className="p-3">
-                      <p className="text-xs font-extrabold text-gray-900 leading-snug">{item.name}</p>
-                      <p className="text-[10px] text-gray-500 font-medium mt-0.5">{item.subtitle}</p>
+                    <div className="p-3 pt-2.5">
+                      <p className="text-[12px] font-extrabold text-on-surface leading-snug">{item.name}</p>
+                      <p className="text-[10px] text-on-surface-variant font-medium mt-1">{item.subtitle}</p>
                     </div>
                   </div>
                 ))}
@@ -257,16 +292,16 @@ export default function NutritionPage() {
           {/* 4. Riwayat Makan (Mobile) */}
           {logs.length > 0 && (
             <div>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-base font-extrabold text-gray-900">Riwayat Makan</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-[15px] font-extrabold text-on-surface">Riwayat Makan</h3>
                 <button
                   onClick={() => router.push("/scanner")}
-                  className="flex items-center gap-1.5 bg-gray-900 text-white text-xs font-bold px-3 py-1.5 rounded-full"
+                  className="flex items-center gap-1.5 bg-on-surface text-white text-xs font-bold px-3.5 py-2 rounded-full"
                 >
                   <Plus size={12} /> Tambah
                 </button>
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-3">
                 {logs.map((log) => (
                   <MobileMealCard key={log.id} item={log} onRemove={() => removeLog(log.id)} />
                 ))}
@@ -276,15 +311,15 @@ export default function NutritionPage() {
 
           {/* Empty state (Mobile) */}
           {logs.length === 0 && (
-            <div className="bg-white rounded-3xl p-8 flex flex-col items-center justify-center text-center border border-gray-100 shadow-sm">
-              <div className="w-14 h-14 rounded-full bg-gray-50 flex items-center justify-center mb-3">
-                <ScanLineIcon size={24} className="text-gray-400" />
+            <div className="bg-white rounded-[2rem] p-8 flex flex-col items-center justify-center text-center border border-gray-100 shadow-card">
+              <div className="w-14 h-14 rounded-full bg-primary-container flex items-center justify-center mb-4">
+                <ScanLineIcon size={24} className="text-primary" />
               </div>
-              <p className="text-sm font-bold text-gray-800 mb-1">Belum ada catatan</p>
-              <p className="text-xs text-gray-500">Scan atau input makanan untuk mulai mencatat gizi si kecil.</p>
+              <p className="text-sm font-bold text-on-surface mb-1">Belum ada catatan</p>
+              <p className="text-xs text-on-surface-variant leading-relaxed">Scan atau input makanan untuk mulai mencatat gizi si kecil.</p>
               <button
                 onClick={() => router.push("/scanner")}
-                className="mt-4 bg-primary text-white text-xs font-bold px-5 py-2.5 rounded-2xl shadow-md shadow-primary/20"
+                className="mt-5 bg-primary text-white text-xs font-bold px-6 py-3 rounded-2xl shadow-md shadow-primary/20"
               >
                 Mulai Scan
               </button>

@@ -3,119 +3,117 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { X, Flame, TrendingUp, Zap } from "lucide-react";
+import { Flame, Droplet, Wheat, Search, Plus, Check, Beef } from "lucide-react";
 import { motion } from "motion/react";
 import { Card } from "@/components/ui/Card";
 import { Avatar } from "@/components/common/Avatar";
 import { PageShell } from "@/components/layout/PageShell";
-import { ScanLineIcon } from "@/components/icons/scan-line";
-import { PlusIcon } from "@/components/icons/plus";
 import { useNutritionStore, NutritionLog } from "@/stores/nutritionStore";
 import { getAvatarUri } from "@/utils/avatar";
+import { ScanLineIcon } from "@/components/icons/scan-line";
 
 type SuggestionItem = {
   id: string;
   name: string;
   ageRange: string;
-  description: string;
   seed: string;
+  image?: string;
 };
 
 const SUGGESTIONS: SuggestionItem[] = [
-  {
-    id: "sug_1",
-    name: "Bubur Salmon Labu",
-    ageRange: "6–8 Bulan",
-    description: "Kaya Omega-3 & Vitamin A",
-    seed: "bubur-salmon-labu",
-  },
-  {
-    id: "sug_2",
-    name: "Nasi Tim Ayam Brokoli",
-    ageRange: "9–12 Bulan",
-    description: "Tekstur cincang halus",
-    seed: "nasi-tim-ayam",
-  },
-  {
-    id: "sug_3",
-    name: "Puree Alpukat Halus",
-    ageRange: "6 Bulan",
-    description: "Lemak sehat untuk otak",
-    seed: "puree-alpukat",
-  },
+  { id: "sug_1", name: "Nasi Tim Ayam Brokoli", ageRange: "9-12 Bulan", seed: "nasi-tim-ayam", image: "/Resep-MPASI-NasiTimAyamWortelBrokoli.jpg" },
+  { id: "sug_2", name: "Bubur Salmon Labu", ageRange: "6-8 Bulan", seed: "bubur-salmon-labu", image: "/Bubur salmon.png" },
+  { id: "sug_3", name: "Puree Alpukat", ageRange: "6 Bulan", seed: "puree-alpukat", image: "/avocado-puree-baby-food.jpg" },
 ];
 
 function formatTimeLocal(dateString: string) {
   return new Date(dateString).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
 }
 
-const MACRO_COLORS = {
-  Protein: "#2d8a7e",
-  Lemak: "#6b9e6b",
-  Karbohidrat: "#d4a454",
-  Serat: "#c47d3e",
-};
-
-function MacroBar({ label, value, total, color }: { label: string; value: number; total: number; color: string }) {
-  const pct = total > 0 ? Math.min(100, Math.round((value / total) * 100)) : 0;
+// ── Soft Metric Card (Ref Image 3) ──
+function MetricCard({ 
+  icon: Icon, title, value, max, unit, bgClass, iconColor 
+}: { 
+  icon: React.ElementType, title: string, value: number, max: number, unit: string, bgClass: string, iconColor: string 
+}) {
+  const pct = Math.min(100, Math.round((value / max) * 100));
+  
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex justify-between items-center">
-        <span className="text-xs font-semibold text-on-surface-variant">{label}</span>
-        <span className="text-xs font-bold text-on-surface">{value}g</span>
+    <div className={`p-5 rounded-[2rem] flex flex-col justify-between relative overflow-hidden transition-all duration-300 ${bgClass}`}>
+      <div className="flex items-center gap-3 mb-6 relative z-10">
+        <div className="w-10 h-10 rounded-full bg-white/60 flex items-center justify-center flex-shrink-0 shadow-sm">
+          <Icon size={20} className={iconColor} strokeWidth={2.5} />
+        </div>
+        <div>
+          <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">{title}</p>
+          <p className="text-[10px] font-semibold text-on-surface-variant/70 mt-0.5">{value} / {max} {unit}</p>
+        </div>
       </div>
-      <div className="h-1.5 rounded-full bg-surface-high overflow-hidden">
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${pct}%` }}
-          transition={{ duration: 1, ease: "easeOut", delay: 0.4 }}
-          className="h-full rounded-full"
-          style={{ backgroundColor: color }}
-        />
+      
+      <div className="relative z-10 flex items-end justify-between">
+        <p className="text-3xl font-extrabold text-on-surface leading-none">{value}</p>
+        <div className="text-right">
+          <p className="text-lg font-extrabold text-on-surface">{pct}%</p>
+        </div>
       </div>
     </div>
   );
 }
 
-function LogItem({ item, onRemove, index }: { item: NutritionLog; onRemove: () => void; index: number }) {
-  const foodAvatar = getAvatarUri(item.foodDetected.join("-"), "food");
-
+// ── Mobile Progress Card (Ref Image 1) ──
+function MobileProgressCard({ title, current, max, icon: Icon, bgClass, textClass }: { title: string, current: number, max: number, icon: React.ElementType, bgClass: string, textClass: string }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: index * 0.07 }}
-      className="group flex items-center gap-4 p-4 bg-white rounded-2xl border border-outline-variant/8 shadow-card hover:shadow-card-hover hover:-translate-y-0.5 transition-all duration-300"
-    >
-      <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 relative bg-primary-container/30 shadow-sm">
-        {item.photoUrl ? (
-          <Image src={item.photoUrl} alt="Makanan" fill sizes="48px" className="object-cover" />
-        ) : (
-          <Image src={foodAvatar} alt="Makanan" fill sizes="48px" className="object-cover" />
-        )}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex justify-between items-center gap-2 mb-1">
-          <span className="font-bold text-on-surface text-sm truncate group-hover:text-primary transition-colors duration-200">
-            {item.foodDetected.join(", ")}
-          </span>
-          <span className="text-[11px] text-on-surface-variant font-medium flex-shrink-0 bg-surface-high px-2 py-0.5 rounded-full">
-            {formatTimeLocal(item.createdAt)}
-          </span>
+    <div className={`flex flex-col items-center justify-center py-3 px-2 rounded-2xl ${bgClass} flex-1`}>
+      <Icon size={18} className={`mb-1 ${textClass}`} strokeWidth={2.5} />
+      <p className="text-[10px] font-bold text-gray-500 mb-0.5">{title}</p>
+      <p className="text-xs font-extrabold text-gray-900">{current} <span className="text-[9px] font-medium text-gray-500">/{max}</span></p>
+    </div>
+  );
+}
+
+// ── Log Item row (Ref Image 3 Medication Tracker) ──
+function MealTrackerRow({ item, onRemove }: { item: NutritionLog; onRemove: () => void }) {
+  const foodAvatar = getAvatarUri(item.foodDetected.join("-"), "food");
+  
+  return (
+    <div className="group flex items-center justify-between py-4 border-b border-gray-100 last:border-0 hover:bg-gray-50/50 px-2 rounded-xl transition-colors">
+      <div className="flex items-center gap-4 flex-1">
+        {/* Status / Check circle */}
+        <div className="w-6 h-6 rounded-full border-2 border-green-500 flex items-center justify-center flex-shrink-0">
+          <Check size={12} className="text-green-500" strokeWidth={3} />
         </div>
-        <p className="text-xs text-primary font-semibold mb-0.5">{item.portionEstimate}</p>
-        <p className="text-xs text-on-surface-variant">
-          {item.calories} kkal · P: {item.protein}g · L: {item.fat}g · K: {item.carbs}g
-        </p>
+        
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="w-10 h-10 rounded-xl overflow-hidden relative flex-shrink-0 bg-gray-100">
+             {item.photoUrl ? (
+                <Image src={item.photoUrl} alt="Food" fill sizes="40px" className="object-cover" />
+              ) : (
+                <Image src={foodAvatar} alt="Food" fill sizes="40px" className="object-cover" />
+              )}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-gray-900 truncate">{item.foodDetected.join(", ")}</p>
+            <p className="text-xs text-gray-500 font-medium">{item.portionEstimate}</p>
+          </div>
+        </div>
       </div>
-      <button
-        onClick={onRemove}
-        aria-label="Hapus log"
-        className="p-2 rounded-xl hover:bg-danger-light transition-all duration-200 flex-shrink-0 opacity-0 group-hover:opacity-100 hover:scale-110"
-      >
-        <X size={15} className="text-danger" />
-      </button>
-    </motion.div>
+
+      <div className="hidden sm:block flex-1 text-center">
+        <p className="text-sm font-semibold text-gray-700">{item.calories} <span className="text-xs text-gray-400 font-medium">kkal</span></p>
+      </div>
+
+      <div className="flex-1 text-right flex items-center justify-end gap-3">
+        <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+          {formatTimeLocal(item.createdAt)}
+        </span>
+        <button 
+          onClick={onRemove}
+          className="opacity-0 group-hover:opacity-100 p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all"
+        >
+          Hapus
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -128,197 +126,196 @@ export default function NutritionPage() {
   const totalProtein = Math.round(logs.reduce((acc, curr) => acc + curr.protein, 0) * 10) / 10;
   const totalFat = Math.round(logs.reduce((acc, curr) => acc + curr.fat, 0) * 10) / 10;
   const totalCarbs = Math.round(logs.reduce((acc, curr) => acc + curr.carbs, 0) * 10) / 10;
-  const totalFiber = Math.round(logs.reduce((acc, curr) => acc + (curr.fiber || 0), 0) * 10) / 10;
 
-  const calorieGoal = 800;
-  const caloriePercent = Math.min(100, Math.round((totalCalories / calorieGoal) * 100));
-
-  const macroGoals = { Protein: 60, Lemak: 30, Karbohidrat: 100, Serat: 10 };
+  const goals = { Calories: 800, Protein: 30, Lemak: 25, Karbohidrat: 100 };
 
   return (
     <PageShell
-      title="Nutrisi"
+      title="Nutrition Dashboard"
       subtitle="Pantau asupan gizi harian si kecil"
       actions={<Avatar seed="Ibu Ani" variant="parent" size="md" />}
     >
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* ── Left Column ── */}
-        <div className="lg:col-span-8 flex flex-col gap-5">
-
-          {/* Hero Summary Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div
-              className="rounded-[2rem] p-6 md:p-8 border border-primary/10 shadow-card relative overflow-hidden"
-              style={{ background: "linear-gradient(145deg, #d4f0eb 0%, #c8ecdb 40%, #ddf0dd 80%, #faf0dc 100%)" }}
-            >
-              <div className="absolute -top-12 -right-12 w-44 h-44 rounded-full bg-white/15" aria-hidden />
-              <div className="absolute top-8 -right-4 w-24 h-24 rounded-full bg-white/10" aria-hidden />
-
-              <div className="flex items-center gap-2 mb-5 relative z-10">
-                <div className="w-7 h-7 rounded-lg bg-white/70 flex items-center justify-center">
-                  <Flame size={14} className="text-tertiary-on-container" />
-                </div>
-                <p className="text-sm font-bold text-primary uppercase tracking-wide">Total Nutrisi Hari Ini</p>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
+        
+        {/* ── Mobile UI: Metric Summary (Ref Image 1) ── */}
+        <div className="lg:hidden mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <p className="text-sm font-medium text-gray-500">Today calorie</p>
+              <div className="flex items-baseline gap-1 mt-1">
+                <span className="text-4xl font-black text-gray-900 tracking-tight">{totalCalories}</span>
+                <span className="text-sm font-bold text-gray-400">kcal</span>
               </div>
+            </div>
+            
+            <div className="relative w-20 h-20 flex items-center justify-center">
+              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#f3f4f6" strokeWidth="12" />
+                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#104f44" strokeWidth="12" strokeDasharray="251.2" strokeDashoffset={251.2 - (251.2 * Math.min(totalCalories, goals.Calories)) / goals.Calories} strokeLinecap="round" />
+              </svg>
+              <div className="absolute flex flex-col items-center justify-center text-center">
+                <span className="text-sm font-extrabold text-gray-900">{Math.max(0, goals.Calories - totalCalories)}</span>
+                <span className="text-[9px] font-bold text-gray-400 uppercase">left</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex gap-3">
+            <MobileProgressCard title="Carbs" current={totalCarbs} max={goals.Karbohidrat} icon={Wheat} bgClass="bg-[#fff9eb]" textClass="text-orange-500" />
+            <MobileProgressCard title="Protein" current={totalProtein} max={goals.Protein} icon={Beef} bgClass="bg-[#f0f4ff]" textClass="text-blue-500" />
+            <MobileProgressCard title="Fat" current={totalFat} max={goals.Lemak} icon={Droplet} bgClass="bg-[#f2f8f2]" textClass="text-green-600" />
+          </div>
+        </div>
 
-              <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5 mb-6 relative z-10">
+        {/* ── Desktop Metric Cards Row (Ref Image 3 Top Cards) ── */}
+        <div className="hidden lg:grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <MetricCard 
+            title="Kalori" value={totalCalories} max={goals.Calories} unit="kkal"
+            icon={Flame} bgClass="bg-[#fff0f0] border border-[#ffe6e6]" iconColor="text-red-500"
+          />
+          <MetricCard 
+            title="Protein" value={totalProtein} max={goals.Protein} unit="g"
+            icon={Beef} bgClass="bg-[#f0f4ff] border border-[#e6ecff]" iconColor="text-blue-500"
+          />
+          <MetricCard 
+            title="Lemak" value={totalFat} max={goals.Lemak} unit="g"
+            icon={Droplet} bgClass="bg-[#f2f8f2] border border-[#e8f4e8]" iconColor="text-green-600"
+          />
+          <MetricCard 
+            title="Karbo" value={totalCarbs} max={goals.Karbohidrat} unit="g"
+            icon={Wheat} bgClass="bg-[#fff9eb] border border-[#fff2cc]" iconColor="text-orange-500"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
+          
+          {/* ── Left Column: Meal Tracker ── */}
+          <div className="lg:col-span-8 flex flex-col gap-6">
+            <Card variant="default" className="p-6 md:p-8 bg-white border-none shadow-sm rounded-[2rem]">
+              <div className="flex items-center justify-between mb-6">
                 <div>
-                  <p className="text-5xl md:text-6xl font-extrabold text-on-surface leading-none">{totalCalories}</p>
-                  <p className="text-sm text-on-surface-variant mt-1.5 font-medium">dari {calorieGoal} kkal target harian</p>
+                  <h2 className="text-xl font-extrabold text-gray-900 tracking-tight">Riwayat Makan</h2>
+                  <p className="text-sm font-medium text-gray-500 mt-0.5">Asupan gizi yang tercatat hari ini</p>
                 </div>
-                {/* Circular progress */}
-                <div className="relative w-20 h-20 flex-shrink-0">
-                  <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 80 80">
-                    <circle cx="40" cy="40" r="34" stroke="rgba(255,255,255,0.4)" strokeWidth="6" fill="white" />
-                    <motion.circle
-                      cx="40" cy="40" r="34" stroke="url(#cal-grad)" strokeWidth="6" fill="none"
-                      strokeLinecap="round"
-                      initial={{ strokeDasharray: 214, strokeDashoffset: 214 }}
-                      animate={{ strokeDashoffset: 214 - (214 * caloriePercent) / 100 }}
-                      transition={{ duration: 1.2, ease: "easeOut", delay: 0.3 }}
-                    />
-                    <defs>
-                      <linearGradient id="cal-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#2d8a7e" />
-                        <stop offset="100%" stopColor="#6b9e6b" />
-                      </linearGradient>
-                    </defs>
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-sm font-extrabold text-on-surface">{caloriePercent}%</span>
-                    <span className="text-[9px] font-semibold text-on-surface-variant">target</span>
+                <div className="flex gap-2">
+                  <button className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 text-sm font-bold text-gray-600 hover:bg-gray-50 transition-colors">
+                    <Search size={16} /> Cari
+                  </button>
+                  <button 
+                    onClick={() => router.push("/scanner")}
+                    className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900 text-white text-sm font-bold hover:bg-gray-800 transition-colors"
+                  >
+                    <Plus size={16} /> Tambah
+                  </button>
+                </div>
+              </div>
+
+              {logs.length === 0 ? (
+                <div className="py-16 flex flex-col items-center justify-center text-center">
+                  <div className="w-16 h-16 rounded-full bg-gray-50 flex items-center justify-center mb-4">
+                    <ScanLineIcon size={24} className="text-gray-400" />
                   </div>
+                  <p className="text-base font-bold text-gray-900 mb-1">Belum ada makanan</p>
+                  <p className="text-sm text-gray-500">Scan MPASI anak Anda untuk mulai mencatat gizinya.</p>
                 </div>
-              </div>
-
-              {/* Macro bars */}
-              <div className="grid grid-cols-2 gap-3 pt-5 border-t border-primary/12 relative z-10">
-                <MacroBar label="Protein" value={totalProtein} total={macroGoals.Protein} color={MACRO_COLORS.Protein} />
-                <MacroBar label="Lemak" value={totalFat} total={macroGoals.Lemak} color={MACRO_COLORS.Lemak} />
-                <MacroBar label="Karbohidrat" value={totalCarbs} total={macroGoals.Karbohidrat} color={MACRO_COLORS.Karbohidrat} />
-                <MacroBar label="Serat" value={totalFiber} total={macroGoals.Serat} color={MACRO_COLORS.Serat} />
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Log List */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-on-surface tracking-tight">Riwayat Hari Ini</h2>
-              {logs.length > 0 && (
-                <span className="text-xs font-bold text-on-surface-variant bg-surface-high px-3 py-1 rounded-full">
-                  {logs.length} makanan
-                </span>
+              ) : (
+                <div className="flex flex-col">
+                  {/* Table Header (hidden on mobile) */}
+                  <div className="hidden sm:flex items-center justify-between py-2 border-b border-gray-100 mb-2">
+                    <span className="flex-1 text-xs font-bold text-gray-400 uppercase tracking-wider px-2">Menu & Porsi</span>
+                    <span className="flex-1 text-center text-xs font-bold text-gray-400 uppercase tracking-wider">Kalori</span>
+                    <span className="flex-1 text-right text-xs font-bold text-gray-400 uppercase tracking-wider px-2">Waktu</span>
+                  </div>
+                  {/* Table Body */}
+                  {logs.map((log) => (
+                    <MealTrackerRow key={log.id} item={log} onRemove={() => removeLog(log.id)} />
+                  ))}
+                </div>
               )}
-            </div>
-            {logs.length === 0 ? (
-              <div className="rounded-[2rem] p-10 flex flex-col items-center text-center bg-surface-warm border border-outline-variant/8 shadow-card">
-                <div className="w-16 h-16 rounded-2xl bg-primary-container/40 flex items-center justify-center mb-4">
-                  <Flame size={28} className="text-primary" />
-                </div>
-                <p className="font-bold text-on-surface mb-1">Belum Ada Catatan</p>
-                <p className="text-sm text-on-surface-variant font-medium">Scan atau input makanan bayi untuk mulai mencatat</p>
+            </Card>
+          </div>
+
+          {/* ── Right Column: Menu Suggestions (Ref Image 3 Care Team) ── */}
+          <div className="lg:col-span-4 flex flex-col gap-6">
+            
+            {/* Quick Action (Ref Image 1) */}
+            <div 
+              onClick={() => router.push("/scanner")}
+              className="p-6 rounded-[2rem] bg-gradient-to-br from-primary to-[#206960] text-white cursor-pointer hover:-translate-y-1 transition-transform shadow-lg shadow-primary/20 relative overflow-hidden"
+            >
+              <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mb-4 relative z-10 backdrop-blur-sm">
+                <ScanLineIcon size={24} className="text-white" />
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {logs.map((log, i) => (
-                  <LogItem key={log.id} item={log} onRemove={() => removeLog(log.id)} index={i} />
+              <h3 className="text-lg font-extrabold mb-1 relative z-10">AI Food Scan</h3>
+              <p className="text-sm text-white/80 font-medium relative z-10">
+                Pindai makanan untuk mengetahui estimasi kalori dan makronutrisi.
+              </p>
+            </div>
+
+            <Card variant="default" className="p-6 bg-white border-none shadow-sm rounded-[2rem] hidden lg:block">
+              <div className="flex justify-between items-center mb-5">
+                <h3 className="text-lg font-extrabold text-gray-900 tracking-tight">Rekomendasi Menu</h3>
+                <button className="text-xs font-bold text-blue-500 hover:text-blue-600">Lihat Semua</button>
+              </div>
+              
+              <div className="flex flex-col gap-4">
+                {SUGGESTIONS.map((item) => (
+                  <div key={item.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer group">
+                    <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100 relative flex-shrink-0 border border-gray-200 group-hover:border-blue-200 transition-colors">
+                      <Image src={item.image || getAvatarUri(item.seed, "food")} alt={item.name} fill sizes="48px" className="object-cover" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-gray-900 truncate group-hover:text-blue-600 transition-colors">{item.name}</p>
+                      <p className="text-xs font-medium text-gray-500">{item.ageRange}</p>
+                    </div>
+                    <button className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 group-hover:bg-blue-50 group-hover:text-blue-500 group-hover:border-blue-100 transition-all">
+                      <Plus size={14} strokeWidth={3} />
+                    </button>
+                  </div>
                 ))}
               </div>
-            )}
+            </Card>
+
+            {/* ── Mobile UI: Meal Suggestion Cards (Ref Image 1) ── */}
+            <div className="lg:hidden mt-2 mb-6">
+              <h3 className="text-lg font-extrabold text-gray-900 tracking-tight mb-4">Meal Suggest</h3>
+              <div className="flex flex-col gap-4">
+                {SUGGESTIONS.map((item, index) => {
+                  const isChecked = index === 1;
+                  return (
+                    <div key={item.id} className={`p-4 rounded-[2rem] flex flex-col gap-3 relative overflow-hidden ${index % 2 === 0 ? 'bg-[#e2f1f0]' : 'bg-[#e7e7fc]'}`}>
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full overflow-hidden bg-white/60 relative flex-shrink-0 shadow-sm">
+                          <Image src={item.image || getAvatarUri(item.seed, "food")} alt={item.name} fill sizes="48px" className="object-cover" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[15px] font-extrabold text-gray-900 truncate">{item.name}</p>
+                          <p className="text-xs font-bold text-gray-500 flex items-center gap-1">
+                            <Flame size={10} className="text-gray-400" /> {index === 0 ? '344' : (index === 1 ? '142' : '200')} kcal
+                          </p>
+                        </div>
+                        <button className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${isChecked ? 'bg-gray-900 text-white' : 'bg-white/60 text-gray-700 hover:bg-white'}`}>
+                          {isChecked ? <Check size={14} strokeWidth={3} /> : <Plus size={14} strokeWidth={3} />}
+                        </button>
+                      </div>
+                      <div className="mt-2 flex flex-col gap-1.5">
+                        <div className="w-full h-1.5 rounded-full bg-black/5 overflow-hidden">
+                          <div className={`h-full rounded-full ${index % 2 === 0 ? 'bg-[#3b8782]' : 'bg-[#706cf4]'}`} style={{ width: isChecked ? '100%' : '60%' }} />
+                        </div>
+                        <p className="text-[10px] font-bold text-gray-500 text-right">
+                          {isChecked ? 'Completed' : '195 left'}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
           </div>
         </div>
-
-        {/* ── Right Sidebar ── */}
-        <div className="lg:col-span-4 flex flex-col gap-5">
-          {/* Action buttons */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
-            <motion.button
-              whileHover={{ y: -3, boxShadow: "0 8px 32px rgba(45,138,126,0.25)" }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => router.push("/scanner")}
-              className="text-left p-5 rounded-[1.75rem] gradient-primary text-white shadow-card transition-all duration-300"
-            >
-              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center mb-4">
-                <ScanLineIcon size={20} className="text-white" />
-              </div>
-              <h3 className="font-bold text-white mb-1">AI Vision Scan</h3>
-              <p className="text-sm text-white/80 leading-relaxed">
-                Foto makanan bayi, AI hitung gizinya otomatis.
-              </p>
-            </motion.button>
-
-            <motion.button
-              whileHover={{ y: -3, boxShadow: "0 8px 32px rgba(45,138,126,0.12)" }}
-              whileTap={{ scale: 0.97 }}
-              className="text-left p-5 rounded-[1.75rem] bg-white border border-outline-variant/10 shadow-card transition-all duration-300"
-            >
-              <div className="w-10 h-10 rounded-xl bg-tertiary-container/50 flex items-center justify-center mb-4">
-                <PlusIcon size={20} className="text-tertiary-on-container" />
-              </div>
-              <h3 className="font-bold text-on-surface mb-1">Input Manual</h3>
-              <p className="text-sm text-on-surface-variant leading-relaxed">
-                Cari dari database makanan lokal dan MPASI buatan rumah.
-              </p>
-            </motion.button>
-          </div>
-
-          {/* Daily insight */}
-          <div className="p-5 rounded-[1.75rem] bg-surface-warm border border-outline-variant/8 shadow-card">
-            <div className="flex items-center gap-2.5 mb-3">
-              <div className="w-8 h-8 rounded-xl bg-tertiary-container/60 flex items-center justify-center">
-                <Zap size={15} className="text-tertiary-on-container" />
-              </div>
-              <h3 className="font-bold text-on-surface text-sm">Tips Nutrisi</h3>
-            </div>
-            <p className="text-sm text-on-surface-variant leading-relaxed">
-              Perkenalkan protein hewani (telur, ikan, daging) pada MPASI usia 6 bulan untuk mencegah defisiensi zat besi.
-            </p>
-          </div>
-
-          {/* Suggestions */}
-          <div>
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-base font-bold text-on-surface tracking-tight">Saran Menu MPASI</h2>
-              <button className="group text-xs font-bold text-primary hover:text-primary-hover transition-colors px-3 py-1.5 rounded-full hover:bg-primary-container/30">
-                Lihat Semua
-              </button>
-            </div>
-            <div className="flex lg:flex-col gap-3 overflow-x-auto lg:overflow-visible no-scrollbar">
-              {SUGGESTIONS.map((item, i) => (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 + i * 0.08 }}
-                  className="group min-w-[220px] lg:min-w-0 flex items-center gap-3.5 p-3.5 rounded-2xl bg-white border border-outline-variant/8 shadow-card hover:shadow-card-hover hover:-translate-y-0.5 cursor-pointer transition-all duration-300"
-                >
-                  <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 relative bg-primary-container/20">
-                    <Image
-                      src={getAvatarUri(item.seed, "food")}
-                      alt={item.name}
-                      fill
-                      sizes="48px"
-                      className="object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="inline-block bg-tertiary-container/60 px-2 py-0.5 rounded-full text-[10px] font-bold text-tertiary-on-container mb-1">
-                      {item.ageRange}
-                    </span>
-                    <p className="font-bold text-sm text-on-surface group-hover:text-primary transition-colors duration-200">{item.name}</p>
-                    <p className="text-xs text-on-surface-variant mt-0.5">{item.description}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+      </motion.div>
     </PageShell>
   );
 }

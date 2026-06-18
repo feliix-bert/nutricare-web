@@ -33,7 +33,7 @@ export function SideNavBar() {
       <div className="flex flex-col h-full px-5 py-8">
         {/* Brand */}
         <div className="mb-8 px-1">
-          <BrandLogo variant="compact" href="/" priority />
+          <BrandLogo variant="full" href="/" priority showText />
         </div>
 
         {/* Nav Label */}

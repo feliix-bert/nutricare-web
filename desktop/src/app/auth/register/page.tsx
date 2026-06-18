@@ -54,7 +54,71 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row bg-white">
+    <div className="min-h-screen flex flex-col lg:flex-row bg-white relative overflow-hidden lg:overflow-auto">
+
+      {/* ── Mobile UI (Ref Image 2) ── */}
+      <div className="lg:hidden flex flex-col min-h-screen bg-white">
+        {/* Top curved header */}
+        <div className="bg-[#2a4d3f] rounded-bl-[4rem] flex items-center px-6 pb-12 pt-16 relative overflow-hidden z-10 shadow-md">
+           <div className="absolute top-8 right-12 w-10 h-10 bg-yellow-400 rounded-full opacity-50 blur-sm" />
+           <div className="absolute -bottom-2 -left-4 w-12 h-12 bg-yellow-400 rounded-full opacity-50 blur-sm" />
+           <button onClick={() => router.back()} className="w-8 h-8 flex items-center justify-center bg-[#ffc529] rounded-full text-[#2a4d3f] shadow-sm active:scale-95 transition-transform z-10">
+             <ArrowLeft size={16} strokeWidth={3} />
+           </button>
+           <h1 className="text-[22px] font-extrabold text-white tracking-tight ml-4 z-10">Create Account</h1>
+        </div>
+
+        {/* Form area */}
+        <div className="flex-1 px-8 pt-10 pb-8 flex flex-col relative z-20 -mt-4 bg-white rounded-tr-[3rem]">
+          <form onSubmit={handleRegister} className="flex flex-col gap-6">
+            {error && <p className="text-xs text-red-500 font-bold">{error.message}</p>}
+            
+            <div className="flex flex-col">
+              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Name</label>
+              <input 
+                type="text" 
+                placeholder="John Williams"
+                className="border-b border-[#ffc529] py-1.5 text-sm font-extrabold text-gray-900 focus:outline-none placeholder-gray-300"
+                onChange={(e) => { nameRef.current = e.target.value; }}
+              />
+              {formErrors.name && <span className="text-[10px] text-red-500 mt-1">{formErrors.name}</span>}
+            </div>
+
+            <div className="flex flex-col">
+              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Email</label>
+              <input 
+                type="email" 
+                className="border-b border-gray-200 focus:border-[#ffc529] py-1.5 text-sm font-extrabold text-gray-900 focus:outline-none transition-colors"
+                onChange={(e) => { emailRef.current = e.target.value; }}
+              />
+              {formErrors.email && <span className="text-[10px] text-red-500 mt-1">{formErrors.email}</span>}
+            </div>
+
+            <div className="flex flex-col">
+              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Password</label>
+              <input 
+                type="password" 
+                className="border-b border-gray-200 focus:border-[#ffc529] py-1.5 text-sm font-extrabold text-gray-900 focus:outline-none transition-colors"
+                onChange={(e) => { passwordRef.current = e.target.value; }}
+              />
+              {formErrors.password && <span className="text-[10px] text-red-500 mt-1">{formErrors.password}</span>}
+            </div>
+
+            <button type="submit" className="w-full bg-[#6a9071] text-white font-bold py-4 rounded-2xl shadow-lg shadow-[#6a9071]/30 mt-6 active:scale-[0.98] transition-transform">
+              {isLoading ? "LOADING..." : "LOGIN"}
+            </button>
+          </form>
+
+          <p className="text-center text-xs font-bold text-gray-500 mt-auto pt-8">
+            Already have an account? <Link href="/auth/sign-in" className="text-gray-900">LOGIN</Link>
+          </p>
+        </div>
+
+        {/* Decorative background circles */}
+        <div className="fixed inset-0 pointer-events-none z-0 hidden lg:hidden">
+          <div className="absolute top-1/3 -right-20 w-[350px] h-[350px] bg-[#ffc529] rounded-full" />
+        </div>
+      </div>
 
       {/* ── Left panel ── */}
       <div className="hidden lg:flex lg:w-[48%] xl:w-[52%] relative overflow-hidden flex-shrink-0">
@@ -75,45 +139,29 @@ export default function RegisterPage() {
         <div className="absolute inset-0 flex flex-col justify-between p-10 xl:p-14">
           <BrandLogo variant="compact" priority onDark />
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut", delay: 0.1 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
           >
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/60 mb-4">
-              Bergabung Sekarang
-            </p>
-            <h2 className="text-3xl xl:text-4xl font-extrabold text-white leading-[1.2] tracking-tight mb-5">
-              Mulai Perjalanan Sehat<br />
-              Si Kecil Bersama Kami
+            <h2 className="text-3xl xl:text-[40px] font-medium text-white leading-[1.2] tracking-tight mb-3">
+              Mulai perjalanan sehat si kecil bersama kami.
             </h2>
-            <div className="flex flex-col gap-3">
-              {BENEFITS.map((item) => (
-                <div key={item} className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded-full bg-primary/80 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Check size={11} strokeWidth={3} className="text-white" />
-                  </div>
-                  <span className="text-sm text-white/80 leading-relaxed">{item}</span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-8 inline-flex items-center gap-2.5 bg-white/10 backdrop-blur-md border border-white/15 px-4 py-2.5 rounded-full">
-              <div className="flex -space-x-2">
-                {["D","E","F"].map((l) => (
-                  <div key={l} className="w-6 h-6 rounded-full bg-secondary-light flex items-center justify-center text-[9px] font-bold text-secondary-on-container border-2 border-white/20">{l}</div>
-                ))}
-              </div>
-              <span className="text-xs text-white/80 font-medium">Gratis untuk keluarga Indonesia</span>
+            <div className="flex items-center gap-2">
+              <div className="w-0.5 h-3.5 bg-primary rounded-full" />
+              <p className="text-[15px] font-medium text-white/80">
+                Akses fitur gizi dan kesehatan secara gratis.
+              </p>
             </div>
           </motion.div>
         </div>
       </div>
 
       {/* ── Right panel ── */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 md:px-12 bg-white">
+      <div className="hidden lg:flex flex-1 flex-col items-center justify-center px-6 py-12 md:px-12 bg-white">
         <motion.div
-          initial={{ opacity: 0, y: 14 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.1 }}
+          transition={{ duration: 0.3 }}
           className="w-full max-w-[380px]"
         >
           {/* Mobile logo */}

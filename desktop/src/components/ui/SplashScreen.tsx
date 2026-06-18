@@ -28,7 +28,7 @@ export function SplashScreen() {
         transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
         className="relative z-10 flex flex-col items-center gap-6"
       >
-        <div className="rounded-[2rem] bg-white/85 backdrop-blur-sm border border-white/60 shadow-elevated px-10 py-8">
+        <div className="rounded-[2rem] bg-white border border-white/60 shadow-elevated px-10 py-8">
           <BrandLogo variant="full" priority />
         </div>
 

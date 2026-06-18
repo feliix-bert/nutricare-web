@@ -54,7 +54,7 @@ export default function RegisterPage() {
       <div className="lg:hidden flex flex-col min-h-screen bg-white">
 
         {/* Hero image with overlay */}
-        <div className="relative h-[38vh] min-h-[220px] flex-shrink-0 overflow-hidden">
+        <div className="relative h-[46vh] min-h-[260px] flex-shrink-0 overflow-hidden">
           <Image
             src="/image1.png"
             alt="TumbuhSehat"
@@ -70,27 +70,24 @@ export default function RegisterPage() {
               background: "linear-gradient(to bottom, rgba(10,35,30,0.55) 0%, rgba(10,35,30,0.28) 40%, rgba(10,35,30,0.78) 80%, rgba(10,35,30,0.96) 100%)",
             }}
           />
-          {/* Back button top-left */}
+          {/* Back button — top left */}
           <button
             onClick={() => router.back()}
             className="absolute top-10 left-6 w-9 h-9 flex items-center justify-center bg-white/20 backdrop-blur-sm rounded-full text-white border border-white/30 active:scale-90 transition-transform z-10"
           >
             <ArrowLeft size={18} strokeWidth={2.5} />
           </button>
-          {/* Brand centered top */}
-          <div className="absolute top-10 left-0 right-0 flex justify-center">
+          {/* Brand — centered vertically & horizontally in the image */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-7 z-10">
             <BrandLogo variant="compact" priority onDark />
-          </div>
-          {/* Tagline bottom */}
-          <div className="absolute bottom-0 left-0 right-0 px-7 pb-7">
-            <p className="text-white/80 text-sm font-medium leading-snug">
+            <p className="text-white/75 text-sm font-medium leading-snug text-center">
               Daftar gratis &amp; mulai pantau gizi si kecil hari ini
             </p>
           </div>
         </div>
 
-        {/* Form card */}
-        <div className="flex-1 bg-white rounded-t-[2.5rem] -mt-8 relative z-10 px-7 pt-8 pb-10 flex flex-col shadow-[0_-8px_30px_rgba(0,0,0,0.08)]">
+        {/* Form card — slides up over the image */}
+        <div className="flex-1 bg-white rounded-t-[2.5rem] -mt-16 relative z-10 px-7 pt-8 pb-10 flex flex-col shadow-[0_-8px_30px_rgba(0,0,0,0.10)]">
           <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight mb-1">Buat Akun</h2>
           <p className="text-sm font-medium text-gray-500 mb-7">
             Bergabung dengan <span className="font-bold text-primary">TumbuhSehat</span> sekarang

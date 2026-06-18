@@ -41,7 +41,7 @@ export default function SignInPage() {
       <div className="lg:hidden flex flex-col min-h-screen bg-white">
 
         {/* Hero image with overlay */}
-        <div className="relative h-[42vh] min-h-[240px] flex-shrink-0 overflow-hidden">
+        <div className="relative h-[50vh] min-h-[280px] flex-shrink-0 overflow-hidden">
           <Image
             src="/image1.png"
             alt="TumbuhSehat"
@@ -54,23 +54,20 @@ export default function SignInPage() {
           <div
             className="absolute inset-0"
             style={{
-              background: "linear-gradient(to bottom, rgba(10,35,30,0.50) 0%, rgba(10,35,30,0.25) 40%, rgba(10,35,30,0.75) 80%, rgba(10,35,30,0.95) 100%)",
+              background: "linear-gradient(to bottom, rgba(10,35,30,0.55) 0%, rgba(10,35,30,0.30) 35%, rgba(10,35,30,0.70) 70%, rgba(10,35,30,0.92) 100%)",
             }}
           />
-          {/* Brand at top */}
-          <div className="absolute top-10 left-0 right-0 flex justify-center">
+          {/* Brand — centered vertically & horizontally in the image */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-7 z-10">
             <BrandLogo variant="compact" priority onDark />
-          </div>
-          {/* Tagline at bottom */}
-          <div className="absolute bottom-0 left-0 right-0 px-7 pb-7">
-            <p className="text-white/80 text-sm font-medium leading-snug">
+            <p className="text-white/75 text-sm font-medium leading-snug text-center">
               Pantau gizi &amp; tumbuh kembang si kecil dengan mudah
             </p>
           </div>
         </div>
 
-        {/* Form card that slides up over the image */}
-        <div className="flex-1 bg-white rounded-t-[2.5rem] -mt-8 relative z-10 px-7 pt-8 pb-10 flex flex-col shadow-[0_-8px_30px_rgba(0,0,0,0.08)]">
+        {/* Form card — slides up over the image */}
+        <div className="flex-1 bg-white rounded-t-[2.5rem] -mt-16 relative z-10 px-7 pt-8 pb-10 flex flex-col shadow-[0_-8px_30px_rgba(0,0,0,0.10)]">
           <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight mb-1">Selamat Datang</h2>
           <p className="text-sm font-medium text-gray-500 mb-8">
             Masuk ke akun <span className="font-bold text-primary">TumbuhSehat</span> Anda

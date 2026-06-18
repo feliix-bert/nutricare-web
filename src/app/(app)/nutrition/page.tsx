@@ -140,8 +140,8 @@ export default function NutritionPage() {
   return (
     <PageShell
       title="Log Nutrisi Anak"
-      subtitle="Pantau asupan gizi harian si kecil"
-      actions={<Avatar seed="Ibu Ani" variant="parent" size="md" />}
+      subtitle="Pantau gizi harian si kecil"
+      actions={<Avatar seed="Ibu Ani" variant="parent" size="sm" />}
     >
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
 

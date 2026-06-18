@@ -47,17 +47,21 @@ export function PageShell({
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="flex flex-col gap-2 mb-6 md:flex-row md:items-end md:justify-between md:gap-4 md:mb-10"
+            className="flex flex-row items-center justify-between gap-3 mb-6 md:mb-10"
           >
-            <div>
+            {/* Title block */}
+            <div className="flex-1 min-w-0">
               {subtitle && (
-                <p className="text-sm font-medium text-on-surface-variant mb-1">{subtitle}</p>
+                <p className="text-xs font-medium text-on-surface-variant mb-0.5 truncate md:text-sm">{subtitle}</p>
               )}
-              <h1 className="text-2xl md:text-3xl font-extrabold text-on-surface tracking-tight">
+              <h1 className="text-xl font-extrabold text-on-surface tracking-tight leading-tight truncate md:text-3xl">
                 {title}
               </h1>
             </div>
-            {actions && <div className="flex items-center gap-2 flex-shrink-0">{actions}</div>}
+            {/* Actions — right side */}
+            {actions && (
+              <div className="flex items-center gap-2 flex-shrink-0">{actions}</div>
+            )}
           </motion.header>
         ) : null)}
         <div className={cn("w-full", contentClassName)}>{children}</div>

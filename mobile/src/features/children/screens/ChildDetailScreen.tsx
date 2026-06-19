@@ -1,7 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { ScrollView, Text, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Image } from 'expo-image';
 import { useMemo, useState } from 'react';
 
 import { Card } from '@/components/ui/Card';
@@ -11,7 +10,6 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useChild } from '@/features/children/hooks/useChildren';
 import { useChildAssessments } from '@/features/assessment/hooks/useAssessment';
 import { GrowthChart, type GrowthDataPoint } from '@/features/children/components/GrowthChart';
-import { formatTime } from '@/utils/format';
 
 export const ChildDetailScreen = () => {
   const { childId } = useLocalSearchParams<{ childId: string }>();
@@ -29,7 +27,8 @@ export const ChildDetailScreen = () => {
       .filter((a) => a.prediction.predictionStatus === 'COMPLETED')
       .map((a) => {
         const dateObj = new Date(a.createdAt);
-        const monthShort = dateObj.toLocaleString('id-ID', { month: 'short' });
+        const MONTHS_ID = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        const monthShort = MONTHS_ID[dateObj.getMonth()];
         const label = `${dateObj.getDate()} ${monthShort}`;
 
         return {
@@ -72,7 +71,7 @@ export const ChildDetailScreen = () => {
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 100, paddingTop: 16, gap: 16 }} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 40, paddingTop: 16, gap: 16 }} showsVerticalScrollIndicator={false}>
         {/* Title */}
         <View className="gap-1.5 mt-2">
           <Text className="text-[26px] font-extrabold text-on-surface tracking-tight">Growth Tracker</Text>

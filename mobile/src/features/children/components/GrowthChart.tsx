@@ -94,6 +94,7 @@ const GrowthChart = React.memo(({ data, yAxisSuffix = ' kg', title }: GrowthChar
             activatePointersOnLongPress: true,
             autoAdjustPointerLabelPosition: true,
             pointerLabelComponent: (items: any) => {
+              if (!items || !items[0]) return null;
               return (
                 <View className="bg-on-surface px-2 py-1 rounded-md">
                   <Text className="text-white text-[10px] font-bold text-center">

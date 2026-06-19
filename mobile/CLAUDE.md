@@ -452,10 +452,10 @@ Di `ConsultScreen.tsx` ada banner warning sticky di bawah header:
 |-------|--------|-------|-----------|
 | Auth (Login/Register/Refresh/Logout) | ✅ Complete | ✅ Mock | Critical |
 | Children (List/Create/Detail) | ✅ Complete | ✅ Mock | Critical |
-| Edit Child | ❌ Missing | — | Medium |
+| Edit Child | ✅ Complete | ✅ Mock | Medium |
 | Assessment 5-Step (Body → Feeding → Illness → Review → Results) | ✅ Complete | ✅ Mock | Critical |
-| Loading PENDING + polling prediction | ❌ Missing | — | High |
-| WHO Growth Chart proper | ❌ Partial (hardcoded) | ✅ Mock | High |
+| Loading PENDING + polling prediction | ✅ Complete | ✅ Mock | High |
+| WHO Growth Chart proper | ✅ Complete | ✅ Mock | High |
 | Nutrition Scanner/Camera | ⚠️ Simulated UI | ✅ Mock | High |
 | Nutrition History List | ⚠️ Partial | ✅ Mock | Medium |
 | Chatbot AI | ✅ Complete | ✅ Mock | High |

@@ -151,6 +151,7 @@ export const ManualEntryScreen = () => {
                   data={filteredFoods}
                   keyExtractor={(item) => item.name}
                   renderItem={renderFoodItem}
+                  estimatedItemSize={60}
                   scrollEnabled={filteredFoods.length > 4}
                   nestedScrollEnabled
                 />

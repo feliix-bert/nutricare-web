@@ -2,24 +2,15 @@ import React, { useCallback, useState, useRef, useEffect } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
-  Pressable,
-  ScrollView,
   Text,
-  TextInput,
   View,
   Keyboard,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FlashList, FlashListRef } from "@shopify/flash-list";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { formatTime } from "@/utils/format";
-
-type Message = {
-  id: string;
-  sender: "user" | "ai";
-  text: string;
-  time: string;
-};
+import { ChatBubble, ChatInput, SuggestedChips } from "@/features/chat";
+import type { ChatMessage } from "@/features/chat/types/chat.types";
 
 const QUICK_PROMPTS = ["Mencegah Stunting", "Jadwal MPASI 6 Bulan", "ASI Eksklusif vs MPASI", "Kebutuhan Zat Besi"];
 
@@ -40,18 +31,17 @@ const inputBarKeyboardStyle = { paddingBottom: 16 };
 const inputBarDefaultStyle = { paddingBottom: 88 };
 
 export const ConsultScreen = () => {
-  const [messages, setMessages] = useState<Message[]>([
+  const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "msg_1",
       sender: "ai",
       text: "Halo Bunda! Saya konsultan AI GiziChain siap menjawab pertanyaan seputar tumbuh kembang, nutrisi MPASI, dan kesehatan si kecil. Ada yang bisa saya bantu hari ini?",
-      time: "12:00",
+      createdAt: new Date().toISOString(),
     },
   ]);
-  const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
-  const flatListRef = useRef<FlashListRef<Message> | null>(null);
+  const flatListRef = useRef<FlashListRef<ChatMessage> | null>(null);
 
   useEffect(() => {
     const showSubscription = Keyboard.addListener("keyboardDidShow", () => setKeyboardVisible(true));
@@ -65,15 +55,14 @@ export const ConsultScreen = () => {
   const handleSend = (text: string) => {
     if (!text.trim()) return;
 
-    const userMsg: Message = {
+    const userMsg: ChatMessage = {
       id: `msg_user_${Date.now()}`,
       sender: "user",
       text,
-      time: formatTime(),
+      createdAt: new Date().toISOString(),
     };
 
     setMessages((prev) => [...prev, userMsg]);
-    setInputText("");
     setIsTyping(true);
 
     // Scroll to bottom
@@ -105,38 +94,12 @@ export const ConsultScreen = () => {
   };
 
   const renderMessageItem = useCallback(
-    ({ item }: { item: Message }) => <MessageItem item={item} />,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    ({ item }: { item: ChatMessage }) => <ChatBubble message={item} />,
     []
   );
 
-  const MessageItem = React.memo(({ item }: { item: Message }) => {
-    const isAi = item.sender === "ai";
-    return (
-      <View className={`flex-row my-2 ${isAi ? "justify-start" : "justify-end"}`}>
-        {isAi && (
-          <View className="w-8 h-8 rounded-full bg-primary/10 items-center justify-center mr-2.5 self-end">
-            <Text className="text-sm">🤖</Text>
-          </View>
-        )}
-        <View
-          className={`max-w-[75%] p-4 rounded-2xl ${
-            isAi ? "bg-surface-lowest rounded-bl-none border border-outline-variant/20" : "bg-primary rounded-br-none"
-          }`}
-        >
-          <Text className={`text-[15px] leading-6 ${isAi ? "text-on-surface" : "text-white"}`}>{item.text}</Text>
-          <Text className={`text-[10px] mt-1.5 text-right ${isAi ? "text-outline" : "text-white/70"}`}>
-            {item.time}
-          </Text>
-        </View>
-      </View>
-    );
-  });
-
-  MessageItem.displayName = "MessageItem";
-
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-background" edges={['top']}>
       {/* Header */}
       <View className="flex-row items-center justify-between px-container-padding py-4 border-b border-surface-container bg-surface-lowest">
         <View className="flex-row items-center gap-3">
@@ -166,7 +129,7 @@ export const ConsultScreen = () => {
       </View>
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 64 : 0}
         className="flex-1"
       >
@@ -176,6 +139,7 @@ export const ConsultScreen = () => {
           data={messages}
           keyExtractor={(item) => item.id}
           renderItem={renderMessageItem}
+          estimatedItemSize={80}
           contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 16 }}
           showsVerticalScrollIndicator={false}
           ListFooterComponent={
@@ -194,44 +158,12 @@ export const ConsultScreen = () => {
 
         {/* Quick Prompts Container */}
         {messages.length === 1 && (
-          <View className="px-container-padding pb-3">
-            <Text className="text-xs text-outline mb-2 font-bold uppercase tracking-wider">Saran Pertanyaan:</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} className="-mx-5 px-5">
-              {QUICK_PROMPTS.map((prompt, idx) => (
-                <Pressable
-                  key={idx}
-                  onPress={() => handleSend(prompt)}
-                  className="bg-primary-light/50 border border-primary/20 rounded-full px-4 py-2 mr-2.5 active:scale-95 transition-transform"
-                >
-                  <Text className="text-primary font-bold text-xs">{prompt}</Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-          </View>
+          <SuggestedChips suggestions={QUICK_PROMPTS} onSelect={handleSend} />
         )}
 
         {/* Chat Input Bar */}
-        <View
-          className="p-4 border-t border-surface-container bg-surface-lowest flex-row items-center gap-3"
-          style={keyboardVisible ? inputBarKeyboardStyle : inputBarDefaultStyle}
-        >
-          <TextInput
-            value={inputText}
-            onChangeText={setInputText}
-            placeholder="Tanya konsultasi gizi di sini..."
-            placeholderTextColor="#717879"
-            className="flex-1 bg-surface-low rounded-full px-5 py-3 text-on-surface text-[15px]"
-            onSubmitEditing={() => handleSend(inputText)}
-          />
-          <Pressable
-            onPress={() => handleSend(inputText)}
-            disabled={!inputText.trim()}
-            className={`w-11 h-11 rounded-full items-center justify-center ${
-              inputText.trim() ? "bg-primary" : "bg-surface-low opacity-60"
-            }`}
-          >
-            <IconSymbol name="paperplane.fill" size={18} color={inputText.trim() ? "#ffffff" : "#717879"} />
-          </Pressable>
+        <View style={keyboardVisible ? inputBarKeyboardStyle : inputBarDefaultStyle}>
+          <ChatInput onSend={handleSend} disabled={isTyping} />
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>

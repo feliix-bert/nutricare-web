@@ -94,7 +94,7 @@ export const NutritionScreen = () => {
   LogItem.displayName = "LogItem";
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-background" edges={['top']}>
       {/* Top AppBar */}
       <View className="w-full flex-row justify-between items-center px-container-padding py-4 border-b border-surface-container bg-surface-lowest">
         <View className="flex-row items-center gap-3">

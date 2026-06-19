@@ -97,7 +97,7 @@ export const VaultScreen = () => {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-background" edges={['top']}>
       {/* Header */}
       <View className="px-container-padding py-6 border-b border-surface-container bg-surface-lowest">
         <View className="flex-row items-center gap-3">
@@ -128,6 +128,7 @@ export const VaultScreen = () => {
         data={records}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
+        estimatedItemSize={100}
         contentContainerStyle={{ paddingHorizontal: 24, paddingVertical: 16, paddingBottom: 110 }}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={

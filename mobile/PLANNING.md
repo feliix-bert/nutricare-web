@@ -32,41 +32,42 @@ Menyiapkan fondasi service/hook dual-mode mock/real agar fitur high priority bis
 
 ---
 
-## Sprint 1 — Assessment Submit, Loading PENDING, dan Polling Prediction
+## Sprint 1 — Assessment Submit, Loading PENDING, dan Polling Prediction (SELESAI)
 
 ### Tujuan
 Mengganti submit assessment dengan flow async: `predictionStatus=PENDING` → loading → polling sampai COMPLETED/FAILED.
 
 ### Tasks
-| ID | Task | Complexity |
-|----|------|------------|
-| S1.1 | Refactor submit assessment pakai service | M |
-| S1.2 | Buat pending/loading prediction UI | M |
-| S1.3 | Implement React Query polling sampai final | M |
-| S1.4 | Ubah navigation bawa `assessmentId` bukan seluruh DTO | M |
-| S1.5 | Invalidate children/detail setelah completed | S |
-| S1.6 | Tambah mock async PENDING → COMPLETED/FAILED | M |
-| S1.7 | Tambah error/retry state untuk polling timeout | M |
+| ID | Task | Complexity | Status |
+|----|------|------------|--------|
+| S1.1 | Refactor submit assessment pakai service | M | ✅ |
+| S1.2 | Buat pending/loading prediction UI | M | ✅ |
+| S1.3 | Implement React Query polling sampai final | M | ✅ |
+| S1.4 | Ubah navigation bawa `assessmentId` bukan seluruh DTO | M | ✅ |
+| S1.5 | Invalidate children/detail setelah completed | S | ✅ |
+| S1.6 | Tambah mock async PENDING → COMPLETED/FAILED | M | ✅ |
+| S1.7 | Tambah error/retry state untuk polling timeout | M | ✅ |
 
 **Dependensi:** S0.1, S0.2, S0.3
 
 ---
 
-## Sprint 2 — WHO Growth Chart Proper
+## Sprint 2 — WHO Growth Chart Proper & Edit Child (SELESAI)
 
 ### Tujuan
 Ganti hardcoded chart data dengan visualisasi berbasis data assessment nyata & z-score dari backend.
 
 ### Tasks
-| ID | Task | Complexity |
-|----|------|------------|
-| S2.1 | Tambah method list assessment by child di service | S |
-| S2.2 | Buat hook assessment history | M |
-| S2.3 | Refactor child growth tracker pakai API data | M |
-| S2.4 | Buat komponen GrowthChart | L |
-| S2.5 | Integrasikan chart di child detail | M |
-| S2.6 | State untuk < 2 titik data | S |
-| S2.7 | Audit teks klinis "berisiko" bukan "menderita" | S |
+| ID | Task | Complexity | Status |
+|----|------|------------|--------|
+| S2.1 | Tambah method list assessment by child di service | S | ✅ |
+| S2.2 | Buat hook assessment history | M | ✅ |
+| S2.3 | Refactor child growth tracker pakai API data | M | ✅ |
+| S2.4 | Buat komponen GrowthChart (Gifted Charts) | L | ✅ |
+| S2.5 | Integrasikan chart di child detail | M | ✅ |
+| S2.6 | State untuk < 2 titik data | S | ✅ |
+| S2.7 | Audit teks klinis "berisiko" bukan "menderita" | S | ✅ |
+| S2.8 | Buat screen & integrasi Edit Data Anak | M | ✅ |
 
 **Dependensi:** S0.1, endpoint `GET /api/assessments/child/{childId}`
 

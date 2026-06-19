@@ -1,12 +1,9 @@
-const timeFormatter = new Intl.DateTimeFormat("id-ID", {
-  hour: "2-digit",
-  minute: "2-digit",
-});
-
 export const formatTime = (isoString?: string): string => {
   try {
     const d = isoString ? new Date(isoString) : new Date();
-    return timeFormatter.format(d) + " WIB";
+    const h = d.getHours().toString().padStart(2, '0');
+    const m = d.getMinutes().toString().padStart(2, '0');
+    return `${h}:${m} WIB`;
   } catch {
     return "00:00 WIB";
   }

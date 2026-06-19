@@ -9,7 +9,6 @@ import { Card } from "@/components/ui/Card";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { DisclaimerText } from "@/features/assessment/components/DisclaimerText";
 import { useAssessment } from "@/features/assessment/hooks/useAssessment";
-import { usePrediction } from "@/features/assessment/hooks/usePrediction";
 import { CHILDREN_QUERY_KEY, childQueryKey } from "@/features/children/hooks/useChildren";
 
 const DIAGNOSIS_DETAILS = {
@@ -44,7 +43,7 @@ export const ResultsScreen = () => {
   const queryClient = useQueryClient();
 
   const { data: assessment, isLoading: isAssessmentLoading } = useAssessment(assessmentId ?? "");
-  const { data: prediction, isLoading: isPredictionLoading } = usePrediction(assessmentId ?? "");
+  const prediction = assessment?.prediction;
 
   // Invalidate children queries whenever a prediction shifts to COMPLETED
   useEffect(() => {
@@ -52,7 +51,7 @@ export const ResultsScreen = () => {
       void queryClient.invalidateQueries({ queryKey: CHILDREN_QUERY_KEY });
       void queryClient.invalidateQueries({ queryKey: childQueryKey(assessment.child.id) });
     }
-  }, [prediction?.predictionStatus, assessment?.child.id, queryClient]);
+  }, [prediction?.predictionStatus, assessment?.child?.id, queryClient]);
 
   const handleFinish = () => {
     router.dismissAll();
@@ -74,7 +73,7 @@ export const ResultsScreen = () => {
   }
 
   // Menunggu prediksi selesai (polling PENDING -> COMPLETED)
-  const isPending = isPredictionLoading || !prediction || prediction.predictionStatus === "PENDING";
+  const isPending = !prediction || prediction.predictionStatus === "PENDING";
 
   if (isPending) {
     return (

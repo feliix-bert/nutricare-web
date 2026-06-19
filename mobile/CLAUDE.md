@@ -1,4 +1,6 @@
-# AGENTS.md — Tumbuh Sehat Mobile (TumbuhSehat)
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 > Dokumen master untuk AI agent yang bekerja di `mobile/`. Tidak perlu membaca `docx/*` global — semua konteks penting sudah dirangkum di sini.
 
@@ -10,7 +12,7 @@
 
 - **Tagline**: *"Data Gizi Anak: Teranalisis oleh AI, Dijamin oleh Blockchain."*
 - **Target**: Orang tua (PARENT), tenaga medis (MEDIC), kader posyandu (POSYANDU), admin (ADMIN)
-- **Backend**: Spring Boot (port 8085) — REST API
+- **Backend**: Spring Boot (port 8080) — REST API
 - **Mobile**: React Native / Expo SDK 54
 - **Blockchain**: Polygon (testnet Mumbai chainId=80001, mainnet chainId=137)
 - **AI**: Google Gemini (Flash + Pro Vision)
@@ -122,11 +124,11 @@ src/
 
 ---
 
-## 5. API ENDPOINTS (Spring Boot — Port 8085)
+## 5. API ENDPOINTS (Spring Boot — Port 8080)
 
 ### Base URL
 ```
-DEV:  http://localhost:8085
+DEV:  http://localhost:8080
 PROD: https://api.stunting-ai.com
 ```
 Env: `EXPO_PUBLIC_API_URL`
@@ -353,7 +355,7 @@ Set `USE_MOCK = false` di `services/mock.ts`. Service akan otomatis pakai `apiCl
 ## 9. AXIOS CLIENT (`services/api.ts`)
 
 ```typescript
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8085'
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8080'
 apiClient = axios.create({ baseURL: BASE_URL, timeout: 15000 })
 ```
 - **Request interceptor**: Attach `Authorization: Bearer <accessToken>` dari authStore
@@ -488,7 +490,7 @@ Di `ConsultScreen.tsx` ada banner warning sticky di bawah header:
 
 | Variable | Default | Keterangan |
 |----------|---------|------------|
-| `EXPO_PUBLIC_API_URL` | `http://localhost:8085` | Base URL Spring Boot |
+| `EXPO_PUBLIC_API_URL` | `http://localhost:8080` | Base URL Spring Boot |
 | `EXPO_PUBLIC_APP_NAME` | `Tumbuh Sehat` | Nama app |
 | `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` | — | Untuk fitur faskes (future) |
 | `EXPO_PUBLIC_PROJECT_ID` | — | Expo push notification (future) |

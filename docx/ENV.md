@@ -16,7 +16,7 @@ File: `application.properties` atau `application-prod.properties` di Spring Boot
 ```properties
 # ─── Server ───────────────────────────────────────────────
 spring.application.name=stunting-backend
-server.port=8085
+server.port=8080
 
 # ─── Database (Supabase PostgreSQL) ───────────────────────
 spring.datasource.url=jdbc:postgresql://db.[project-ref].supabase.co:5432/postgres
@@ -100,7 +100,7 @@ File: `.env.local`
 
 ```env
 # ─── API ──────────────────────────────────────────────────
-NEXT_PUBLIC_API_URL=http://localhost:8085
+NEXT_PUBLIC_API_URL=http://localhost:8080
 # Production: https://api.stunting-ai.com
 
 # ─── App ──────────────────────────────────────────────────
@@ -132,9 +132,9 @@ File: `.env` (dengan library `react-native-dotenv` atau `expo-constants`)
 
 ```env
 # ─── API ──────────────────────────────────────────────────
-EXPO_PUBLIC_API_URL=http://localhost:8085
+EXPO_PUBLIC_API_URL=http://localhost:8080
 # Production: https://api.stunting-ai.com
-# Untuk testing di device fisik: gunakan IP lokal, misal http://192.168.1.x:8085
+# Untuk testing di device fisik: gunakan IP lokal, misal http://192.168.1.x:8080
 
 EXPO_PUBLIC_APP_NAME=Stunting AI
 
@@ -172,9 +172,9 @@ EXPO_PUBLIC_SENTRY_DSN=your-sentry-dsn
 | `pinata.api-key`                  | Server  | 🟡 Batasi | API key Pinata (rate limit by IP)                    |
 | `pinata.secret-key`               | Server  | 🔴 Ya     | Secret key Pinata                                    |
 | `SENTRY_AUTH_TOKEN`               | Web     | 🔴 Ya     | Upload source maps                                   |
-| `NEXT_PUBLIC_API_URL`             | Web     | 🟡 Aman   | URL publik API (port 8085)                           |
+| `NEXT_PUBLIC_API_URL`             | Web     | 🟡 Aman   | URL publik API (port 8080)                           |
 | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Web     | 🟡 Batasi | Batasi di Google Console                             |
-| `EXPO_PUBLIC_API_URL`             | Mobile  | 🟡 Aman   | URL publik API (port 8085)                           |
+| `EXPO_PUBLIC_API_URL`             | Mobile  | 🟡 Aman   | URL publik API (port 8080)                           |
 | `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` | Mobile  | 🟡 Batasi | Batasi di Google Console                             |
 
 ---

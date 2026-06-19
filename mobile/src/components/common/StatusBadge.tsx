@@ -32,4 +32,6 @@ const StatusBadge = React.memo(({ status }: StatusBadgeProps) => {
   );
 });
 
+StatusBadge.displayName = 'StatusBadge';
+
 export { StatusBadge };

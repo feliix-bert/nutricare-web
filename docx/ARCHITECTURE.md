@@ -29,7 +29,7 @@ Platform ini terdiri dari **3 service utama** yang berkomunikasi via REST API, d
 │                                                                               │
 │   ┌───────────────────────────────────────────────────────────────────────┐  │
 │   │                     Spring Boot (REST API)                            │  │
-│   │                     Port: 8080                                        │  │
+│   │                     Port: 8080 (application.properties)               │  │
 │   │                                                                       │  │
 │   │   ┌─────────────┐  ┌──────────────┐  ┌─────────────────────────┐    │  │
 │   │   │  Controller │  │   Service    │  │     Repository (JPA)    │    │  │
@@ -907,9 +907,9 @@ Authorization: Bearer <accessToken>
 ### Base URL
 | Environment | URL |
 |-------------|-----|
-| Development (server) | `http://localhost:8080` |
-| Development (web) | `http://localhost:3000` |
-| Development (mobile device fisik) | `http://192.168.x.x:8080` |
+| Server | `http://localhost:8080` |
+| Web | `http://localhost:3000` |
+| Mobile (device fisik) | `http://192.168.x.x:8080` |
 | Production API | Dikonfigurasi via `NEXT_PUBLIC_API_URL` / `EXPO_PUBLIC_API_URL` |
 
 ### Token Refresh Strategy (Client Side)

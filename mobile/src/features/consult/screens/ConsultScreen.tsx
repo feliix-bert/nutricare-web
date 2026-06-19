@@ -106,6 +106,7 @@ export const ConsultScreen = () => {
 
   const renderMessageItem = useCallback(
     ({ item }: { item: Message }) => <MessageItem item={item} />,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
 
@@ -131,6 +132,8 @@ export const ConsultScreen = () => {
       </View>
     );
   });
+
+  MessageItem.displayName = "MessageItem";
 
   return (
     <SafeAreaView className="flex-1 bg-background">

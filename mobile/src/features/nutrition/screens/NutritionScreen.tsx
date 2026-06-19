@@ -91,6 +91,8 @@ export const NutritionScreen = () => {
     </View>
   ));
 
+  LogItem.displayName = "LogItem";
+
   return (
     <SafeAreaView className="flex-1 bg-background">
       {/* Top AppBar */}

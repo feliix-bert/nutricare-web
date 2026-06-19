@@ -89,9 +89,11 @@ export const VaultScreen = () => {
     );
   });
 
+  RecordCard.displayName = "RecordCard";
+
   const renderItem = useCallback(
     ({ item }: { item: BlockchainRecord }) => <RecordCard record={item} />,
-    []
+    [expandedId]
   );
 
   return (

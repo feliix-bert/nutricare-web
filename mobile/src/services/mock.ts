@@ -2,6 +2,7 @@ import { randomHex } from '@/utils/random';
 import type { AuthResponse, User } from '@/features/auth/types/auth.types';
 import type { Child } from '@/features/children/types/child.types';
 import type { AssessmentResponseDTO, AssessmentRequestDTO } from '@/features/assessment/types/assessment.types';
+import type { NutritionLog, NutritionUploadRequest } from '@/features/nutrition/types/nutrition.types';
 
 export const USE_MOCK = true;
 
@@ -133,6 +134,39 @@ let mockAssessments: AssessmentResponseDTO[] = [
   },
 ];
 
+let mockNutritionLogs: NutritionLog[] = [
+  {
+    id: 'log_001',
+    childId: 'child_001',
+    photoUrl: 'https://images.unsplash.com/photo-1547058886-f685c2c77d5b?q=80&w=240&auto=format&fit=crop',
+    foodDetected: ['Bubur Beras Merah', 'Hati Ayam'],
+    portionEstimate: 'Porsi Sedang (~150g)',
+    calories: 120,
+    protein: 4.5,
+    fat: 3.2,
+    carbs: 20.0,
+    fiber: 1.5,
+    adequacyNote: 'Cukup untuk makan pagi',
+    mpasiRecommendation: 'Tambahkan sayur hijau di menu berikutnya',
+    createdAt: '2026-06-08T08:30:00Z',
+  },
+  {
+    id: 'log_002',
+    childId: 'child_001',
+    photoUrl: 'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?q=80&w=240&auto=format&fit=crop',
+    foodDetected: ['Potongan Pepaya'],
+    portionEstimate: 'Porsi Kecil (~50g)',
+    calories: 45,
+    protein: 0.5,
+    fat: 0.1,
+    carbs: 11.0,
+    fiber: 1.8,
+    adequacyNote: 'Selingan buah yang baik',
+    mpasiRecommendation: 'Lanjutkan pemberian buah segar',
+    createdAt: '2026-06-08T10:45:00Z',
+  },
+];
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -169,6 +203,49 @@ export const buildMockAuthResponse = (user: User): AuthResponse => ({
 
 export const getMockAssessments = () => [...mockAssessments];
 
+export const getMockNutritionLogs = () => [...mockNutritionLogs];
+
+export const addMockNutritionLog = (req: NutritionUploadRequest): NutritionLog => {
+  const samples = [
+    {
+      foodDetected: ['Nasi Tim Ayam', 'Brokoli'],
+      portionEstimate: 'Porsi Sedang (~160g)',
+      calories: 185,
+      protein: 8.4,
+      fat: 4.2,
+      carbs: 28.0,
+      fiber: 2.4,
+      adequacyNote: 'Baik sebagai menu makan utama dengan protein hewani.',
+      mpasiRecommendation: 'Tambahkan buah lunak sebagai selingan setelah 2 jam.',
+    },
+    {
+      foodDetected: ['Puree Alpukat', 'Pisang'],
+      portionEstimate: 'Porsi Kecil (~90g)',
+      calories: 132,
+      protein: 1.6,
+      fat: 8.9,
+      carbs: 13.4,
+      fiber: 3.1,
+      adequacyNote: 'Cukup sebagai selingan padat energi.',
+      mpasiRecommendation: 'Lengkapi dengan lauk tinggi zat besi pada makan utama.',
+    },
+  ];
+  const sample = samples[mockNutritionLogs.length % samples.length];
+  const newLog: NutritionLog = {
+    ...sample,
+    id: `log_${Date.now()}`,
+    childId: req.childId,
+    photoUrl: req.photo.uri,
+    createdAt: new Date().toISOString(),
+  };
+  mockNutritionLogs = [newLog, ...mockNutritionLogs];
+  return newLog;
+};
+
+export const removeMockNutritionLog = (id: string) => {
+  mockNutritionLogs = mockNutritionLogs.filter((log) => log.id !== id);
+};
+
 export const addMockAssessment = (req: AssessmentRequestDTO): AssessmentResponseDTO => {
   const child = mockChildren.find((c) => c.id === req.childId);
   const childName = child ? child.name : 'Anak Tiruan';
@@ -201,42 +278,75 @@ export const addMockAssessment = (req: AssessmentRequestDTO): AssessmentResponse
     createdAt: new Date().toISOString(),
     prediction: {
       id: predId,
-      status,
-      predictionStatus: 'COMPLETED',
-      zscoreWa: status === 'NORMAL' ? -0.2 : status === 'AT_RISK' ? -1.8 : status === 'STUNTED' ? -2.5 : -3.2,
-      zscoreHa: status === 'NORMAL' ? -0.4 : status === 'AT_RISK' ? -2.2 : status === 'STUNTED' ? -2.8 : -3.6,
-      zscoreWh: status === 'NORMAL' ? -0.1 : status === 'AT_RISK' ? -1.1 : status === 'STUNTED' ? -1.9 : -2.4,
-      riskLevel,
-      summary: `Hasil skrining tiruan menunjukkan anak tergolong ${status}.`,
-      recommendations: [
-        'Konsultasikan dengan dokter spesialis anak terdekat.',
-        'Pastikan pemenuhan gizi protein hewani harian.',
-        'Pantau lingkar kepala dan panjang badan setiap bulan.',
-      ],
-      nextAssessmentDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      disclaimer: 'Hasil ini bersifat skrining awal dan bukan diagnosis medis. Konsultasikan dengan dokter atau tenaga kesehatan.',
+      status: 'NORMAL', // Will be updated later
+      predictionStatus: 'PENDING',
+      zscoreWa: 0,
+      zscoreHa: 0,
+      zscoreWh: 0,
+      riskLevel: 0,
+      summary: '',
+      recommendations: [],
+      nextAssessmentDate: '',
+      disclaimer: '',
     },
     blockchain: {
       id: anchorId,
-      anchored: true,
-      recordHash: txHash,
-      txHash: txHash,
-      blockNumber: 1206000 + Math.floor(Math.random() * 5000),
-      anchorStatus: 'CONFIRMED',
-      explorerUrl: `https://polygonscan.com/tx/${txHash}`,
-      verifyUrl: `/api/blockchain/verify/${assessmentId}`,
+      anchored: false,
+      recordHash: '',
+      txHash: '',
+      blockNumber: 0,
+      anchorStatus: 'PENDING',
+      explorerUrl: '',
+      verifyUrl: '',
     },
   };
 
   mockAssessments.push(newAssessment);
 
-  // Update latest child prediction status
-  updateMockChild(req.childId, {
-    latestPrediction: {
-      status,
-      createdAt: newAssessment.createdAt,
-    },
-  });
+  // Simulate background processing for Prediction (takes 4 seconds)
+  setTimeout(() => {
+    const idx = mockAssessments.findIndex((a) => a.id === assessmentId);
+    if (idx !== -1) {
+      mockAssessments[idx] = {
+        ...mockAssessments[idx],
+        prediction: {
+          id: predId,
+          status,
+          predictionStatus: 'COMPLETED',
+          zscoreWa: status === 'NORMAL' ? -0.2 : status === 'AT_RISK' ? -1.8 : status === 'STUNTED' ? -2.5 : -3.2,
+          zscoreHa: status === 'NORMAL' ? -0.4 : status === 'AT_RISK' ? -2.2 : status === 'STUNTED' ? -2.8 : -3.6,
+          zscoreWh: status === 'NORMAL' ? -0.1 : status === 'AT_RISK' ? -1.1 : status === 'STUNTED' ? -1.9 : -2.4,
+          riskLevel,
+          summary: `Hasil skrining tiruan menunjukkan anak tergolong ${status}.`,
+          recommendations: [
+            'Konsultasikan dengan dokter spesialis anak terdekat.',
+            'Pastikan pemenuhan gizi protein hewani harian.',
+            'Pantau lingkar kepala dan panjang badan setiap bulan.',
+          ],
+          nextAssessmentDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          disclaimer: 'Hasil ini bersifat skrining awal dan bukan diagnosis medis. Konsultasikan dengan dokter atau tenaga kesehatan.',
+        },
+        blockchain: {
+          id: anchorId,
+          anchored: true,
+          recordHash: txHash,
+          txHash: txHash,
+          blockNumber: 1206000 + Math.floor(Math.random() * 5000),
+          anchorStatus: 'CONFIRMED',
+          explorerUrl: `https://polygonscan.com/tx/${txHash}`,
+          verifyUrl: `/api/blockchain/verify/${assessmentId}`,
+        },
+      };
+
+      // Update latest child prediction status only after completion
+      updateMockChild(req.childId, {
+        latestPrediction: {
+          status,
+          createdAt: mockAssessments[idx].createdAt,
+        },
+      });
+    }
+  }, 4000);
 
   return newAssessment;
 };

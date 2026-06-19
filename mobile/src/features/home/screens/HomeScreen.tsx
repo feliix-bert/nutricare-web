@@ -21,6 +21,8 @@ const MiniBarChart = React.memo(({ color }: { color: string }) => (
   </View>
 ));
 
+MiniBarChart.displayName = 'MiniBarChart';
+
 const ChildPill = React.memo(
   ({
     child,
@@ -47,6 +49,8 @@ const ChildPill = React.memo(
   )
 );
 
+ChildPill.displayName = 'ChildPill';
+
 const NutritionColumn = React.memo(
   ({ label, value, percentage, color }: { label: string; value: string; percentage: number; color: string }) => (
     <View className="items-center flex-1">
@@ -58,6 +62,8 @@ const NutritionColumn = React.memo(
     </View>
   )
 );
+
+NutritionColumn.displayName = 'NutritionColumn';
 
 export const HomeScreen = () => {
   const { data, isLoading } = useChildrenList();

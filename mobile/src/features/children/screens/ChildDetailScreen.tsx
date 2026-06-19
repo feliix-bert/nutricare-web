@@ -86,7 +86,7 @@ export const ChildDetailScreen = () => {
         <View className="gap-1.5 mt-2">
           <Text className="text-[26px] font-extrabold text-on-surface tracking-tight">Growth Tracker</Text>
           <Text className="text-sm text-outline font-medium leading-5">
-            Monitoring your baby's development against WHO standards.
+            Monitoring your baby’s development against WHO standards.
           </Text>
         </View>
 

@@ -1,20 +1,19 @@
-import React, { useState } from "react";
-import { Pressable, ScrollView, Text, View, ActivityIndicator } from "react-native";
+import React from "react";
+import { Pressable, ScrollView, Text, View, ActivityIndicator, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { useChild } from "@/features/children/hooks/useChildren";
-import { useVaultStore } from "@/stores/vaultStore";
 import { useAssessmentFormStore } from "@/stores/assessmentFormStore";
-import { addMockAssessment } from "@/services/mock";
+import { useCreateAssessment } from "@/features/assessment/hooks/useAssessment";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Button } from "@/components/ui/Button";
 import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
-import { Card, CardContent } from "@/components/ui/Card";
+import { Card } from "@/components/ui/Card";
 
 export const ReviewScreen = () => {
   const { childId } = useLocalSearchParams<{ childId: string }>();
   const { data: child, isLoading } = useChild(childId ?? "");
-  const addRecord = useVaultStore((s) => s.addRecord);
+  const { mutateAsync: createAssessment, isPending } = useCreateAssessment();
 
   const {
     weight,
@@ -27,8 +26,6 @@ export const ReviewScreen = () => {
     resetForm,
   } = useAssessmentFormStore();
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
   if (isLoading) return <LoadingOverlay />;
   if (!child) return null;
 
@@ -39,9 +36,8 @@ export const ReviewScreen = () => {
   const freqNum = parseInt(mealFreq || "3", 10);
 
   const handleConfirmSubmit = async () => {
-    setIsSubmitting(true);
-    setTimeout(() => {
-      const resDto = addMockAssessment({
+    try {
+      const resDto = await createAssessment({
         childId: child.id,
         weight: wNum,
         height: hNum,
@@ -52,40 +48,20 @@ export const ReviewScreen = () => {
         illnessHistory: illnessHistory,
       });
 
-      // 2. Add record to blockchain vault store for user dashboard log
-      addRecord({
-        childId: child.id,
-        childName: child.name,
-        weight: wNum,
-        height: hNum,
-        ageMonths: child.ageMonths,
-        status: resDto.prediction.status,
-      });
-
-      // 3. Reset store data
+      // Reset store data
       resetForm();
-      setIsSubmitting(false);
 
-      // 4. Navigate to results page with full prediction DTO params
+      // Navigate to results page with assessmentId for polling
       router.push({
         pathname: `/(app)/children/${child.id}/assessment/results`,
         params: {
-          status: resDto.prediction.status,
-          weight: String(wNum),
-          height: String(hNum),
-          headCircumference: String(hcNum),
-          txHash: resDto.blockchain.txHash,
-          blockNumber: String(resDto.blockchain.blockNumber),
-          zscoreWa: String(resDto.prediction.zscoreWa),
-          zscoreHa: String(resDto.prediction.zscoreHa),
-          zscoreWh: String(resDto.prediction.zscoreWh),
-          summary: resDto.prediction.summary,
-          recommendations: JSON.stringify(resDto.prediction.recommendations),
-          nextAssessmentDate: resDto.prediction.nextAssessmentDate,
-          disclaimer: resDto.prediction.disclaimer,
+          assessmentId: resDto.id,
         },
       } as any);
-    }, 1800);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? 'Gagal mengirim assessment. Coba lagi.';
+      Alert.alert('Gagal', msg);
+    }
   };
 
   return (
@@ -103,12 +79,12 @@ export const ReviewScreen = () => {
         </Text>
       </View>
 
-      {isSubmitting ? (
+      {isPending ? (
         <View className="flex-1 items-center justify-center px-8 gap-4">
           <ActivityIndicator size="large" color="#3e646a" />
-          <Text className="font-bold text-on-surface text-base">Menulis Blok ke GiziChain...</Text>
+          <Text className="font-bold text-on-surface text-base">Mengirim Data...</Text>
           <Text className="text-xs text-outline text-center">
-            Memverifikasi tanda tangan kriptografi ECDSA (secp256k1) dan menyebarkan transaksi ke ledger.
+            Memulai enkripsi ukuran antropometri dan mencatat hash di GiziChain Vault.
           </Text>
         </View>
       ) : (

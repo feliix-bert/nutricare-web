@@ -1,12 +1,16 @@
-import React from "react";
-import { ScrollView, Text, View } from "react-native";
+import React, { useEffect } from "react";
+import { ScrollView, Text, View, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { Button } from "@/components/ui/Button";
-import { Card, CardContent } from "@/components/ui/Card";
+import { Card } from "@/components/ui/Card";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { DisclaimerText } from "@/features/assessment/components/DisclaimerText";
+import { useAssessment } from "@/features/assessment/hooks/useAssessment";
+import { usePrediction } from "@/features/assessment/hooks/usePrediction";
+import { CHILDREN_QUERY_KEY, childQueryKey } from "@/features/children/hooks/useChildren";
 
 const DIAGNOSIS_DETAILS = {
   NORMAL: {
@@ -36,49 +40,19 @@ const DIAGNOSIS_DETAILS = {
 };
 
 export const ResultsScreen = () => {
-  const {
-    status,
-    weight,
-    height,
-    headCircumference,
-    txHash,
-    blockNumber,
-    zscoreWa,
-    zscoreHa,
-    zscoreWh,
-    summary,
-    recommendations,
-    nextAssessmentDate,
-  } = useLocalSearchParams<{
-    status: "NORMAL" | "AT_RISK" | "STUNTED" | "SEVERELY_STUNTED";
-    weight: string;
-    height: string;
-    headCircumference: string;
-    txHash: string;
-    blockNumber: string;
-    zscoreWa: string;
-    zscoreHa: string;
-    zscoreWh: string;
-    summary: string;
-    recommendations: string;
-    nextAssessmentDate: string;
-  }>();
+  const { assessmentId } = useLocalSearchParams<{ assessmentId: string }>();
+  const queryClient = useQueryClient();
 
-  const activeStatus = status ?? "NORMAL";
-  const details = DIAGNOSIS_DETAILS[activeStatus];
+  const { data: assessment, isLoading: isAssessmentLoading } = useAssessment(assessmentId ?? "");
+  const { data: prediction, isLoading: isPredictionLoading } = usePrediction(assessmentId ?? "");
 
-  // Parse recommendations safely
-  let parsedRecs: string[] = [];
-  try {
-    if (recommendations) {
-      parsedRecs = JSON.parse(recommendations);
+  // Invalidate children queries whenever a prediction shifts to COMPLETED
+  useEffect(() => {
+    if (prediction?.predictionStatus === "COMPLETED" && assessment?.child.id) {
+      void queryClient.invalidateQueries({ queryKey: CHILDREN_QUERY_KEY });
+      void queryClient.invalidateQueries({ queryKey: childQueryKey(assessment.child.id) });
     }
-  } catch {
-    parsedRecs = [
-      "Konsultasikan dengan dokter spesialis anak terdekat.",
-      "Pastikan pemenuhan gizi protein hewani harian.",
-    ];
-  }
+  }, [prediction?.predictionStatus, assessment?.child.id, queryClient]);
 
   const handleFinish = () => {
     router.dismissAll();
@@ -89,6 +63,45 @@ export const ResultsScreen = () => {
     router.dismissAll();
     router.replace("/(app)/(tabs)/consult" as any);
   };
+
+  if (isAssessmentLoading || !assessment) {
+    return (
+      <SafeAreaView className="flex-1 bg-background justify-center items-center gap-4">
+        <ActivityIndicator size="large" color="#3e646a" />
+        <Text className="font-bold text-outline">Memuat data assessment...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  // Menunggu prediksi selesai (polling PENDING -> COMPLETED)
+  const isPending = isPredictionLoading || !prediction || prediction.predictionStatus === "PENDING";
+
+  if (isPending) {
+    return (
+      <SafeAreaView className="flex-1 bg-background">
+        <View className="px-container-padding py-4 border-b border-surface-container bg-surface-lowest items-center">
+          <Text className="font-bold text-lg text-primary">Analisis AI Gemini</Text>
+        </View>
+        <View className="flex-1 items-center justify-center px-8 gap-5">
+          <View className="w-20 h-20 rounded-full bg-primary-light items-center justify-center mb-2">
+            <ActivityIndicator size="large" color="#3e646a" />
+          </View>
+          <Text className="font-extrabold text-on-surface text-xl text-center tracking-tight">Memproses Data Antropometri...</Text>
+          <Text className="text-sm text-outline font-medium text-center leading-5 px-4">
+            Gemini AI sedang menghitung z-score WHO dan merumuskan rekomendasi nutrisi untuk {assessment.child.name}.
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const activeStatus = prediction.status ?? "NORMAL";
+  const details = DIAGNOSIS_DETAILS[activeStatus];
+
+  const parsedRecs = prediction.recommendations || [
+    "Konsultasikan dengan dokter spesialis anak terdekat.",
+    "Pastikan pemenuhan gizi protein hewani harian.",
+  ];
 
   return (
     <SafeAreaView className="flex-1 bg-background">
@@ -110,22 +123,22 @@ export const ResultsScreen = () => {
           <Text className="font-bold text-xs text-outline uppercase tracking-wider">Metrik Tumbuh Kembang (WHO Z-Score)</Text>
           <Card className="p-4 gap-4">
             <Text className="text-xs text-on-surface leading-5 font-semibold">
-              {summary || "Status gizi dianalisis berdasarkan kurva standar pertumbuhan anak WHO."}
+              {prediction.summary || "Status gizi dianalisis berdasarkan kurva standar pertumbuhan anak WHO."}
             </Text>
             <View className="flex-row justify-between pt-2 border-t border-surface-container">
               <View className="items-center flex-1">
                 <Text className="text-[10px] text-outline font-bold">Berat/Umur (WAZ)</Text>
-                <Text className="font-extrabold text-on-surface text-sm mt-1">{zscoreWa || "-0.0"} SD</Text>
+                <Text className="font-extrabold text-on-surface text-sm mt-1">{prediction.zscoreWa || "-0.0"} SD</Text>
               </View>
               <View className="w-px h-8 bg-surface-container" />
               <View className="items-center flex-1">
                 <Text className="text-[10px] text-outline font-bold">Tinggi/Umur (HAZ)</Text>
-                <Text className="font-extrabold text-on-surface text-sm mt-1">{zscoreHa || "-0.0"} SD</Text>
+                <Text className="font-extrabold text-on-surface text-sm mt-1">{prediction.zscoreHa || "-0.0"} SD</Text>
               </View>
               <View className="w-px h-8 bg-surface-container" />
               <View className="items-center flex-1">
                 <Text className="text-[10px] text-outline font-bold">Berat/Tinggi (WHZ)</Text>
-                <Text className="font-extrabold text-on-surface text-sm mt-1">{zscoreWh || "-0.0"} SD</Text>
+                <Text className="font-extrabold text-on-surface text-sm mt-1">{prediction.zscoreWh || "-0.0"} SD</Text>
               </View>
             </View>
           </Card>
@@ -138,17 +151,17 @@ export const ResultsScreen = () => {
             <View className="flex-row justify-between items-center p-4">
               <View className="items-center flex-1">
                 <Text className="text-[10px] text-outline font-medium">Berat Badan</Text>
-                <Text className="font-bold text-on-surface text-xs mt-0.5">{weight} kg</Text>
+                <Text className="font-bold text-on-surface text-xs mt-0.5">{assessment.weight} kg</Text>
               </View>
               <View className="w-px h-6 bg-surface-container" />
               <View className="items-center flex-1">
                 <Text className="text-[10px] text-outline font-medium">Tinggi Badan</Text>
-                <Text className="font-bold text-on-surface text-xs mt-0.5">{height} cm</Text>
+                <Text className="font-bold text-on-surface text-xs mt-0.5">{assessment.height} cm</Text>
               </View>
               <View className="w-px h-6 bg-surface-container" />
               <View className="items-center flex-1">
                 <Text className="text-[10px] text-outline font-medium">Lingkar Kepala</Text>
-                <Text className="font-bold text-on-surface text-xs mt-0.5">{headCircumference || "45.0"} cm</Text>
+                <Text className="font-bold text-on-surface text-xs mt-0.5">{assessment.headCircumference || "45.0"} cm</Text>
               </View>
             </View>
           </Card>
@@ -166,7 +179,7 @@ export const ResultsScreen = () => {
             ))}
             <View className="mt-2 pt-3 border-t border-surface-container flex-row justify-between items-center">
               <Text className="text-[10px] text-outline font-medium">Jadwal Pemeriksaan Berikutnya</Text>
-              <Text className="text-xs font-bold text-primary">{nextAssessmentDate || "-"}</Text>
+              <Text className="text-xs font-bold text-primary">{prediction.nextAssessmentDate || "-"}</Text>
             </View>
           </Card>
         </View>
@@ -184,12 +197,12 @@ export const ResultsScreen = () => {
             </View>
             <View className="flex-row justify-between">
               <Text className="text-xs text-outline font-medium">Block Number</Text>
-              <Text className="text-xs font-bold text-on-surface">{blockNumber || "1206148"}</Text>
+              <Text className="text-xs font-bold text-on-surface">{assessment.blockchain.blockNumber || "1206148"}</Text>
             </View>
             <View className="flex-row justify-between">
               <Text className="text-xs text-outline font-medium">TX Hash</Text>
               <Text className="text-xs font-mono text-on-surface text-right max-w-[200px]" numberOfLines={1} ellipsizeMode="middle">
-                {txHash || "0xabc123...def789"}
+                {assessment.blockchain.txHash || "0xabc123...def789"}
               </Text>
             </View>
           </Card>

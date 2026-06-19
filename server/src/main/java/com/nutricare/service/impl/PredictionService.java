@@ -10,15 +10,11 @@ import com.nutricare.domain.enums.PredictionStatus;
 import com.nutricare.repository.PredictionRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 
 /**
  * PredictionService — BE-303
@@ -34,14 +30,8 @@ import java.util.Map;
 public class PredictionService {
 
     private final PredictionRepository predictionRepository;
-    private final WebClient webClient;
+    private final GeminiService geminiService;
     private final ObjectMapper objectMapper;
-
-    @Value("${gemini.api.key}")
-    private String geminiApiKey;
-
-    @Value("${gemini.api.url}")
-    private String geminiApiUrl;
 
     /**
      * Panggil Gemini secara async — tidak memblokir response ke client.
@@ -127,35 +117,10 @@ public class PredictionService {
     }
 
     /**
-     * Panggil Gemini API.
+     * Panggil Gemini API melalui GeminiService.
      */
     private String callGemini(String prompt) {
-        Map<String, Object> requestBody = Map.of(
-            "contents", List.of(
-                Map.of("parts", List.of(Map.of("text", prompt)))
-            ),
-            "generationConfig", Map.of(
-                "temperature", 0.3,
-                "maxOutputTokens", 1024
-            )
-        );
-
-        String response = webClient.post()
-            .uri(geminiApiUrl + "?key=" + geminiApiKey)
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(requestBody)
-            .retrieve()
-            .bodyToMono(String.class)
-            .block();
-
-        try {
-            JsonNode root = objectMapper.readTree(response);
-            return root.path("candidates").get(0)
-                .path("content").path("parts").get(0)
-                .path("text").asText();
-        } catch (Exception e) {
-            throw new RuntimeException("Gagal parse Gemini response: " + e.getMessage());
-        }
+        return geminiService.callText(prompt);
     }
 
     /**
@@ -164,7 +129,7 @@ public class PredictionService {
     private void parseAndUpdatePrediction(Prediction prediction, String geminiResponse) {
         try {
             String cleanJson = geminiResponse
-                .replace("```json", "").replace("```", "").trim();
+                .replaceAll("(?s)^.*?(\\{.*\\}).*$", "$1").trim();
 
             JsonNode parsed = objectMapper.readTree(cleanJson);
 

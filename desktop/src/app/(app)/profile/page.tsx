@@ -46,7 +46,7 @@ export default function ProfilePage() {
 
   return (
     <PageShell title="Profil" subtitle="Kelola akun dan preferensi Anda">
-      <div className="max-w-3xl mx-auto flex flex-col gap-6">
+      <div className="max-w-4xl mx-auto flex flex-col gap-6">
 
         {/* ── Hero Profile Card ── */}
         <motion.div
@@ -100,7 +100,7 @@ export default function ProfilePage() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.15 }}
-          className="grid grid-cols-3 gap-4"
+          className="grid grid-cols-3 gap-2 sm:gap-4"
         >
           {STATS.map((stat, i) => {
             const Icon = stat.icon;
@@ -115,8 +115,8 @@ export default function ProfilePage() {
                 <div className={`w-9 h-9 rounded-xl ${stat.bg} flex items-center justify-center mx-auto mb-2.5 transition-transform duration-300 group-hover:scale-110`}>
                   <Icon size={16} className={stat.color} />
                 </div>
-                <p className={`text-xl font-extrabold ${stat.color} mb-0.5`}>{stat.value}</p>
-                <p className="text-xs text-on-surface-variant font-medium">{stat.label}</p>
+                <p className={`text-lg sm:text-xl font-extrabold ${stat.color} mb-0.5`}>{stat.value}</p>
+                <p className="text-[10px] sm:text-xs text-on-surface-variant font-medium">{stat.label}</p>
               </motion.div>
             );
           })}

@@ -144,7 +144,8 @@ export default function ConsultPage() {
 
   return (
     <PageShell flush>
-      <div className="flex flex-col h-[100dvh] lg:h-auto lg:min-h-[calc(100vh-6rem)] lg:max-w-4xl lg:mx-auto lg:my-8 lg:rounded-[2.5rem] lg:shadow-elevated lg:border lg:border-outline-variant/10 bg-surface-warm overflow-hidden relative">
+      <div className="flex items-center justify-center min-h-[100dvh] lg:min-h-[calc(100vh-2rem)] lg:py-8">
+      <div className="flex flex-col w-full h-[100dvh] lg:h-[85vh] lg:max-w-4xl lg:rounded-[2.5rem] lg:shadow-elevated lg:border lg:border-outline-variant/10 bg-surface-warm overflow-hidden relative">
         
         {/* ── Header ── */}
         <div className="flex items-center justify-between px-5 py-3.5 bg-surface-warm border-b border-outline-variant/10 z-20 flex-shrink-0">
@@ -228,6 +229,7 @@ export default function ConsultPage() {
           
         </div>
         
+      </div>
       </div>
     </PageShell>
   );

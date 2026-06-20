@@ -136,6 +136,17 @@ export default function ProfilePage() {
                 );
               })}
             </div>
+
+            {/* ── Logout ── */}
+            <div className="mt-6 flex">
+              <button
+                onClick={handleLogout}
+                className="group flex flex-1 items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-danger-light/30 border border-danger/10 text-danger font-semibold hover:bg-danger hover:text-white hover:border-danger transition-all duration-300 shadow-sm"
+              >
+                <LogOut size={18} strokeWidth={2.5} className="group-hover:-translate-x-1 transition-transform" />
+                Keluar dari Akun
+              </button>
+            </div>
           </motion.div>
 
           {/* Settings */}
@@ -169,22 +180,6 @@ export default function ProfilePage() {
             </div>
           </motion.div>
         </div>
-
-        {/* ── Logout ── */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="mt-4 flex justify-center md:justify-start"
-        >
-          <button
-            onClick={handleLogout}
-            className="group flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-danger-light/30 border border-danger/10 text-danger font-semibold hover:bg-danger hover:text-white hover:border-danger transition-all duration-300 shadow-sm w-full md:w-auto"
-          >
-            <LogOut size={18} strokeWidth={2.5} className="group-hover:-translate-x-1 transition-transform" />
-            Keluar dari Akun
-          </button>
-        </motion.div>
       </div>
     </PageShell>
   );

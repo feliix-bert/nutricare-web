@@ -47,7 +47,6 @@ export default function ProfilePage() {
   return (
     <PageShell title="Profil" subtitle="Kelola akun dan preferensi Anda">
       <div className="max-w-4xl mx-auto flex flex-col gap-8 pb-12">
-
         {/* ── Hero Profile Section ── */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -88,7 +87,7 @@ export default function ProfilePage() {
           {STATS.map((stat, i) => {
             const Icon = stat.icon;
             return (
-              <div
+              <motion.div
                 key={stat.label}
                 className="p-4 md:p-5 rounded-2xl bg-white border border-outline-variant/10 shadow-sm text-center flex flex-col items-center"
               >
@@ -97,7 +96,7 @@ export default function ProfilePage() {
                 </div>
                 <p className="text-xl md:text-2xl font-bold text-on-surface mb-1">{stat.value}</p>
                 <p className="text-[11px] md:text-xs text-on-surface-variant font-medium">{stat.label}</p>
-              </div>
+              </motion.div>
             );
           })}
         </motion.div>

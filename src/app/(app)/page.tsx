@@ -147,11 +147,11 @@ export default function HomePage() {
               </div>
 
               <div className="flex items-center gap-2">
-                {/* Search — desktop only */}
+                {/* Search */}
                 <button
                   id="home-search-btn"
                   aria-label="Cari"
-                  className="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-full bg-white border border-outline-variant/12 shadow-sm text-on-surface-variant/60 hover:border-primary/20 hover:text-on-surface-variant transition-all duration-200 text-sm"
+                  className="flex items-center gap-2 px-3 py-2 sm:px-3.5 sm:py-2 rounded-full bg-white border border-outline-variant/12 shadow-sm text-on-surface-variant/60 hover:border-primary/20 hover:text-on-surface-variant transition-all duration-200 text-sm"
                 >
                   <Search size={14} />
                   <span className="hidden md:inline font-medium">Cari...</span>

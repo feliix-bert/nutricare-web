@@ -168,7 +168,7 @@ export default function NewChildPage() {
                 <Button 
                   type="submit" 
                   className="w-full h-[3.5rem] text-[1.05rem] font-extrabold rounded-[1.25rem] shadow-[0_8px_24px_rgba(45,138,126,0.25)] hover:shadow-[0_12px_28px_rgba(45,138,126,0.35)] transition-all"
-                  loading={createChild.isPending}
+                  isLoading={createChild.isPending}
                 >
                   Simpan Profil
                 </Button>

@@ -232,9 +232,10 @@ export default function ConsultPage() {
 
   const [selectedPredictionId, setSelectedPredictionId] = useState<string | null>(null);
   const [inputText, setInputText] = useState("");
-  const [localMessages, setLocalMessages] = useState<Array<{ id: string; role: "user" | "assistant"; content: string; timestamp: string }>>([]);
+  const [localMessages, setLocalMessages] = useState<{ id: string; role: "user" | "assistant"; content: string; timestamp: string }[]>([]);
   const [sendError, setSendError] = useState<string | null>(null);
   const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null);
+  const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -246,12 +247,14 @@ export default function ConsultPage() {
   // Sinkronisasi localMessages dengan history dari server/mock
   useEffect(() => {
     if (historyData?.messages) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocalMessages(historyData.messages);
     }
   }, [historyData]);
 
   // Reset state saat pindah anak
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLocalMessages([]);
     setSendError(null);
     setLastFailedMessage(null);
@@ -318,8 +321,6 @@ export default function ConsultPage() {
     },
     [selectedPredictionId, context, sendMutation],
   );
-
-  const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
 
   // Quick prompts default (berubah setelah AI menjawab)
   const quickPrompts =

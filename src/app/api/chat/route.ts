@@ -4,12 +4,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import type { ChatRouteRequest, ChatRouteResponse } from '@/features/consult/types/consult.types';
 
 // ---------------------------------------------------------------------------
-// Inisialisasi Gemini
-// ---------------------------------------------------------------------------
-
-const apiKey = process.env.GEMINI_API_KEY;
-
-// ---------------------------------------------------------------------------
 // Helper: bangun system prompt sesuai CONTEXT.md
 // ---------------------------------------------------------------------------
 
@@ -99,6 +93,8 @@ function buildSuggestedQuestions(status: string): string[] {
 // ---------------------------------------------------------------------------
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  const apiKey = process.env.GEMINI_API_KEY;
+
   if (!apiKey) {
     return NextResponse.json(
       { error: 'Konfigurasi AI tidak tersedia. Hubungi administrator.' },

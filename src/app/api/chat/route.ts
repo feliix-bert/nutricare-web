@@ -93,7 +93,7 @@ function buildSuggestedQuestions(status: string): string[] {
 // ---------------------------------------------------------------------------
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
 
   if (!apiKey) {
     return NextResponse.json(
@@ -131,7 +131,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-1.5-flash',
       systemInstruction: buildSystemPrompt(context),
     });
 
@@ -156,10 +156,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     };
 
     return NextResponse.json(responseBody, { status: 200 });
-  } catch (err: unknown) {
+  } catch (err: any) {
     console.error('[ChatRoute] Gemini error:', err);
     return NextResponse.json(
-      { error: 'Layanan AI sedang tidak tersedia. Silakan coba beberapa saat lagi.' },
+      { error: `Layanan AI sedang tidak tersedia. Info (debug): ${err?.message || 'Unknown error'}` },
       { status: 503 },
     );
   }

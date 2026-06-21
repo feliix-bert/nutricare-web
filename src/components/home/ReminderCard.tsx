@@ -2,7 +2,7 @@
 
 import { motion } from "motion/react";
 import { Card } from "@/components/ui/Card";
-import { Calendar, Syringe, ClipboardList, ShieldAlert, Check } from "lucide-react";
+import { Calendar, Syringe, ClipboardList, ShieldAlert, ArrowRight } from "lucide-react";
 
 type ReminderItem = {
   id: string;
@@ -52,60 +52,73 @@ const REMINDERS: ReminderItem[] = [
     date: "Bulan lalu",
     status: "Diproses",
     icon: ShieldAlert,
-    iconBg: "bg-gray-50",
+    iconBg: "bg-gray-100",
     iconColor: "text-gray-500",
   },
 ];
 
 export function ReminderCard() {
   return (
-    <Card variant="default" className="p-0 h-full overflow-hidden flex flex-col bg-white">
+    <Card variant="default" className="p-6 h-full flex flex-col bg-white">
       {/* Header */}
-      <div className="px-5 pt-6 pb-2">
-        <div className="flex items-center justify-between">
-          <h3 className="text-[17px] font-bold text-on-surface">Pengingat</h3>
-          <button className="text-[13px] font-bold text-on-surface-variant hover:text-primary transition-colors">
-            Lihat semua
-          </button>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h3 className="text-[18px] font-bold text-on-surface leading-tight">Pengingat</h3>
+          <p className="text-[13px] text-on-surface-variant mt-1">Tugas & jadwal yang perlu perhatian</p>
         </div>
+        <button className="group flex items-center gap-1.5 text-[13px] font-semibold text-primary hover:opacity-80 transition-opacity">
+          Lihat semua
+          <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+        </button>
       </div>
 
       {/* Reminder list */}
-      <div className="p-3 flex-1 flex flex-col gap-1">
+      <div className="flex-1 flex flex-col">
         {REMINDERS.map((reminder, index) => {
           const Icon = reminder.icon;
+          const isLast = index === REMINDERS.length - 1;
+          
           return (
             <motion.div
               key={reminder.id}
-              initial={{ opacity: 0, y: 8 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35, delay: index * 0.05 }}
-              className="group flex items-center justify-between p-3 rounded-2xl hover:bg-surface-warm cursor-pointer transition-colors"
+              transition={{ duration: 0.3, delay: index * 0.1 }}
+              className={`group flex items-center justify-between py-4 ${!isLast ? 'border-b border-gray-100' : ''}`}
             >
-              <div className="flex items-center gap-3.5">
+              <div className="flex items-center gap-4">
                 <div
-                  className={`w-[42px] h-[42px] rounded-full flex items-center justify-center flex-shrink-0 ${reminder.iconBg} ${reminder.iconColor}`}
+                  className={`w-[46px] h-[46px] rounded-2xl flex items-center justify-center flex-shrink-0 ${reminder.iconBg} ${reminder.iconColor}`}
                 >
-                  <Icon size={18} strokeWidth={2} />
+                  <Icon size={22} strokeWidth={2} />
                 </div>
                 <div>
-                  <p className="text-[14px] font-bold text-on-surface leading-tight mb-0.5 group-hover:text-primary transition-colors">
+                  <p className="text-[15px] font-bold text-on-surface mb-0.5 group-hover:text-primary transition-colors">
                     {reminder.title}
                   </p>
-                  <p className="text-[12px] font-medium text-on-surface-variant">
-                    {reminder.date}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-[13px] font-medium text-on-surface-variant">
+                      {reminder.date}
+                    </p>
+                    {reminder.status === "Mendesak" && (
+                      <>
+                        <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                        <span className="text-[12px] font-bold text-red-500">Mendesak</span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <div className="text-right">
-                <p className={`text-[13px] font-bold ${reminder.actionText ? 'text-on-surface' : 'text-on-surface-variant'}`}>
-                  {reminder.actionText || reminder.status}
-                </p>
-                {reminder.actionText && (
-                  <p className="text-[11px] font-medium text-on-surface-variant mt-0.5">
+              <div className="text-right ml-4 flex-shrink-0">
+                {reminder.actionText ? (
+                  <button className="px-4 py-2 rounded-xl text-[13px] font-bold border border-gray-200 text-on-surface hover:border-primary hover:text-primary hover:bg-primary/5 transition-all bg-white shadow-sm">
+                    {reminder.actionText}
+                  </button>
+                ) : (
+                  <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-[12px] font-bold bg-gray-50 text-on-surface-variant border border-gray-100">
                     {reminder.status}
-                  </p>
+                  </span>
                 )}
               </div>
             </motion.div>

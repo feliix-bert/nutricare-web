@@ -156,10 +156,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     };
 
     return NextResponse.json(responseBody, { status: 200 });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('[ChatRoute] Gemini error:', err);
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
     return NextResponse.json(
-      { error: `Layanan AI sedang tidak tersedia. Info (debug): ${err?.message || 'Unknown error'}` },
+      { error: `Layanan AI sedang tidak tersedia. Info (debug): ${errorMessage}` },
       { status: 503 },
     );
   }

@@ -1,6 +1,6 @@
 # server.md — Progress & Roadmap Backend
 
-## Status Keseluruhan: ~65%
+## Status Keseluruhan: ~80%
 
 ---
 
@@ -9,7 +9,7 @@
 | Komponen | Detail |
 |----------|--------|
 | **Entities (9/9)** | User, Child, Assessment, Prediction, NutritionLog, ChatSession, RefreshToken, BlockchainAnchor, VerifiableCredential |
-| **Repositories (9/9)** | User, Child, Assessment, Prediction, NutritionLog, ChatSession, RefreshToken, BlockchainAnchor, VerifiableCredential + custom query methods |
+| **Repositories (12/9)** | User, Child, Assessment, Prediction, NutritionLog, ChatSession, RefreshToken, BlockchainAnchor, VerifiableCredential + custom query methods (findBySearch, countByStatus, dll.) |
 | **Enums (6/6)** | Role, Gender, StuntStatus, PredictionStatus, AnchorStatus, VcType |
 | **Security/JWT** | JwtUtil (generate/validate/parse), JwtAuthFilter, UserDetailsServiceImpl |
 | **Config (2 file)** | SecurityConfig (filter chain, CORS, method security), AppConfig (WebClient, ObjectMapper) |
@@ -28,8 +28,9 @@
 | **BlockchainService** | SHA-256 hash anchoring + verifikasi, simulation flag `app.blockchain.simulation` (default true) |
 | **VcService** | Issue/revoke/verify W3C Verifiable Credential + QR code, simulation flag |
 | **ReportService** | Generate PDF laporan anak dengan iText (data anak + riwayat assessment + prediksi) |
-| **Controllers (3/10)** | AuthController, ChildController, AssessmentController |
-| **DTO Request (10)** | RegisterRequest, LoginRequest, RefreshTokenRequest, ChildRequest, AssessmentRequest, NutritionRequest, ChatRequest, AnchorRequest, IssueVcRequest, RevokeVcRequest |
+| **AdminService** | Manajemen user (CRUD untuk MEDIC/ADMIN), statistik distribusi stunting |
+| **Controllers (8/10)** | AuthController, ChildController, AssessmentController, **NutritionController**, **ChatController**, **ReportController**, **MedicController**, **AdminController** |
+| **DTO Request (13)** | RegisterRequest, LoginRequest, RefreshTokenRequest, ChildRequest, AssessmentRequest, NutritionRequest, ChatRequest, AnchorRequest, IssueVcRequest, RevokeVcRequest, **CreateUserRequest**, **UpdateUserStatusRequest**, **UpdateUserRoleRequest** |
 | **DTO Response (12)** | AuthResponse, ChildResponse, AssessmentResponse, PredictionResponse, NutritionResponse, ChatResponse, AnchorResponse, VerifyResponse, IssueVcResponse, VcDetailResponse, VerifyQrResponse, PageResponse\<T\> |
 | **pom.xml** | Spring Boot 3.2.0, JDK 17, Web3j 4.12.0, iText 8.0.4 |
 | **AssessmentRepository** | Tambah query `findByChildIdAndDateRange` untuk ReportService |
@@ -38,17 +39,12 @@
 
 ## ❌ Belum Selesai / Missing
 
-### 🔴 Missing Controllers (7 file)
+### 🔴 Missing Controllers (2 file)
 
 | Controller | Endpoints |
 |------------|-----------|
-| `NutritionController` | POST /api/nutrition, GET /api/nutrition/child/{childId} |
-| `ChatController` | POST /api/chat, GET /api/chat/{predictionId} |
 | `BlockchainController` | POST /api/blockchain/anchor, GET /api/blockchain/verify/{assessmentId} |
 | `VcController` | POST /api/vc/issue, GET /api/vc/{vcId}, POST /api/vc/revoke, GET /api/verify |
-| `ReportController` | GET /api/reports/child/{childId} |
-| `MedicController` | GET /api/medic/patients, GET /api/medic/patients/{childId}/summary |
-| `AdminController` | GET/POST /api/admin/users, PATCH /api/admin/users/{id}/status & role, GET /api/admin/stats |
 
 ### 🟡 Lainnya
 
@@ -75,17 +71,17 @@ src/
 │   │   ├── NutricareApplication.java
 │   │   ├── config/                        # 2 file
 │   │   ├── security/                      # 3 file
-│   │   ├── controller/                    # 3 file
+│   │   ├── controller/                    # 8 file (baru: Nutrition, Chat, Report, Medic, Admin)
 │   │   ├── domain/
 │   │   │   ├── entity/                    # 9 entities
 │   │   │   └── enums/                     # 6 enums
 │   │   ├── dto/
-│   │   │   ├── request/                   # 10 file (auth/3, child/1, assessment/1, nutrition/1, chat/1, blockchain/1, vc/2)
+│   │   │   ├── request/                   # 13 file (auth/3, child/1, assessment/1, nutrition/1, chat/1, blockchain/1, vc/2, admin/3 ✨)
 │   │   │   └── response/                  # 12 file (auth/1, child/1, assessment/1, prediction/1, nutrition/1, chat/1, blockchain/2, vc/3, page/1)
 │   │   ├── exception/                     # 7 file
-│   │   ├── repository/                    # 9 file
+│   │   ├── repository/                    # 9 file (dengan query tambahan)
 │   │   ├── service/
-│   │   │   └── impl/                      # 12 file (Auth, Child, Assessment, Prediction, Gemini, Storage, Nutrition, Chat, Ipfs, Blockchain, Vc, Report)
+│   │   │   └── impl/                      # 13 file (baru: AdminService ✨)
 │   │   └── util/                          # 2 file
 │   └── resources/
 │       └── application.properties         # ✅ DB, JWT, Gemini, Supabase, CORS, multipart, Polygon, Pinata, simulation
@@ -114,33 +110,36 @@ src/
 ✅ ReportService (PDF)
 ```
 
-### Sprint 3 ⬜ — Role-based API (Controllers)
+### Sprint 3 ✅ — Role-based API (Controllers)
 ```
-1. Bikin NutritionController
-2. Bikin ChatController
-3. Bikin ReportController
-4. Bikin MedicController
-5. Bikin AdminController
+✅ NutritionController — POST /api/nutrition + GET /api/nutrition/child/{childId}
+✅ ChatController — POST /api/chat + GET /api/chat/{predictionId}
+✅ ReportController — GET /api/reports/child/{childId}
+✅ MedicController — GET /api/medic/patients + GET /api/medic/patients/{childId}/summary
+✅ AdminController — GET/POST /api/admin/users, PATCH status & role, GET /api/admin/stats
+✅ AdminService — logic bisnis admin (create user, update status/role, stats)
+✅ 3 DTO baru — CreateUserRequest, UpdateUserStatusRequest, UpdateUserRoleRequest
+✅ Repository queries — ChildRepository.findBySearchWithParent, UserRepository.findBySearch/findByRole, PredictionRepository.countByStatus
 ```
 
 ### Sprint 4 ⬜ — Blockchain & VC (Controllers)
 ```
-6. Bikin BlockchainController
-7. Bikin VcController
+1. Bikin BlockchainController
+2. Bikin VcController
 ```
 
 ### Sprint 5 ⬜ — Implementasi Web3j Real
 ```
-8. Deploy smart contracts ke testnet (GiziChainRegistry + VCRegistry)
-9. Implementasi Web3j di BlockchainService (anchor + verify real)
-10. Implementasi Web3j di VcService (issue/revoke real)
-11. Set app.blockchain.simulation=false
+3. Deploy smart contracts ke testnet (GiziChainRegistry + VCRegistry)
+4. Implementasi Web3j di BlockchainService (anchor + verify real)
+5. Implementasi Web3j di VcService (issue/revoke real)
+6. Set app.blockchain.simulation=false
 ```
 
 ### Sprint 6 ⬜ — Testing
 ```
-12. Unit test service-service kritis
-13. Integration test controller
+7. Unit test service-service kritis
+8. Integration test controller
 ```
 
 ---
@@ -157,6 +156,7 @@ src/
 8. **AssessmentResponse.java tidak dipakai** — bisa dihapus atau diintegrasikan.
 9. **Services**: Semua service class langsung di `service/impl/` tanpa interface di `service/` root.
 10. **@Builder**: 7 dari 9 entity punya @Builder. ChatSession & NutritionLog belum ada @Builder.
+11. **Owner check pattern**: Controller menggunakan pola `user.getRole() == Role.PARENT ? user.getId() : …` untuk bypass ownership check bagi MEDIC/ADMIN. Diterapkan di ReportController dan ChildController.
 
 ---
 

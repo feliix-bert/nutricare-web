@@ -3,12 +3,17 @@ package com.nutricare.controller;
 import com.nutricare.domain.entity.User;
 import com.nutricare.domain.enums.Role;
 import com.nutricare.dto.request.child.ChildRequest;
+import com.nutricare.dto.response.PageResponse;
+import com.nutricare.dto.response.child.ChildDetailResponse;
 import com.nutricare.dto.response.child.ChildResponse;
-import com.nutricare.exception.ForbiddenException;
+import com.nutricare.exception.ResourceNotFoundException;
 import com.nutricare.repository.ChildRepository;
 import com.nutricare.service.impl.ChildService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -33,21 +38,45 @@ public class ChildController {
     private final ChildService childService;
     private final ChildRepository childRepository;
 
-    /**
+/**
      * GET /api/children
-     * PARENT → hanya anaknya sendiri
-     * MEDIC & ADMIN → semua anak
+     * PARENT → hanya anaknya sendiri (paginated)
+     * MEDIC & ADMIN → semua anak (paginated)
      */
     @GetMapping
-    public ResponseEntity<List<ChildResponse>> getChildren(@AuthenticationPrincipal User user) {
+    public ResponseEntity<PageResponse<ChildResponse>> getChildren(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @AuthenticationPrincipal User user) {
+
+        PageRequest pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+
         if (user.getRole() == Role.PARENT) {
-            return ResponseEntity.ok(childService.getChildren(user.getId()));
+            Page<ChildResponse> childPage = childService.getChildren(user.getId(), pageable);
+            PageResponse<ChildResponse> response = PageResponse.<ChildResponse>builder()
+                .data(childPage.getContent())
+                .page(childPage.getNumber())
+                .size(childPage.getSize())
+                .totalElements(childPage.getTotalElements())
+                .totalPages(childPage.getTotalPages())
+                .build();
+            return ResponseEntity.ok(response);
         }
-        // MEDIC & ADMIN — ambil semua anak
-        List<ChildResponse> all = childRepository.findAll().stream()
+
+        // MEDIC & ADMIN — ambil semua anak (paginated)
+        Page<com.nutricare.domain.entity.Child> childPage = childRepository.findAll(pageable);
+        List<ChildResponse> children = childPage.getContent().stream()
             .map(c -> childService.getChild(c.getId(), c.getUser().getId()))
             .collect(Collectors.toList());
-        return ResponseEntity.ok(all);
+
+        PageResponse<ChildResponse> response = PageResponse.<ChildResponse>builder()
+            .data(children)
+            .page(childPage.getNumber())
+            .size(childPage.getSize())
+            .totalElements(childPage.getTotalElements())
+            .totalPages(childPage.getTotalPages())
+            .build();
+        return ResponseEntity.ok(response);
     }
 
     /**
@@ -65,20 +94,23 @@ public class ChildController {
 
     /**
      * GET /api/children/{childId}
+     * Return detail anak termasuk riwayat assessment + prediksi.
      * PARENT → ownership check di service
      * MEDIC & ADMIN → bebas akses
      */
     @GetMapping("/{childId}")
-    public ResponseEntity<ChildResponse> getChild(
+    public ResponseEntity<ChildDetailResponse> getChild(
             @PathVariable String childId,
             @AuthenticationPrincipal User user) {
 
         if (user.getRole() == Role.PARENT) {
-            return ResponseEntity.ok(childService.getChild(childId, user.getId()));
+            return ResponseEntity.ok(childService.getChildDetail(childId, user.getId()));
         }
         // MEDIC & ADMIN: akses tanpa ownership check
-        return ResponseEntity.ok(childService.getChild(childId, childRepository.findById(childId)
-            .orElseThrow().getUser().getId()));
+        String ownerId = childRepository.findById(childId)
+            .orElseThrow(() -> new ResourceNotFoundException("Anak tidak ditemukan"))
+            .getUser().getId();
+        return ResponseEntity.ok(childService.getChildDetail(childId, ownerId));
     }
 
     /**

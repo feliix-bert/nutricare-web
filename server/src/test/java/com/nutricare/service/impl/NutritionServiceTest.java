@@ -3,6 +3,7 @@ package com.nutricare.service.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nutricare.TestDataFactory;
 import com.nutricare.domain.entity.Child;
+import com.nutricare.domain.enums.Role;
 import com.nutricare.domain.entity.NutritionLog;
 import com.nutricare.domain.entity.User;
 import com.nutricare.exception.ForbiddenException;
@@ -156,5 +157,54 @@ class NutritionServiceTest {
 
         assertThrows(ForbiddenException.class,
             () -> nutritionService.getNutritionHistory(child.getId(), other.getId(), pageable));
+    }
+
+    @Test
+    void deleteNutritionLog_shouldSucceed_forOwner() {
+        User parent = TestDataFactory.createParent();
+        Child child = TestDataFactory.createChild(parent);
+        NutritionLog log = TestDataFactory.createNutritionLog(child);
+
+        when(nutritionLogRepository.findById(log.getId())).thenReturn(Optional.of(log));
+
+        assertDoesNotThrow(() ->
+            nutritionService.deleteNutritionLog(log.getId(), parent.getId(), Role.PARENT));
+        verify(nutritionLogRepository).delete(log);
+    }
+
+    @Test
+    void deleteNutritionLog_shouldSucceed_forMedic() {
+        User parent = TestDataFactory.createParent();
+        User medic = TestDataFactory.createMedic();
+        Child child = TestDataFactory.createChild(parent);
+        NutritionLog log = TestDataFactory.createNutritionLog(child);
+
+        when(nutritionLogRepository.findById(log.getId())).thenReturn(Optional.of(log));
+
+        assertDoesNotThrow(() ->
+            nutritionService.deleteNutritionLog(log.getId(), medic.getId(), Role.MEDIC));
+        verify(nutritionLogRepository).delete(log);
+    }
+
+    @Test
+    void deleteNutritionLog_shouldThrow_whenNotOwner() {
+        User parent = TestDataFactory.createParent();
+        User other = TestDataFactory.createParent();
+        Child child = TestDataFactory.createChild(parent);
+        NutritionLog log = TestDataFactory.createNutritionLog(child);
+
+        when(nutritionLogRepository.findById(log.getId())).thenReturn(Optional.of(log));
+
+        assertThrows(ForbiddenException.class,
+            () -> nutritionService.deleteNutritionLog(log.getId(), other.getId(), Role.PARENT));
+        verify(nutritionLogRepository, never()).delete(any());
+    }
+
+    @Test
+    void deleteNutritionLog_shouldThrow_whenNotFound() {
+        when(nutritionLogRepository.findById("notfound")).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class,
+            () -> nutritionService.deleteNutritionLog("notfound", "user", Role.PARENT));
     }
 }

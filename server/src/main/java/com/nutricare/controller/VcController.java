@@ -5,6 +5,7 @@ import com.nutricare.dto.request.vc.IssueVcRequest;
 import com.nutricare.dto.request.vc.RevokeVcRequest;
 import com.nutricare.dto.response.vc.IssueVcResponse;
 import com.nutricare.dto.response.vc.VcDetailResponse;
+import com.nutricare.dto.response.vc.VcStatusResponse;
 import com.nutricare.dto.response.vc.VerifyQrResponse;
 import com.nutricare.service.impl.VcService;
 import jakarta.validation.Valid;
@@ -61,6 +62,18 @@ public class VcController {
     @GetMapping("/api/vc/{vcId}")
     public ResponseEntity<VcDetailResponse> getVc(@PathVariable String vcId) {
         return ResponseEntity.ok(vcService.getVc(vcId));
+    }
+
+    // ── GET /api/vc/child/{childId} ──────────────────────────────────────────────
+
+    /**
+     * GET /api/vc/child/{childId}
+     * Mendapatkan VC status untuk seorang anak (VC aktif terbaru).
+     * Endpoint publik — bisa diakses siapa saja.
+     */
+    @GetMapping("/api/vc/child/{childId}")
+    public ResponseEntity<VcStatusResponse> getVcByChild(@PathVariable String childId) {
+        return ResponseEntity.ok(vcService.getVcByChild(childId));
     }
 
     // ── POST /api/vc/revoke ────────────────────────────────────────────────

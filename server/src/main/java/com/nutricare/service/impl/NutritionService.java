@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nutricare.domain.entity.Child;
 import com.nutricare.domain.entity.NutritionLog;
 import com.nutricare.dto.response.nutrition.NutritionResponse;
+import com.nutricare.domain.enums.Role;
 import com.nutricare.exception.ForbiddenException;
 import com.nutricare.exception.ResourceNotFoundException;
 import com.nutricare.exception.StorageException;
@@ -109,6 +110,26 @@ public class NutritionService {
 
         return nutritionLogRepository.findByChildIdOrderByCreatedAtDesc(childId, pageable)
             .map(this::mapToResponse);
+    }
+
+    /**
+     * Menghapus log gizi.
+     * Ownership: PARENT hanya bisa hapus milik sendiri, MEDIC/ADMIN bisa semua.
+     *
+     * @param logId ID log gizi
+     * @param userId ID user yang meminta
+     * @param role Role user yang meminta
+     */
+    @Transactional
+    public void deleteNutritionLog(String logId, String userId, Role role) {
+        NutritionLog log = nutritionLogRepository.findById(logId)
+            .orElseThrow(() -> new ResourceNotFoundException("Log gizi tidak ditemukan"));
+
+        if (role == Role.PARENT && !log.getChild().getUser().getId().equals(userId)) {
+            throw new ForbiddenException("Anda tidak memiliki akses ke data ini");
+        }
+
+        nutritionLogRepository.delete(log);
     }
 
     /**

@@ -76,4 +76,22 @@ public class NutritionController {
         PageRequest pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         return ResponseEntity.ok(nutritionService.getNutritionHistory(childId, ownerId, pageable));
     }
+
+    /**
+     * DELETE /api/nutrition/{logId}
+     * Hapus log gizi tertentu.
+     * PARENT hanya bisa hapus milik sendiri, MEDIC/ADMIN bisa semua.
+     *
+     * @param logId ID log gizi
+     * @param user  user yang login
+     * @return 204 No Content
+     */
+    @DeleteMapping("/{logId}")
+    @PreAuthorize("hasRole('PARENT') or hasRole('MEDIC') or hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteNutritionLog(
+            @PathVariable String logId,
+            @AuthenticationPrincipal User user) {
+        nutritionService.deleteNutritionLog(logId, user.getId(), user.getRole());
+        return ResponseEntity.noContent().build();
+    }
 }

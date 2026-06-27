@@ -27,5 +27,6 @@ public class AuthResponse {
         private String email;
         private Role role;
         private Boolean isActive;
+        private String walletAddress;
     }
 }

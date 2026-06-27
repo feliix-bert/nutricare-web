@@ -129,6 +129,7 @@ public class AuthService {
             .email(user.getEmail())
             .role(user.getRole())
             .isActive(user.getIsActive())
+            .walletAddress(user.getWalletAddress())
             .build();
     }
 
@@ -158,6 +159,7 @@ public class AuthService {
                 .email(user.getEmail())
                 .role(user.getRole())
                 .isActive(user.getIsActive())
+                .walletAddress(user.getWalletAddress())
                 .build())
             .build();
     }

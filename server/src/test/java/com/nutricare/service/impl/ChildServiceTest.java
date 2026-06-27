@@ -6,7 +6,9 @@ import com.nutricare.domain.entity.User;
 import com.nutricare.dto.request.child.ChildRequest;
 import com.nutricare.exception.ForbiddenException;
 import com.nutricare.exception.ResourceNotFoundException;
+import com.nutricare.repository.AssessmentRepository;
 import com.nutricare.repository.ChildRepository;
+import com.nutricare.repository.PredictionRepository;
 import com.nutricare.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,12 +30,14 @@ class ChildServiceTest {
 
     @Mock private ChildRepository childRepository;
     @Mock private UserRepository userRepository;
+    @Mock private PredictionRepository predictionRepository;
+    @Mock private AssessmentRepository assessmentRepository;
 
     private ChildService childService;
 
     @BeforeEach
     void setUp() {
-        childService = new ChildService(childRepository, userRepository);
+        childService = new ChildService(childRepository, userRepository, predictionRepository, assessmentRepository);
     }
 
     @Test
@@ -115,6 +119,56 @@ class ChildServiceTest {
 
         assertEquals("Nama Baru", response.getName());
         assertEquals(com.nutricare.domain.enums.Gender.MALE, response.getGender());
+    }
+
+    @Test
+    void getChildren_withPagination_shouldReturn() {
+        User parent = TestDataFactory.createParent();
+        Child child = TestDataFactory.createChild(parent);
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 10);
+
+        when(childRepository.findByUserId(parent.getId(), pageable))
+            .thenReturn(new org.springframework.data.domain.PageImpl<>(java.util.List.of(child)));
+
+        var result = childService.getChildren(parent.getId(), pageable);
+
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+    }
+
+    @Test
+    void getChildDetail_shouldReturn_withAssessments() {
+        User parent = TestDataFactory.createParent();
+        Child child = TestDataFactory.createChild(parent);
+        com.nutricare.domain.entity.Assessment assessment = TestDataFactory.createAssessment(child);
+        var prediction = com.nutricare.domain.entity.Prediction.builder()
+            .id("pred1")
+            .assessment(assessment)
+            .status(com.nutricare.domain.enums.StuntStatus.NORMAL)
+            .predictionStatus(com.nutricare.domain.enums.PredictionStatus.COMPLETED)
+            .build();
+
+        when(childRepository.findById(child.getId())).thenReturn(java.util.Optional.of(child));
+        when(assessmentRepository.findByChildIdOrderByCreatedAtDesc(child.getId()))
+            .thenReturn(java.util.List.of(assessment));
+
+        var result = childService.getChildDetail(child.getId(), parent.getId());
+
+        assertNotNull(result);
+        assertEquals(child.getName(), result.getName());
+        assertFalse(result.getAssessments().isEmpty());
+    }
+
+    @Test
+    void getChildDetail_shouldThrow_whenNotOwner() {
+        User parent = TestDataFactory.createParent();
+        User other = TestDataFactory.createParent();
+        Child child = TestDataFactory.createChild(parent);
+
+        when(childRepository.findById(child.getId())).thenReturn(java.util.Optional.of(child));
+
+        assertThrows(ForbiddenException.class,
+            () -> childService.getChildDetail(child.getId(), other.getId()));
     }
 
     @Test

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nutricare.domain.entity.Child;
 import com.nutricare.domain.entity.User;
 import com.nutricare.domain.entity.VerifiableCredential;
+import com.nutricare.dto.response.vc.VcStatusResponse;
 import com.nutricare.domain.enums.VcType;
 import com.nutricare.dto.request.vc.IssueVcRequest;
 import com.nutricare.dto.request.vc.RevokeVcRequest;
@@ -218,6 +219,26 @@ public class VcService {
             log.error("Gagal verifikasi QR: {}", e.getMessage());
             throw new ResourceNotFoundException("QR payload tidak valid: " + e.getMessage());
         }
+    }
+
+    /**
+     * Mendapatkan VC status untuk seorang anak (VC aktif terbaru).
+     *
+     * @param childId ID anak
+     * @return status VC anak (bisa null jika tidak ada VC aktif)
+     */
+    public VcStatusResponse getVcByChild(String childId) {
+        List<VerifiableCredential> validVcs = verifiableCredentialRepository
+            .findValidByChildId(childId);
+
+        VcDetailResponse vcDetail = null;
+        if (!validVcs.isEmpty()) {
+            vcDetail = getVc(validVcs.get(0).getId());
+        }
+
+        return VcStatusResponse.builder()
+            .vc(vcDetail)
+            .build();
     }
 
     /**

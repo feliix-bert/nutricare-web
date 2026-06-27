@@ -2,7 +2,6 @@ package com.nutricare.repository;
 
 import com.nutricare.domain.entity.Prediction;
 import com.nutricare.domain.enums.PredictionStatus;
-import com.nutricare.domain.enums.StuntStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

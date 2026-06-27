@@ -1,6 +1,6 @@
 # server.md — Progress & Roadmap Backend
 
-## Status Keseluruhan: ~90%
+## Status Keseluruhan: ~95%
 
 ---
 
@@ -19,7 +19,7 @@
 | **AuthService** | register, login, refresh, logout, getMe — BCrypt + token rotation |
 | **ChildService** | CRUD lengkap + ownership validation |
 | **AssessmentService** | create assessment + @Async trigger prediksi, get by id, get by child (paginated), @Scheduled retry job |
-| **PredictionService** | Hitung z-score, build prompt, call Gemini via GeminiService, parse JSON response — refactored from hardcoded HTTP |
+| **PredictionService** | Hitung z-score, build prompt, call Gemini via GeminiService, parse JSON response |
 | **GeminiService** | Wrapper call Gemini API — `callText(prompt)` + `callVision(base64, prompt)`, konfigurasi URL terpisah text/vision |
 | **StorageService** | Upload file ke Supabase Storage via REST, delete, generate public URL |
 | **NutritionService** | Upload foto + Gemini Vision parallel (CompletableFuture), simpan NutritionLog, riwayat paginated |
@@ -29,18 +29,15 @@
 | **VcService** | Issue/revoke/verify W3C Verifiable Credential + QR code, simulation flag |
 | **ReportService** | Generate PDF laporan anak dengan iText (data anak + riwayat assessment + prediksi) |
 | **AdminService** | Manajemen user (CRUD untuk MEDIC/ADMIN), statistik distribusi stunting |
-| **Controllers (10/10)** | AuthController, ChildController, AssessmentController, **NutritionController**, **ChatController**, **ReportController**, **MedicController**, **AdminController**, **BlockchainController**, **VcController** |
-| **Unit Tests (74 test)** | **13 service test classes + 1 util test — 0 failures** |
-| **DTO Request (13)** | RegisterRequest, LoginRequest, RefreshTokenRequest, ChildRequest, AssessmentRequest, NutritionRequest, ChatRequest, AnchorRequest, IssueVcRequest, RevokeVcRequest, **CreateUserRequest**, **UpdateUserStatusRequest**, **UpdateUserRoleRequest** |
-| **DTO Response (12)** | AuthResponse, ChildResponse, AssessmentResponse, PredictionResponse, NutritionResponse, ChatResponse, AnchorResponse, VerifyResponse, IssueVcResponse, VcDetailResponse, VerifyQrResponse, PageResponse\<T\> |
+| **Controllers (10/10)** | AuthController, ChildController, AssessmentController, NutritionController, ChatController, ReportController, MedicController, AdminController, BlockchainController, VcController |
+| **Unit Tests (138 test — 0 failures)** | **13 service test + 10 controller test + 1 util + 1 app** — 0 failures, 0 errors |
+| **DTO Request (13)** | RegisterRequest, LoginRequest, RefreshTokenRequest, ChildRequest, AssessmentRequest, NutritionRequest, ChatRequest, AnchorRequest, IssueVcRequest, RevokeVcRequest, CreateUserRequest, UpdateUserStatusRequest, UpdateUserRoleRequest |
+| **DTO Response (12)** | AuthResponse, ChildResponse, AssessmentResponse, PredictionResponse, NutritionResponse, ChatResponse, AnchorResponse, VerifyResponse, IssueVcResponse, VcDetailResponse, VcStatusResponse, VerifyQrResponse, PageResponse\<T\> |
 | **pom.xml** | Spring Boot 3.2.0, JDK 17, Web3j 4.12.0, iText 8.0.4 |
-| **AssessmentRepository** | Tambah query `findByChildIdAndDateRange` untuk ReportService |
 
 ---
 
 ## ❌ Belum Selesai / Missing
-
-### 🔴 Missing Controllers ✅ Selesai Sprint 4
 
 ### 🟡 Lainnya
 
@@ -51,7 +48,6 @@
 | `application-prod.yml` | Belum dibuat |
 | `.env` template | Belum dibuat |
 | `db/migration/` | Tidak ada — pakai `ddl-auto=update` |
-| Tests | **74 test service & utility — 0 failures** (Auth, Child, Assessment, Prediction, Chat, Nutrition, Vc, Admin, Report, Gemini, Storage, Ipfs, ZScore) |
 | `PromptBuilder.java` | Tidak ada — prompt dibangun inline di PredictionService |
 | `VcException.java` | Disebut di ARCHITECTURE.md tapi belum dibuat |
 | Web3j real implementation | BlockchainService & VcService masih mode simulasi |
@@ -67,17 +63,17 @@ src/
 │   │   ├── NutricareApplication.java
 │   │   ├── config/                        # 2 file
 │   │   ├── security/                      # 3 file
-│   │   ├── controller/                    # 10 file (baru: Nutrition, Chat, Report, Medic, Admin, Blockchain, Vc)
+│   │   ├── controller/                    # 10 file
 │   │   ├── domain/
 │   │   │   ├── entity/                    # 9 entities
 │   │   │   └── enums/                     # 6 enums
 │   │   ├── dto/
-│   │   │   ├── request/                   # 13 file (auth/3, child/1, assessment/1, nutrition/1, chat/1, blockchain/1, vc/2, admin/3 ✨)
-│   │   │   └── response/                  # 12 file (auth/1, child/1, assessment/1, prediction/1, nutrition/1, chat/1, blockchain/2, vc/3, page/1)
+│   │   │   ├── request/                   # 13 file
+│   │   │   └── response/                  # 13 file
 │   │   ├── exception/                     # 7 file
-│   │   ├── repository/                    # 9 file (dengan query tambahan)
+│   │   ├── repository/                    # 9 file
 │   │   ├── service/
-│   │   │   └── impl/                      # 13 file (baru: AdminService ✨)
+│   │   │   └── impl/                      # 13 file
 │   │   └── util/                          # 2 file
 │   └── resources/
 │       └── application.properties         # ✅ DB, JWT, Gemini, Supabase, CORS, multipart, Polygon, Pinata, simulation
@@ -85,8 +81,17 @@ src/
     ├── java/com/nutricare/
     │   ├── NutricareApplicationTests.java
     │   ├── TestDataFactory.java
-    │   ├── config/
-    │   │   └── TestConfig.java
+    │   ├── controller/                # 10 test files ✅ BARU
+    │   │   ├── AdminControllerTest.java
+    │   │   ├── AssessmentControllerTest.java
+    │   │   ├── AuthControllerTest.java
+    │   │   ├── BlockchainControllerTest.java
+    │   │   ├── ChatControllerTest.java
+    │   │   ├── ChildControllerTest.java
+    │   │   ├── MedicControllerTest.java
+    │   │   ├── NutritionControllerTest.java
+    │   │   ├── ReportControllerTest.java
+    │   │   └── VcControllerTest.java
     │   ├── service/impl/              # 13 test files
     │   │   ├── AuthServiceTest.java
     │   │   ├── ChildServiceTest.java
@@ -109,7 +114,7 @@ src/
 
 ---
 
-## 📋 Urutan Pengerjaan
+## 📋 Riwayat Pengerjaan
 
 ### Sprint 1 ✅ — Fix Critical Errors
 ```
@@ -148,35 +153,51 @@ src/
 
 ### Sprint 5 ✅ — Service & Utility Unit Tests (74 test)
 ```
-✅ AuthServiceTest — 9 test (register, login, refresh, logout, getMe)
-✅ ChildServiceTest — 7 test (CRUD + ownership)
-✅ AssessmentServiceTest — 5 test (create, get, pagination + error cases)
-✅ PredictionServiceTest — 4 test (parse success, parse error, gemini error, skip not found)
-✅ ChatServiceTest — 7 test (sendMessage, getHistory + auth guards)
-✅ NutritionServiceTest — 6 test (analyze + file validation + history)
-✅ VcServiceTest — 8 test (issue, get, revoke, verify QR + error cases)
-✅ AdminServiceTest — 7 test (crud user, filter search, stats aggregation)
-✅ ReportServiceTest — 4 test (pdf generation + error cases)
-✅ GeminiServiceTest — 4 test (callText/callVision success + errors)
-✅ StorageServiceTest — 2 test (upload + error handling)
-✅ IpfsServiceTest — 2 test (upload + error handling)
-✅ ZScoreCalculatorTest — 9 test (all indicators + status determination)
+✅ AuthServiceTest — 9 test
+✅ ChildServiceTest — 7 test
+✅ AssessmentServiceTest — 5 test
+✅ PredictionServiceTest — 4 test
+✅ ChatServiceTest — 7 test
+✅ NutritionServiceTest — 6 test
+✅ VcServiceTest — 8 test
+✅ AdminServiceTest — 7 test
+✅ ReportServiceTest — 4 test
+✅ GeminiServiceTest — 4 test
+✅ StorageServiceTest — 2 test
+✅ IpfsServiceTest — 2 test
+✅ ZScoreCalculatorTest — 9 test
 ```
+
+### Sprint 5b ✅ — Controller Unit Tests (64 test)
+```
+✅ AdminControllerTest — 6 test
+✅ AssessmentControllerTest — 6 test
+✅ AuthControllerTest — 6 test
+✅ BlockchainControllerTest — 5 test
+✅ ChatControllerTest — 4 test
+✅ ChildControllerTest — 7 test
+✅ MedicControllerTest — 3 test
+✅ NutritionControllerTest — 5 test
+✅ ReportControllerTest — 2 test
+✅ VcControllerTest — 6 test
+```
+**Total: 138 test — 0 failures, 0 errors — BUILD SUCCESS**
 
 ### Sprint 6 ⬜ — Implementasi Web3j Real
 ```
-3. Deploy smart contracts ke testnet (GiziChainRegistry + VCRegistry)
-4. Implementasi Web3j di BlockchainService (anchor + verify real)
-5. Implementasi Web3j di VcService (issue/revoke real)
-6. Set app.blockchain.simulation=false
+1. Deploy smart contracts ke testnet (GiziChainRegistry + VCRegistry)
+2. Implementasi Web3j di BlockchainService (anchor + verify real)
+3. Implementasi Web3j di VcService (issue/revoke real)
+4. Set app.blockchain.simulation=false
 ```
 
-### Sprint 6 ⬜ — Implementasi Web3j Real & Controller Tests
+### Sprint 7 ⬜ — Agent Skills `.md` untuk Gemini AI
 ```
-3. Deploy smart contracts ke testnet (GiziChainRegistry + VCRegistry)
-4. Implementasi Web3j di BlockchainService (anchor + verify real)
-5. Implementasi Web3j di VcService (issue/revoke real)
-6. Integration test controller
+1. util/PromptLoader.java — load .md, strip YAML frontmatter
+2. resources/agents/prediction-agent.md — domain knowledge Z-Score
+3. resources/agents/chat-agent.md — domain knowledge chatbot
+4. resources/agents/nutrition-agent.md — domain knowledge gizi
+5-7. Refactor PredictionService, ChatService, NutritionService — inject PromptLoader
 ```
 
 ---
@@ -186,14 +207,14 @@ src/
 1. **JDK 17 required** — Java 24 tidak kompatibel dengan Lombok 1.18.30. Set `JAVA_HOME` ke JDK 17.
 2. **application.properties** — port 8080, DB Supabase, JWT, Gemini url-text & url-vision terpisah, Supabase, CORS, multipart, Polygon (placeholder `your-xxx`), Pinata (placeholder `your-xxx`), simulation flag.
 3. **Simulation mode** — `app.blockchain.simulation=true` (default). BlockchainService dan VcService generate fake txHash. Saat siap mainnet, set `false` dan implementasi Web3j.
-4. **PredictionService** — sudah refactored: call Gemini via `GeminiService.callText()`, JSON parsing pakai regex `(?s)^.*?(\\{.*\\}).*$`.
+4. **PredictionService** — call Gemini via `GeminiService.callText()`, JSON parsing pakai regex `(?s)^.*?(\\{.*\\}).*$`.
 5. **GeminiService** — dua URL terpisah: `gemini.api.url-text` (flash) dan `gemini.api.url-vision` (pro).
 6. **NutritionService** — parallelism via `CompletableFuture.allOf()` untuk upload storage + vision.
 7. **ZScoreCalculator simplified** — linear approximation, bukan full WHO 2006 reference tables.
 8. **AssessmentResponse.java tidak dipakai** — bisa dihapus atau diintegrasikan.
 9. **Services**: Semua service class langsung di `service/impl/` tanpa interface di `service/` root.
-10. **@Builder**: 7 dari 9 entity punya @Builder. ChatSession & NutritionLog belum ada @Builder.
-11. **Owner check pattern**: Controller menggunakan pola `user.getRole() == Role.PARENT ? user.getId() : …` untuk bypass ownership check bagi MEDIC/ADMIN. Diterapkan di ReportController dan ChildController.
+10. **Owner check pattern**: Controller menggunakan pola `user.getRole() == Role.PARENT ? user.getId() : …` untuk bypass ownership check bagi MEDIC/ADMIN.
+11. **Unit test controllers**: 10 controller test class + 13 service test class + 1 util test + 1 app test = 25 test class, **138 test — 0 failures**.
 
 ---
 
@@ -214,6 +235,7 @@ src/
 | Scheduling pool | size=2 |
 | Blockchain simulation | true |
 | Polygon chain | Mumbai testnet (chainId=80001) |
+| **Total unit tests** | **138 — 0 failures, 0 errors** |
 
 ---
 
@@ -311,10 +333,7 @@ Lalu domain knowledge asli dalam markdown: tabel WHO, kategori status gizi, form
 
 Setiap file 1 agent complete — domain knowledge inline, tidak pecah ke file referensi terpisah. Appendix References di akhir sebagai audit trail sumber asli.
 
----
-
 ##### `prediction-agent.md`
-Buat dengan struktur:
 - YAML frontmatter: name, description, model (gemini-1.5-flash)
 - ## Role — interpretasi Z-Score, bukan diagnosis
 - ## WHO Growth Standards 2006 — tabel TB/U, BB/U, BB/TB + kategori + interpretasi klinis + kombinasi status gizi
@@ -324,7 +343,6 @@ Buat dengan struktur:
 - ## References — WHO 2006, Kemenkes PMK No.2/2020
 
 ##### `chat-agent.md`
-Buat dengan struktur:
 - YAML frontmatter: name, description, model (gemini-1.5-flash)
 - ## Role — asisten konsultasi untuk orang tua
 - ## Domain Knowledge — 1000 HPK, intervensi spesifik & sensitif, tabel MPASI per usia, 4 bintang
@@ -333,7 +351,6 @@ Buat dengan struktur:
 - ## References — WHO Essential Nutrition Actions, IDAI Rekomendasi MPASI
 
 ##### `nutrition-agent.md`
-Buat dengan struktur:
 - YAML frontmatter: name, description, model (gemini-1.5-pro)
 - ## Role — ahli gizi analisis foto makanan
 - ## Standar Porsi MPASI — tabel per usia

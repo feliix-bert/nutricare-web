@@ -5,6 +5,7 @@ import com.nutricare.domain.enums.PredictionStatus;
 import com.nutricare.domain.enums.StuntStatus;
 import com.nutricare.dto.request.assessment.AssessmentRequest;
 import com.nutricare.dto.response.prediction.PredictionResponse;
+import com.nutricare.dto.response.PageResponse;
 import com.nutricare.exception.ForbiddenException;
 import com.nutricare.exception.ResourceNotFoundException;
 import com.nutricare.repository.*;
@@ -12,7 +13,6 @@ import com.nutricare.util.CuidGenerator;
 import com.nutricare.util.ZScoreCalculator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -118,17 +118,28 @@ public class AssessmentService {
 
     // ── BE-305: Get assessments by child ─────────────────────────────────────
 
-    public Page<PredictionResponse> getAssessmentsByChild(
+    public PageResponse<PredictionResponse> getAssessmentsByChild(
             String childId, String userId, Pageable pageable) {
 
         childRepository.findByIdAndUserId(childId, userId)
             .orElseThrow(() -> new ForbiddenException("Anak tidak ditemukan atau bukan milik Anda"));
 
-        return assessmentRepository.findByChildIdOrderByCreatedAtDesc(childId, pageable)
+        org.springframework.data.domain.Page<com.nutricare.domain.entity.Assessment> pageResult = assessmentRepository.findByChildIdOrderByCreatedAtDesc(childId, pageable);
+        
+        java.util.List<PredictionResponse> responses = pageResult.stream()
             .map(a -> {
                 Prediction p = predictionRepository.findByAssessmentId(a.getId()).orElse(null);
                 return p != null ? mapToResponse(p, a.getChild()) : null;
-            });
+            })
+            .toList();
+
+        return PageResponse.<PredictionResponse>builder()
+            .data(responses)
+            .page(pageResult.getNumber())
+            .size(pageResult.getSize())
+            .totalElements(pageResult.getTotalElements())
+            .totalPages(pageResult.getTotalPages())
+            .build();
     }
 
     // ── BE-306: Retry job untuk PENDING ──────────────────────────────────────
@@ -149,8 +160,6 @@ public class AssessmentService {
     // ── Helper ────────────────────────────────────────────────────────────────
 
     private PredictionResponse mapToResponse(Prediction prediction, Child child) {
-        // Ambil info blockchain jika ada
-        PredictionResponse.BlockchainInfo blockchainInfo = null;
         blockchainAnchorRepository.findByAssessmentId(prediction.getAssessment().getId())
             .ifPresent(anchor -> {});
 

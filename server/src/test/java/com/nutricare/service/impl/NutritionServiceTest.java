@@ -16,7 +16,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.mock.web.MockMultipartFile;
@@ -138,11 +137,10 @@ class NutritionServiceTest {
         when(nutritionLogRepository.findByChildIdOrderByCreatedAtDesc(child.getId(), pageable))
             .thenReturn(new PageImpl<>(List.of(log)));
 
-        Page<com.nutricare.dto.response.nutrition.NutritionResponse> result =
-            nutritionService.getNutritionHistory(child.getId(), parent.getId(), pageable);
+        var result = nutritionService.getNutritionHistory(child.getId(), parent.getId(), pageable);
 
         assertEquals(1, result.getTotalElements());
-        assertTrue(result.getContent().get(0).getFoodDetected().contains("Nasi"));
+        assertTrue(result.getData().get(0).getFoodDetected().contains("Nasi"));
     }
 
     @Test

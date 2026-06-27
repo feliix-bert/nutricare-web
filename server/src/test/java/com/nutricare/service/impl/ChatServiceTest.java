@@ -3,7 +3,6 @@ package com.nutricare.service.impl;
 import com.nutricare.TestDataFactory;
 import com.nutricare.domain.entity.*;
 import com.nutricare.domain.enums.PredictionStatus;
-import com.nutricare.dto.response.chat.ChatResponse;
 import com.nutricare.exception.ForbiddenException;
 import com.nutricare.exception.ResourceNotFoundException;
 import com.nutricare.repository.ChatSessionRepository;

@@ -3,6 +3,7 @@ package com.nutricare.exception;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -53,6 +54,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleForbidden(
             ForbiddenException ex, HttpServletRequest req) {
         return buildError(HttpStatus.FORBIDDEN, "FORBIDDEN", ex.getMessage(), req.getRequestURI());
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessDenied(
+            AccessDeniedException ex, HttpServletRequest req) {
+        return buildError(HttpStatus.FORBIDDEN, "ACCESS_DENIED", "Akses ditolak: role tidak sesuai.", req.getRequestURI());
     }
 
     @ExceptionHandler(GeminiException.class)

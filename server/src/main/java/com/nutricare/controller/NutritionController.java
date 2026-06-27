@@ -7,7 +7,6 @@ import com.nutricare.exception.ResourceNotFoundException;
 import com.nutricare.repository.ChildRepository;
 import com.nutricare.service.impl.NutritionService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -63,7 +62,7 @@ public class NutritionController {
      * @return halaman riwayat log gizi
      */
     @GetMapping("/child/{childId}")
-    public ResponseEntity<Page<NutritionResponse>> getNutritionHistory(
+    public ResponseEntity<com.nutricare.dto.response.PageResponse<NutritionResponse>> getNutritionHistory(
             @PathVariable String childId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,

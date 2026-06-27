@@ -5,7 +5,6 @@ import com.nutricare.exception.GeminiException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -43,7 +42,6 @@ class GeminiServiceTest {
     void callText_shouldThrowGeminiException_onNetworkError() {
         WebClient webClient = mock(WebClient.class);
         when(webClient.post()).thenThrow(new RuntimeException("Connection refused"));
-        Field:
         try {
             java.lang.reflect.Field f = GeminiService.class.getDeclaredField("webClient");
             f.setAccessible(true);
@@ -70,7 +68,6 @@ class GeminiServiceTest {
     void callText_shouldParseSuccessResponse() {
         String mockResponse = "{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Hasil analisis dari Gemini\"}]}}]}";
 
-        @SuppressWarnings("rawtypes")
         WebClient.RequestBodyUriSpec uriSpec = mock(WebClient.RequestBodyUriSpec.class);
         WebClient.RequestBodySpec bodySpec = mock(WebClient.RequestBodySpec.class);
         WebClient.RequestHeadersSpec headersSpec = mock(WebClient.RequestHeadersSpec.class);

@@ -6,7 +6,6 @@ import com.nutricare.domain.enums.PredictionStatus;
 import com.nutricare.domain.enums.StuntStatus;
 import com.nutricare.dto.request.assessment.AssessmentRequest;
 import com.nutricare.exception.ForbiddenException;
-import com.nutricare.exception.ResourceNotFoundException;
 import com.nutricare.repository.*;
 import com.nutricare.util.ZScoreCalculator;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,7 +13,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
@@ -136,10 +134,9 @@ class AssessmentServiceTest {
             .thenReturn(new PageImpl<>(List.of(assessment)));
         when(predictionRepository.findByAssessmentId(assessment.getId())).thenReturn(Optional.of(prediction));
 
-        Page<com.nutricare.dto.response.prediction.PredictionResponse> result =
-            assessmentService.getAssessmentsByChild(child.getId(), parent.getId(), pageable);
+        var result = assessmentService.getAssessmentsByChild(child.getId(), parent.getId(), pageable);
 
         assertEquals(1, result.getTotalElements());
-        assertEquals(StuntStatus.NORMAL, result.getContent().get(0).getStatus());
+        assertEquals(StuntStatus.NORMAL, result.getData().get(0).getStatus());
     }
 }

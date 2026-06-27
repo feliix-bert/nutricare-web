@@ -3,13 +3,12 @@ package com.nutricare.controller;
 import com.nutricare.domain.entity.User;
 import com.nutricare.domain.enums.Role;
 import com.nutricare.dto.request.assessment.AssessmentRequest;
+import com.nutricare.dto.response.PageResponse;
 import com.nutricare.dto.response.prediction.PredictionResponse;
 import com.nutricare.repository.AssessmentRepository;
-import com.nutricare.repository.PredictionRepository;
 import com.nutricare.service.impl.AssessmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -31,7 +30,6 @@ public class AssessmentController {
 
     private final AssessmentService assessmentService;
     private final AssessmentRepository assessmentRepository;
-    private final PredictionRepository predictionRepository;
 
     /**
      * POST /api/assessments
@@ -68,7 +66,7 @@ public class AssessmentController {
      * Riwayat assessment satu anak dengan pagination.
      */
     @GetMapping("/child/{childId}")
-    public ResponseEntity<Page<PredictionResponse>> getAssessmentsByChild(
+    public ResponseEntity<PageResponse<PredictionResponse>> getAssessmentsByChild(
             @PathVariable String childId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,

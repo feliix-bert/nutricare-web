@@ -5,7 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { useChild } from "@/features/children/hooks/useChildren";
 import { useVaultStore } from "@/stores/vaultStore";
 import { useAssessmentFormStore } from "@/stores/assessmentFormStore";
-import { addMockAssessment } from "@/services/mock";
+import { assessmentService } from "@/features/assessment/services/assessment.service";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ArrowLeft } from "lucide-react";
@@ -47,8 +47,8 @@ export default function ReviewPage() {
 
   const handleConfirmSubmit = async () => {
     setIsSubmitting(true);
-    setTimeout(() => {
-      const resDto = addMockAssessment({
+    try {
+      const resDto = await assessmentService.createAssessment({
         childId: child.id,
         weight: wNum,
         height: hNum,
@@ -66,7 +66,7 @@ export default function ReviewPage() {
         weight: wNum,
         height: hNum,
         ageMonths: child.ageMonths,
-        status: resDto.prediction.status,
+        status: resDto.prediction?.status || 'PENDING',
       });
 
       // 3. Reset store data
@@ -74,25 +74,28 @@ export default function ReviewPage() {
       setIsSubmitting(false);
 
       // 4. Navigate to results page with full prediction DTO params
-      // Map params to query string
       const searchParams = new URLSearchParams({
-        status: resDto.prediction.status,
+        predictionId: resDto.prediction?.id || '',
+        status: resDto.prediction?.status || 'PENDING',
         weight: String(wNum),
         height: String(hNum),
         headCircumference: String(hcNum),
-        txHash: resDto.blockchain.txHash,
-        blockNumber: String(resDto.blockchain.blockNumber),
-        zscoreWa: String(resDto.prediction.zscoreWa),
-        zscoreHa: String(resDto.prediction.zscoreHa),
-        zscoreWh: String(resDto.prediction.zscoreWh),
-        summary: resDto.prediction.summary,
-        recommendations: JSON.stringify(resDto.prediction.recommendations),
-        nextAssessmentDate: resDto.prediction.nextAssessmentDate,
-        disclaimer: resDto.prediction.disclaimer,
+        txHash: resDto.blockchain?.txHash || '',
+        blockNumber: String(resDto.blockchain?.blockNumber || 0),
+        zscoreWa: String(resDto.prediction?.zscoreWa || 0),
+        zscoreHa: String(resDto.prediction?.zscoreHa || 0),
+        zscoreWh: String(resDto.prediction?.zscoreWh || 0),
+        summary: resDto.prediction?.summary || 'Menunggu hasil',
+        recommendations: JSON.stringify(resDto.prediction?.recommendations || []),
+        nextAssessmentDate: resDto.prediction?.nextAssessmentDate || '',
+        disclaimer: resDto.prediction?.disclaimer || '',
       });
 
       router.push(`/children/${child.id}/assessment/results?${searchParams.toString()}`);
-    }, 1800);
+    } catch (error) {
+      console.error("Failed to submit assessment:", error);
+      setIsSubmitting(false);
+    }
   };
 
   return (

@@ -11,13 +11,15 @@ import { ScanLineIcon } from "@/components/icons/scan-line";
 import { MessageCircleIcon } from "@/components/icons/message-circle";
 import { UserIcon } from "@/components/icons/user";
 
+import { useAuthStore } from "@/stores/authStore";
+
 type NavRoute = {
   name: string;
   href: string;
   Icon: React.FC<{ size?: number; className?: string }>;
 };
 
-const routes: NavRoute[] = [
+const PARENT_ROUTES: NavRoute[] = [
   { name: "Beranda", href: "/", Icon: HomeIcon },
   { name: "Nutrisi", href: "/nutrition", Icon: FileTextIcon },
   { name: "Scanner", href: "/scanner", Icon: ScanLineIcon },
@@ -25,15 +27,29 @@ const routes: NavRoute[] = [
   { name: "Profil", href: "/profile", Icon: UserIcon },
 ];
 
+const MEDIC_ROUTES: NavRoute[] = [
+  { name: "Dashboard", href: "/medic", Icon: HomeIcon },
+  { name: "Profil", href: "/medic/profile", Icon: UserIcon },
+];
+
 export function SideNavBar() {
   const pathname = usePathname();
+  const user = useAuthStore((s) => s.user);
+
+  const isMedic = user?.role === "MEDIC";
+  const routes = isMedic ? MEDIC_ROUTES : PARENT_ROUTES;
+  
+  const userName = user?.name || "User";
+  const userLabel = isMedic ? "Tenaga Medis" : "Orang Tua Aktif";
+  // The backend doesn't explicitly store gender for the parent/medic, we just use their name as seed
+  const avatarVariant = isMedic ? "medic" : "parent";
 
   return (
     <nav className="hidden md:flex flex-col w-[272px] gradient-sidebar fixed inset-y-0 left-0 z-40 border-r border-outline-variant/10">
       <div className="flex flex-col h-full px-5 py-8">
         {/* Brand */}
         <div className="mb-8 px-1">
-          <BrandLogo variant="full" href="/" priority showText />
+          <BrandLogo variant="full" href={isMedic ? "/medic" : "/"} priority showText />
         </div>
 
         {/* Nav Label */}
@@ -46,7 +62,7 @@ export function SideNavBar() {
           {routes.map((route) => {
             const isActive =
               pathname === route.href ||
-              (route.href !== "/" && pathname.startsWith(route.href));
+              (route.href !== "/" && route.href !== "/medic" && pathname.startsWith(route.href));
             const { Icon } = route;
 
             return (
@@ -101,13 +117,13 @@ export function SideNavBar() {
 
         {/* Profile Card */}
         <Link
-          href="/profile"
+          href={isMedic ? "/medic/profile" : "/profile"}
           className="flex items-center gap-3 p-3 rounded-2xl bg-surface-warm hover:shadow-card transition-all duration-300 hover-lift border border-outline-variant/8"
         >
-          <Avatar seed="Ibu Ani" variant="parent" size="md" />
+          <Avatar seed={userName} variant={avatarVariant as any} size="md" />
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold text-on-surface truncate">Ibu Ani</p>
-            <p className="text-xs text-on-surface-variant truncate">Orang Tua Aktif</p>
+            <p className="text-sm font-bold text-on-surface truncate">{userName}</p>
+            <p className="text-xs text-on-surface-variant truncate">{userLabel}</p>
           </div>
           <div className="w-2 h-2 rounded-full bg-secondary flex-shrink-0" />
         </Link>

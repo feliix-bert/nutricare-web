@@ -11,6 +11,8 @@ import { PageShell } from "@/components/layout/PageShell";
 import { useNutritionStore, NutritionLog } from "@/stores/nutritionStore";
 import { getAvatarUri } from "@/utils/avatar";
 import { ScanLineIcon } from "@/components/icons/scan-line";
+import { useChildrenList } from "@/features/children/hooks/useChildren";
+import { nutritionService } from "@/features/nutrition/services/nutrition.service";
 
 type SuggestionItem = {
   id: string;
@@ -127,7 +129,20 @@ function MobileMealCard({ item, onRemove }: { item: NutritionLog; onRemove: () =
 export default function NutritionPage() {
   const router = useRouter();
   const logs = useNutritionStore((s) => s.logs);
+  const setLogs = useNutritionStore((s) => s.setLogs);
   const removeLog = useNutritionStore((s) => s.removeLog);
+  const { data: childrenData } = useChildrenList(0, 1);
+
+  React.useEffect(() => {
+    let mounted = true;
+    if (childrenData?.data?.[0]) {
+      const childId = childrenData.data[0].id;
+      nutritionService.getNutritionHistory(childId).then(res => {
+        if (mounted) setLogs(res.data);
+      }).catch(console.error);
+    }
+    return () => { mounted = false; };
+  }, [childrenData, setLogs]);
 
   const totalCalories = logs.reduce((acc, curr) => acc + curr.calories, 0);
   const totalProtein = Math.round(logs.reduce((acc, curr) => acc + curr.protein, 0) * 10) / 10;

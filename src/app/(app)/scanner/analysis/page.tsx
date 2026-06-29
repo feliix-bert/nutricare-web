@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { useNutritionStore } from "@/stores/nutritionStore";
+import { nutritionService } from "@/features/nutrition/services/nutrition.service";
+import { useChildrenList } from "@/features/children/hooks/useChildren";
 import { CheckCircle2, Loader2, Sparkles } from "lucide-react";
 
 const STEPS = [
@@ -16,31 +18,52 @@ const STEPS = [
 export default function AnalysisPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
+  const photoFile = useNutritionStore((s) => s.photoFile);
   const addLog = useNutritionStore((s) => s.addLog);
+  const { data: childrenData } = useChildrenList(0, 1);
 
   useEffect(() => {
-    if (currentStep < STEPS.length) {
-      const timer = setTimeout(() => {
-        setCurrentStep((prev) => prev + 1);
-      }, 1200);
-      return () => clearTimeout(timer);
-    } else {
-      addLog({
-        childId: "child_001",
-        photoUrl: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=240&auto=format&fit=crop",
-        foodDetected: ["Bubur Salmon", "Beras Merah", "Wortel"],
-        portionEstimate: "Porsi Sedang (~200g)",
-        calories: 145,
-        protein: 6.5,
-        fat: 4.0,
-        carbs: 21.0,
-        fiber: 2.2,
-        adequacyNote: "Sangat baik untuk pemenuhan gizi protein dan omega-3 makan siang anak.",
-        mpasiRecommendation: "Tambahkan porsi lemak sehat seperti 1 sdt minyak zaitun.",
-      });
-      router.replace("/nutrition");
-    }
-  }, [currentStep, addLog, router]);
+    let mounted = true;
+
+    const processPhoto = async () => {
+      // 1. Wait for file and child data
+      if (!photoFile || !childrenData?.data?.[0]) {
+        // If no file or child, just simulate then go back
+        await new Promise(r => setTimeout(r, 2000));
+        if (mounted) router.replace("/nutrition");
+        return;
+      }
+
+      try {
+        const childId = childrenData.data[0].id;
+        
+        // Progress steps automatically
+        const stepInterval = setInterval(() => {
+          setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 2));
+        }, 1500);
+
+        // Upload to real API
+        const log = await nutritionService.uploadNutritionPhoto(childId, photoFile);
+        
+        clearInterval(stepInterval);
+        
+        if (mounted) {
+          setCurrentStep(STEPS.length); // complete
+          addLog(log);
+          setTimeout(() => {
+            router.replace("/nutrition");
+          }, 800);
+        }
+      } catch (err) {
+        console.error("Failed to upload photo:", err);
+        if (mounted) router.replace("/nutrition");
+      }
+    };
+
+    processPhoto();
+    
+    return () => { mounted = false; };
+  }, [photoFile, childrenData, addLog, router]);
 
   const progressPercent = (currentStep / STEPS.length) * 100;
 

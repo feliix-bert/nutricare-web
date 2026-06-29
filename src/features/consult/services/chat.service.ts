@@ -1,12 +1,10 @@
 import { apiClient } from '@/services/api';
-import { delay, getMockAssessments, USE_MOCK } from '@/services/mock';
+import { delay, USE_MOCK } from '@/services/mock';
 import type {
   ChatApiRequest,
   ChatApiResponse,
   ChatHistoryResponse,
   ChatMessage,
-  ChatRouteRequest,
-  ChatRouteResponse,
   PredictionContext,
 } from '@/features/consult/types/consult.types';
 
@@ -38,44 +36,26 @@ function findOrCreateSession(predictionId: string): MockSession {
 }
 
 // ---------------------------------------------------------------------------
-// Mock: kirim pesan via Next.js Route Handler → Gemini
+// Mock: kirim pesan — diteruskan ke Spring Boot (sesuai ARCHITECTURE.md)
+// Gemini API dipanggil oleh Spring Boot, bukan oleh Next.js.
 // ---------------------------------------------------------------------------
 
 const mockSendMessage = async (
-  payload: ChatApiRequest & { context: PredictionContext },
+  payload: ChatApiRequest & { context?: PredictionContext },
 ): Promise<ChatApiResponse> => {
   await delay(800);
 
   const session = findOrCreateSession(payload.predictionId);
 
-  // Ambil history untuk dikirim ke Route Handler
-  const history = session.messages.map((m) => ({
-    role: m.role,
-    content: m.content,
-  }));
-
-  const routePayload: ChatRouteRequest = {
+  // Kirim ke Spring Boot /api/chat
+  const res = await apiClient.post<ChatApiResponse>('/api/chat', {
+    predictionId: payload.predictionId,
     message: payload.message,
-    history,
-    context: payload.context,
-  };
-
-  const res = await fetch('/api/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(routePayload),
   });
 
-  if (!res.ok) {
-    const errData = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(
-      errData.error ?? 'Layanan AI sedang tidak tersedia. Silakan coba lagi.',
-    );
-  }
+  const data = res.data;
 
-  const data = (await res.json()) as ChatRouteResponse;
-
-  // Simpan ke session mock
+  // Simpan ke session mock (untuk riwayat lokal sementara)
   const userMsg: ChatMessage = {
     id: `msg_user_${Date.now()}`,
     role: 'user',
@@ -91,50 +71,33 @@ const mockSendMessage = async (
   session.messages.push(userMsg, aiMsg);
   session.updatedAt = new Date().toISOString();
 
-  return {
-    sessionId: session.sessionId,
-    reply: data.reply,
-    suggestedQuestions: data.suggestedQuestions,
-  };
+  return data;
 };
 
 // ---------------------------------------------------------------------------
-// Mock: ambil riwayat chat
+// Mock: ambil riwayat chat — diteruskan ke Spring Boot
 // ---------------------------------------------------------------------------
 
 const mockGetHistory = async (predictionId: string): Promise<ChatHistoryResponse> => {
   await delay(400);
-  const session = findOrCreateSession(predictionId);
-  return {
-    sessionId: session.sessionId,
-    predictionId: session.predictionId,
-    messages: session.messages,
-    updatedAt: session.updatedAt,
-  };
+
+  // Gunakan sesi lokal jika ada (optimis, sebelum backend merespons)
+  const session = mockSessions.find((s) => s.predictionId === predictionId);
+  if (session) {
+    return {
+      sessionId: session.sessionId,
+      predictionId: session.predictionId,
+      messages: session.messages,
+      updatedAt: session.updatedAt,
+    };
+  }
+
+  // Fallback ke Spring Boot
+  const res = await apiClient.get<ChatHistoryResponse>(`/api/chat/${predictionId}`);
+  return res.data;
 };
 
-// ---------------------------------------------------------------------------
-// Helper: bangun PredictionContext dari assessment mock
-// ---------------------------------------------------------------------------
 
-export function buildContextFromPredictionId(predictionId: string): PredictionContext | null {
-  const assessments = getMockAssessments();
-  const found = assessments.find((a) => a.prediction.id === predictionId);
-  if (!found) return null;
-
-  return {
-    predictionId: found.prediction.id,
-    childName: found.child.name,
-    ageMonths: found.child.ageMonths,
-    gender: 'MALE', // default — real API akan return ini dari child data
-    status: found.prediction.status,
-    zscoreHa: found.prediction.zscoreHa,
-    zscoreWa: found.prediction.zscoreWa,
-    zscoreWh: found.prediction.zscoreWh,
-    summary: found.prediction.summary,
-    recommendations: found.prediction.recommendations,
-  };
-}
 
 // ---------------------------------------------------------------------------
 // Real: kirim pesan ke Spring Boot API

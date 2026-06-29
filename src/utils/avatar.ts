@@ -4,13 +4,14 @@ import bigSmile from "@dicebear/styles/big-smile.json";
 import bottts from "@dicebear/styles/bottts.json";
 import shapes from "@dicebear/styles/shapes.json";
 
-export type AvatarVariant = "parent" | "child" | "ai" | "food";
+export type AvatarVariant = "parent" | "child" | "ai" | "food" | "medic";
 
 const STYLE_MAP = {
   parent: lorelei,
   child: bigSmile,
   ai: bottts,
   food: shapes,
+  medic: bottts,
 } as const;
 
 const PASTEL_BACKGROUNDS = ["bde6ec", "cfe7be", "e8e291", "f4f1c5", "d9f3f6"];

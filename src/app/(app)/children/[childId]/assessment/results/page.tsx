@@ -38,6 +38,7 @@ export default function ResultsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const predictionId = searchParams.get("predictionId");
   const status = searchParams.get("status") as keyof typeof DIAGNOSIS_DETAILS | null;
   const weight = searchParams.get("weight");
   const height = searchParams.get("height");
@@ -78,7 +79,11 @@ export default function ResultsPage() {
   };
 
   const handleConsult = () => {
-    router.replace("/consult");
+    if (predictionId) {
+      router.replace(`/consult?predictionId=${predictionId}`);
+    } else {
+      router.replace("/consult");
+    }
   };
 
   return (

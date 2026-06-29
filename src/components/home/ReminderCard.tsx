@@ -15,49 +15,63 @@ type ReminderItem = {
   iconColor: string;
 };
 
-const REMINDERS: ReminderItem[] = [
-  {
-    id: "r1",
-    title: "Assessment Bulan Ini",
-    date: "Segera lakukan",
-    status: "Mendesak",
-    actionText: "Mulai",
-    icon: Calendar,
-    iconBg: "bg-red-50",
-    iconColor: "text-red-500",
-  },
-  {
-    id: "r2",
-    title: "Jadwal Imunisasi",
-    date: "Vaksin Polio (OPV)",
-    status: "Penting",
-    actionText: "Cek",
-    icon: Syringe,
-    iconBg: "bg-orange-50",
-    iconColor: "text-orange-500",
-  },
-  {
-    id: "r3",
-    title: "Upload Foto MPASI",
-    date: "Belum lengkap",
-    status: "Tertunda",
-    actionText: "Lengkapi",
-    icon: ClipboardList,
-    iconBg: "bg-blue-50",
-    iconColor: "text-blue-500",
-  },
-  {
-    id: "r4",
-    title: "Verifiable Credential",
-    date: "Bulan lalu",
-    status: "Diproses",
-    icon: ShieldAlert,
-    iconBg: "bg-gray-100",
-    iconColor: "text-gray-500",
-  },
-];
+export function ReminderCard({ childId, assessments = [], nutritionLogs = [] }: { childId: string, assessments: any[], nutritionLogs: any[] }) {
+  const reminders: ReminderItem[] = [];
 
-export function ReminderCard() {
+  const hasAssessmentThisMonth = assessments.some(a => {
+    const d = new Date(a.createdAt);
+    const now = new Date();
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+
+  if (!hasAssessmentThisMonth) {
+    reminders.push({
+      id: "r1",
+      title: "Assessment Bulan Ini",
+      date: "Segera lakukan",
+      status: "Mendesak",
+      actionText: "Mulai",
+      icon: Calendar,
+      iconBg: "bg-red-50",
+      iconColor: "text-red-500",
+    });
+  } else {
+    reminders.push({
+      id: "r1",
+      title: "Assessment Bulan Ini",
+      date: "Selesai",
+      status: "Selesai",
+      icon: Calendar,
+      iconBg: "bg-green-50",
+      iconColor: "text-green-500",
+    });
+  }
+
+  const today = new Date().toDateString();
+  const hasNutritionToday = nutritionLogs.some(n => new Date(n.createdAt).toDateString() === today);
+  if (!hasNutritionToday) {
+    reminders.push({
+      id: "r2",
+      title: "Upload Foto MPASI",
+      date: "Belum ada hari ini",
+      status: "Tertunda",
+      actionText: "Lengkapi",
+      icon: ClipboardList,
+      iconBg: "bg-blue-50",
+      iconColor: "text-blue-500",
+    });
+  } else {
+    reminders.push({
+      id: "r2",
+      title: "Upload Foto MPASI",
+      date: "Sudah diisi hari ini",
+      status: "Selesai",
+      icon: ClipboardList,
+      iconBg: "bg-green-50",
+      iconColor: "text-green-500",
+    });
+  }
+
   return (
     <Card variant="default" className="p-6 h-full flex flex-col bg-white">
       {/* Header */}
@@ -74,9 +88,9 @@ export function ReminderCard() {
 
       {/* Reminder list */}
       <div className="flex-1 flex flex-col">
-        {REMINDERS.map((reminder, index) => {
+        {reminders.map((reminder, index) => {
           const Icon = reminder.icon;
-          const isLast = index === REMINDERS.length - 1;
+          const isLast = index === reminders.length - 1;
           
           return (
             <motion.div

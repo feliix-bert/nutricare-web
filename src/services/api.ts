@@ -2,7 +2,7 @@ import axios from 'axios';
 
 import { useAuthStore } from '@/stores/authStore';
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8085';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080';
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -27,17 +27,20 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true;
       try {
-        const { refreshToken, setAuth, logout } = useAuthStore.getState();
+        const { refreshToken, setAuth, logout, user } = useAuthStore.getState();
         if (!refreshToken) {
           logout();
           return Promise.reject(error);
         }
-        const res = await axios.post<{ accessToken: string }>(
-          `${BASE_URL}/api/auth/refresh`,
-          { refreshToken },
-        );
-        setAuth(res.data.accessToken, refreshToken, useAuthStore.getState().user!);
-        original.headers.Authorization = `Bearer ${res.data.accessToken}`;
+        const res = await axios.post<{
+          accessToken: string;
+          refreshToken: string;
+        }>(`${BASE_URL}/api/auth/refresh`, { refreshToken });
+        const newAccessToken = res.data.accessToken;
+        // Use new refreshToken from backend if provided, fallback to current
+        const newRefreshToken = res.data.refreshToken ?? refreshToken;
+        setAuth(newAccessToken, newRefreshToken, user!);
+        original.headers.Authorization = `Bearer ${newAccessToken}`;
         return apiClient(original);
       } catch {
         useAuthStore.getState().logout();

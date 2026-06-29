@@ -19,38 +19,47 @@ type ActivityItem = {
   icon: React.ElementType;
 };
 
-const ACTIVITIES: ActivityItem[] = [
-  {
-    id: "a1",
-    title: "Pemantauan Status Gizi",
-    datetime: "Hari ini, 10:00 AM",
-    duration: "Selesai",
-    stat1: "12.5 kg",
-    stat1Icon: Scale,
-    stat1Color: "text-orange-500",
-    stat2: "85 cm",
-    stat2Icon: Ruler,
-    stat2Color: "text-blue-500",
-    score: "+2 Poin",
-    icon: Activity,
-  },
-  {
-    id: "a2",
-    title: "Konsultasi Dokter AI",
-    datetime: "Kemarin, 08:30 AM",
-    duration: "15 min",
-    stat1: "Demam & Ruam",
-    stat1Icon: HeartPulse,
-    stat1Color: "text-red-500",
-    stat2: "Resep Obat",
-    stat2Icon: Activity,
-    stat2Color: "text-green-500",
-    score: "+5 Poin",
-    icon: Activity,
-  },
-];
+export function ActivityTimeline({ childId, assessments = [], nutritionLogs = [] }: { childId: string, assessments: any[], nutritionLogs: any[] }) {
+  const activities: ActivityItem[] = [];
 
-export function ActivityTimeline() {
+  assessments.forEach(a => {
+    activities.push({
+      id: `assess_${a.id}`,
+      title: "Pemantauan Status Gizi",
+      datetime: new Date(a.createdAt).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" }),
+      duration: "Selesai",
+      stat1: `${a.weight} kg`,
+      stat1Icon: Scale,
+      stat1Color: "text-orange-500",
+      stat2: `${a.height} cm`,
+      stat2Icon: Ruler,
+      stat2Color: "text-blue-500",
+      score: "+2 Poin",
+      icon: Activity,
+    });
+  });
+
+  nutritionLogs.forEach(n => {
+    activities.push({
+      id: `nutri_${n.id}`,
+      title: "Catatan Nutrisi MPASI",
+      datetime: new Date(n.createdAt).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" }),
+      duration: "Selesai",
+      stat1: `${n.calories} kkal`,
+      stat1Icon: HeartPulse,
+      stat1Color: "text-red-500",
+      stat2: `${n.protein}g P`,
+      stat2Icon: Activity,
+      stat2Color: "text-green-500",
+      score: "+5 Poin",
+      icon: Activity,
+    });
+  });
+
+  // Sort descending and take top 5
+  activities.sort((a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime());
+  const displayActivities = activities.slice(0, 5);
+
   return (
     <Card variant="default" className="p-0 h-full overflow-hidden bg-white shadow-card">
       {/* Header */}
@@ -58,10 +67,10 @@ export function ActivityTimeline() {
         <div className="flex items-start justify-between">
           <div>
             <h3 className="text-[28px] font-extrabold text-[#1c1c1c] tracking-tight leading-none mb-1.5">
-              2 dari 5
+              Aktivitas
             </h3>
             <p className="text-[14px] text-on-surface-variant font-medium">
-              Selesaikan 3 aktivitas lagi minggu ini.
+              Aktivitas terbaru untuk anak ini.
             </p>
           </div>
           <button className="w-10 h-10 rounded-full border border-blue-100 flex items-center justify-center text-blue-500 hover:bg-blue-50 transition-colors">
@@ -72,9 +81,12 @@ export function ActivityTimeline() {
 
       {/* Timeline List */}
       <div className="flex flex-col">
-        {ACTIVITIES.map((activity, index) => {
+        {displayActivities.length === 0 && (
+          <div className="p-6 text-center text-gray-500 font-medium">Belum ada aktivitas.</div>
+        )}
+        {displayActivities.map((activity, index) => {
           const Icon = activity.icon;
-          const isLast = index === ACTIVITIES.length - 1;
+          const isLast = index === displayActivities.length - 1;
           const Stat1Icon = activity.stat1Icon;
           const Stat2Icon = activity.stat2Icon;
           

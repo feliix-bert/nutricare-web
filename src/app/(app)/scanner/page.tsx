@@ -4,11 +4,13 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { ArrowLeft, Image as ImageIcon, ScanLine, Zap, Sparkles } from "lucide-react";
+import { useNutritionStore } from "@/stores/nutritionStore";
 
 export default function ScannerPage() {
   const router = useRouter();
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const setPhotoFile = useNutritionStore((s) => s.setPhotoFile);
 
   const handleCapture = () => {
     if (fileInputRef.current) {
@@ -20,10 +22,11 @@ export default function ScannerPage() {
     const file = e.target.files?.[0];
     if (file) {
       setIsUploading(true);
+      setPhotoFile(file);
       setTimeout(() => {
         setIsUploading(false);
         router.push("/scanner/analysis");
-      }, 1200);
+      }, 500); // reduced delay since analysis page will take time
     }
   };
 

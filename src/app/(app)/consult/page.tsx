@@ -5,9 +5,10 @@ import { Info, Send, ChevronDown, Bot, AlertCircle, RefreshCw } from "lucide-rea
 import { motion, AnimatePresence } from "motion/react";
 import { Avatar } from "@/components/common/Avatar";
 import { PageShell } from "@/components/layout/PageShell";
-import { useChatHistory, useSendMessage, usePredictionContext } from "@/features/consult/hooks/useChat";
-import { getMockAssessments } from "@/services/mock";
+import { useChatHistory, useSendMessage, usePredictionContextQuery } from "@/features/consult/hooks/useChat";
+import { useSearchParams } from "next/navigation";
 import type { PredictionContext } from "@/features/consult/types/consult.types";
+import { useChildrenList } from "@/features/children/hooks/useChildren";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -100,10 +101,11 @@ function TypingIndicator() {
 // ---------------------------------------------------------------------------
 
 type SelectorItem = {
-  predictionId: string;
+  childId: string;
+  predictionId?: string;
   childName: string;
   ageMonths: number;
-  status: string;
+  status?: string;
 };
 
 type PredictionSelectorProps = {
@@ -114,7 +116,7 @@ type PredictionSelectorProps = {
 
 function PredictionSelector({ items, selected, onSelect }: PredictionSelectorProps) {
   const [open, setOpen] = useState(false);
-  const selectedItem = items.find((i) => i.predictionId === selected);
+  const selectedItem = items.find((i) => i.predictionId && i.predictionId === selected);
 
   return (
     <div className="relative">
@@ -128,7 +130,7 @@ function PredictionSelector({ items, selected, onSelect }: PredictionSelectorPro
         <span className="text-[13px] font-semibold text-on-surface max-w-[140px] truncate">
           {selectedItem ? selectedItem.childName : "Pilih Anak"}
         </span>
-        {selectedItem && (
+        {selectedItem?.status && (
           <span className={`text-[11px] font-bold ${STATUS_LABEL[selectedItem.status]?.color ?? "text-on-surface-variant"}`}>
             · {STATUS_LABEL[selectedItem.status]?.label}
           </span>
@@ -146,26 +148,47 @@ function PredictionSelector({ items, selected, onSelect }: PredictionSelectorPro
             transition={{ duration: 0.15 }}
             className="absolute top-full left-0 mt-1.5 w-64 bg-white rounded-2xl shadow-elevated border border-outline-variant/15 overflow-hidden z-50"
           >
-            {items.map((item) => (
-              <li key={item.predictionId}>
-                <button
-                  role="option"
-                  aria-selected={item.predictionId === selected}
-                  onClick={() => { onSelect(item.predictionId); setOpen(false); }}
-                  className={`w-full text-left px-4 py-3 flex flex-col gap-0.5 hover:bg-surface-warm transition-colors ${
-                    item.predictionId === selected ? "bg-primary-container/20" : ""
-                  }`}
-                >
-                  <span className="text-[13px] font-bold text-on-surface">{item.childName}</span>
-                  <span className="text-[11px] text-on-surface-variant">
-                    {item.ageMonths} bulan ·{" "}
-                    <span className={`font-semibold ${STATUS_LABEL[item.status]?.color ?? ""}`}>
-                      {STATUS_LABEL[item.status]?.label ?? item.status}
+            {items.map((item) => {
+              const isSelected = item.predictionId === selected && !!selected;
+              const hasPrediction = !!item.predictionId;
+              
+              return (
+                <li key={item.childId}>
+                  <button
+                    role="option"
+                    aria-selected={isSelected}
+                    disabled={!hasPrediction}
+                    onClick={() => {
+                      if (hasPrediction) {
+                        onSelect(item.predictionId!);
+                        setOpen(false);
+                      }
+                    }}
+                    className={`w-full text-left px-4 py-3 flex flex-col gap-0.5 transition-colors ${
+                      isSelected ? "bg-primary-container/20" : ""
+                    } ${hasPrediction ? "hover:bg-surface-warm cursor-pointer" : "opacity-60 cursor-not-allowed bg-surface-dim"}`}
+                  >
+                    <span className="text-[13px] font-bold text-on-surface">{item.childName}</span>
+                    <span className="text-[11px] text-on-surface-variant">
+                      {item.ageMonths} bulan
+                      {hasPrediction && item.status ? (
+                        <>
+                          {" · "}
+                          <span className={`font-semibold ${STATUS_LABEL[item.status]?.color ?? ""}`}>
+                            {STATUS_LABEL[item.status]?.label ?? item.status}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          {" · "}
+                          <span className="italic">Belum ada hasil deteksi</span>
+                        </>
+                      )}
                     </span>
-                  </span>
-                </button>
-              </li>
-            ))}
+                  </button>
+                </li>
+              );
+            })}
           </motion.ul>
         )}
       </AnimatePresence>
@@ -183,9 +206,9 @@ function EmptyState() {
       <div className="w-16 h-16 rounded-2xl bg-primary-container/30 flex items-center justify-center mb-5">
         <Bot size={30} className="text-primary" />
       </div>
-      <h2 className="text-[17px] font-bold text-on-surface mb-2">Pilih Data Anak</h2>
+      <h2 className="text-[17px] font-bold text-on-surface mb-2">Belum ada konteks</h2>
       <p className="text-[14px] text-on-surface-variant leading-relaxed max-w-xs">
-        Pilih anak dan hasil assessment yang ingin Anda konsultasikan di bagian atas.
+        Pilih anak dari daftar di atas, atau mulai dari halaman Riwayat Pemeriksaan Anak agar AI dapat membaca hasil secara spesifik.
       </p>
     </div>
   );
@@ -220,17 +243,10 @@ function ErrorBanner({ message, onRetry }: { message: string; onRetry: () => voi
 // ---------------------------------------------------------------------------
 
 export default function ConsultPage() {
-  // Ambil semua assessments dengan prediksi COMPLETED dari mock (atau API)
-  const availableItems: SelectorItem[] = getMockAssessments()
-    .filter((a) => a.prediction.predictionStatus === "COMPLETED")
-    .map((a) => ({
-      predictionId: a.prediction.id,
-      childName: a.child.name,
-      ageMonths: a.child.ageMonths,
-      status: a.prediction.status,
-    }));
+  const searchParams = useSearchParams();
+  const predictionIdFromUrl = searchParams.get('predictionId');
 
-  const [selectedPredictionId, setSelectedPredictionId] = useState<string | null>(null);
+  const [selectedPredictionId, setSelectedPredictionId] = useState<string | null>(predictionIdFromUrl);
   const [inputText, setInputText] = useState("");
   const [localMessages, setLocalMessages] = useState<{ id: string; role: "user" | "assistant"; content: string; timestamp: string }[]>([]);
   const [sendError, setSendError] = useState<string | null>(null);
@@ -239,7 +255,18 @@ export default function ConsultPage() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const context: PredictionContext | null = usePredictionContext(selectedPredictionId);
+  const { data: context } = usePredictionContextQuery(selectedPredictionId);
+
+  const { data: childrenData } = useChildrenList(0, 50);
+
+  const availableItems: SelectorItem[] = childrenData?.data
+    .map(child => ({
+      childId: child.id,
+      predictionId: child.latestPrediction?.predictionId,
+      childName: child.name,
+      ageMonths: child.ageMonths,
+      status: child.latestPrediction?.status,
+    })) || [];
 
   const { data: historyData } = useChatHistory(selectedPredictionId);
   const sendMutation = useSendMessage(selectedPredictionId);

@@ -11,7 +11,9 @@ import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/common/Avatar";
 import { PageShell } from "@/components/layout/PageShell";
 import { UtensilsIcon } from "@/components/icons/utensils";
-import { useChildrenList } from "@/features/children/hooks/useChildren";
+import { useChildrenList, useChild } from "@/features/children/hooks/useChildren";
+import { useNutritionHistory } from "@/features/nutrition/hooks/useNutrition";
+import { useAuthStore } from "@/stores/authStore";
 
 /* ── Small bar chart inside metric card ── */
 const SparkBars = React.memo(({ color }: { color: string }) => (
@@ -75,9 +77,32 @@ function ChildPill({
 /* ── Home Page ── */
 export default function HomePage() {
   const router = useRouter();
+  const user = useAuthStore((s) => s.user);
+
+  React.useEffect(() => {
+    if (user?.role === "MEDIC") {
+      router.replace("/medic");
+    }
+  }, [user, router]);
+
   const { data, isLoading } = useChildrenList();
   const children = data?.data ?? [];
   const [activeChildId, setActiveChildId] = useState<string | null>(null);
+
+  // If user is medic, render null while redirecting to avoid flashing
+  if (user?.role === "MEDIC") return null;
+
+  // Set default active child
+  React.useEffect(() => {
+    if (!activeChildId && children.length > 0) {
+      setActiveChildId(children[0].id);
+    }
+  }, [children, activeChildId]);
+
+  const activeChild = children.find((c) => c.id === activeChildId) ?? children[0];
+
+  const { data: childDetail } = useChild(activeChild?.id ?? "");
+  const { data: nutritionData } = useNutritionHistory(activeChild?.id ?? "");
 
   if (isLoading) {
     return (
@@ -86,8 +111,6 @@ export default function HomePage() {
       </div>
     );
   }
-
-  const activeChild = children.find((c) => c.id === activeChildId) ?? children[0];
 
   if (!activeChild) {
     return (
@@ -106,19 +129,62 @@ export default function HomePage() {
     );
   }
 
-  const isAndi = activeChild.name.toLowerCase().includes("andi");
-  const growthPct = isAndi ? 91 : 94;
-  const calorieTarget = isAndi ? 1350 : 850;
-  const calorieConsumed = isAndi ? 920 : 580;
-  const caloriePct = Math.round((calorieConsumed / calorieTarget) * 100);
-  const weightVal = isAndi ? "9.5" : "7.1";
-  const heightVal = isAndi ? "74.0" : "65.0";
-  const weightChange = isAndi ? "+0.2 kg" : "+0.35 kg";
-  const heightChange = isAndi ? "+1.2 cm" : "+1.5 cm";
+  // Determine latest assessment for metrics
+  const assessments = childDetail?.assessments || [];
+  const hasAssessment = assessments.length > 0;
+  // Sort descending by createdAt
+  const sortedAssessments = [...assessments].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const latestAssessment = hasAssessment ? sortedAssessments[0] : null;
 
-  const macros = isAndi
-    ? [{ label: "Protein", value: "62g", color: "#2d8a7e" }, { label: "Lemak", value: "24g", color: "#6b9e6b" }, { label: "Karbo", value: "46g", color: "#d4a454" }]
-    : [{ label: "Protein", value: "38g", color: "#2d8a7e" }, { label: "Lemak", value: "18g", color: "#6b9e6b" }, { label: "Karbo", value: "32g", color: "#d4a454" }];
+  const latestPred = activeChild.latestPrediction;
+
+  const statusLabel = latestPred
+    ? latestPred.status === 'NORMAL' ? 'Tumbuh Optimal'
+      : latestPred.status === 'AT_RISK' ? 'Perlu Perhatian'
+      : 'Butuh Tindakan Medis'
+    : 'Belum Ada Data';
+
+  const growthPct = latestPred ? (latestPred.status === 'NORMAL' ? 94 : latestPred.status === 'AT_RISK' ? 70 : 45) : 0;
+
+  const weightVal = latestAssessment ? latestAssessment.weight.toFixed(1) : "—";
+  const heightVal = latestAssessment ? latestAssessment.height.toFixed(1) : "—";
+
+  let weightChange = "—";
+  let heightChange = "—";
+  if (sortedAssessments.length > 1) {
+    const prevAssessment = sortedAssessments[1];
+    const wDiff = latestAssessment!.weight - prevAssessment.weight;
+    const hDiff = latestAssessment!.height - prevAssessment.height;
+    weightChange = `${wDiff >= 0 ? '+' : ''}${wDiff.toFixed(2)} kg`;
+    heightChange = `${hDiff >= 0 ? '+' : ''}${hDiff.toFixed(2)} cm`;
+  } else if (hasAssessment) {
+    weightChange = "Baru";
+    heightChange = "Baru";
+  }
+
+  // Calculate Nutrition sum for today
+  let calorieConsumed = 0;
+  let proteinSum = 0;
+  let fatSum = 0;
+  let carbsSum = 0;
+
+  const nutritionLogs = nutritionData?.data || [];
+  const today = new Date().toDateString();
+  nutritionLogs.filter(log => new Date(log.createdAt).toDateString() === today).forEach(log => {
+    calorieConsumed += log.calories || 0;
+    proteinSum += log.protein || 0;
+    fatSum += log.fat || 0;
+    carbsSum += log.carbs || 0;
+  });
+
+  const calorieTarget = hasAssessment ? 850 : 0;
+  const caloriePct = calorieTarget > 0 ? Math.min(Math.round((calorieConsumed / calorieTarget) * 100), 100) : 0;
+
+  const macros = [
+    { label: "Protein", value: `${Math.round(proteinSum)}g`, color: "#2d8a7e" },
+    { label: "Lemak", value: `${Math.round(fatSum)}g`, color: "#6b9e6b" },
+    { label: "Karbo", value: `${Math.round(carbsSum)}g`, color: "#d4a454" }
+  ];
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
@@ -216,7 +282,7 @@ export default function HomePage() {
                       {activeChild.latestPrediction?.status ?? "NORMAL"}
                     </div>
                     <p className="text-5xl font-extrabold text-on-surface leading-none">{growthPct}%</p>
-                    <p className="text-sm font-semibold text-on-surface/60 mt-1">Tumbuh Kembang Optimal</p>
+                    <p className="text-sm font-semibold text-on-surface/60 mt-1">{statusLabel}</p>
                   </div>
 
                   {/* Circular progress */}
@@ -353,10 +419,10 @@ export default function HomePage() {
             className="hidden lg:grid grid-cols-4 gap-3"
           >
             {[
-              { label: "Assessment Selesai", value: "3", unit: "bulan ini", bg: "bg-primary-container/30 border-primary/8" },
-              { label: "Status Gizi", value: "Optimal", unit: "terkini", bg: "bg-secondary-container/30 border-secondary/8" },
-              { label: "Imunisasi", value: "8/12", unit: "lengkap", bg: "bg-tertiary-container/30 border-tertiary/8" },
-              { label: "Konsultasi AI", value: "5", unit: "minggu ini", bg: "bg-accent-light/30 border-accent/8" },
+              { label: "Assessment Selesai", value: assessments.length.toString(), unit: "total", bg: "bg-primary-container/30 border-primary/8" },
+              { label: "Status Gizi", value: latestPred?.status === 'NORMAL' ? "Optimal" : latestPred?.status === 'AT_RISK' ? "Berisiko" : latestPred?.status ? "Stunting" : "—", unit: "terkini", bg: "bg-secondary-container/30 border-secondary/8" },
+              { label: "Nutrisi Hari Ini", value: `${caloriePct}%`, unit: "terpenuhi", bg: "bg-tertiary-container/30 border-tertiary/8" },
+              { label: "Prediksi Gizi", value: latestPred ? "Selesai" : "Belum", unit: "status AI", bg: "bg-accent-light/30 border-accent/8" },
             ].map((stat, i) => (
               <motion.div
                 key={stat.label}
@@ -399,14 +465,14 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.25 }}
             >
-              <ReminderCard />
+              <ReminderCard childId={activeChild.id} assessments={sortedAssessments} nutritionLogs={nutritionLogs} />
             </motion.div>
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.3 }}
             >
-              <ActivityTimeline />
+              <ActivityTimeline childId={activeChild.id} assessments={sortedAssessments} nutritionLogs={nutritionLogs} />
             </motion.div>
           </div>
         </div>

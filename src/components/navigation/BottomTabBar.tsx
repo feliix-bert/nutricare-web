@@ -9,7 +9,9 @@ import { MessageCircleIcon } from "@/components/icons/message-circle";
 import { ScanLineIcon } from "@/components/icons/scan-line";
 import { UserIcon } from "@/components/icons/user";
 
-const TABS = [
+import { useAuthStore } from "@/stores/authStore";
+
+const PARENT_TABS = [
   { name: "Beranda", path: "/", Icon: HomeIcon },
   { name: "Nutrisi", path: "/nutrition", Icon: FileTextIcon },
   { name: "Tanya AI", path: "/consult", Icon: MessageCircleIcon },
@@ -17,16 +19,25 @@ const TABS = [
   { name: "Profil", path: "/profile", Icon: UserIcon },
 ];
 
+const MEDIC_TABS = [
+  { name: "Dashboard", path: "/medic", Icon: HomeIcon },
+  { name: "Profil", path: "/medic/profile", Icon: UserIcon },
+];
+
 export function BottomTabBar() {
   const pathname = usePathname();
+  const user = useAuthStore((s) => s.user);
+
+  const isMedic = user?.role === "MEDIC";
+  const tabs = isMedic ? MEDIC_TABS : PARENT_TABS;
 
   return (
     <div className="fixed bottom-0 inset-x-0 z-50 md:hidden px-4 pb-4 pt-2 bg-gradient-to-t from-background via-background/95 to-transparent">
       <div className="h-[4.5rem] bg-white rounded-[1.75rem] shadow-[0_4px_24px_rgba(0,0,0,0.08)] border border-outline-variant/10 flex items-center justify-around px-2">
-        {TABS.map((tab) => {
+        {tabs.map((tab) => {
           const isActive =
             pathname === tab.path ||
-            (tab.path !== "/" && pathname.startsWith(tab.path));
+            (tab.path !== "/" && tab.path !== "/medic" && pathname.startsWith(tab.path));
           const { Icon } = tab;
 
           return (

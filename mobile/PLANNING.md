@@ -8,27 +8,26 @@ Fokus MVP berikutnya adalah mengganti simulasi kritikal dengan integrasi service
 
 ---
 
-## Sprint 0 — Foundation Services, Hooks, dan Component Extraction
+## Sprint 0 — Foundation Services, Hooks, dan Component Extraction (SELESAI)
 
 ### Tujuan
 Menyiapkan fondasi service/hook dual-mode mock/real agar fitur high priority bisa dibangun tanpa hardcoded logic di screen.
 
 ### Tasks
-
-| ID | Task | File | Complexity |
-|----|------|------|------------|
-| S0.1 | Buat assessment service dual-mode | `features/assessment/services/assessment.service.ts` | M |
-| S0.2 | Buat prediction service dual-mode | `features/assessment/services/prediction.service.ts` | M |
-| S0.3 | Buat hook `usePrediction` dgn React Query polling | `features/assessment/hooks/usePrediction.ts` | M |
-| S0.4 | Buat nutrition service dual-mode | `features/nutrition/services/nutrition.service.ts` | M |
-| S0.5 | Buat hook `useNutrition` | `features/nutrition/hooks/useNutrition.ts` | M |
-| S0.6 | Buat chat service dual-mode | `features/chat/services/chat.service.ts` | M |
-| S0.7 | Buat hook `useChat` | `features/chat/hooks/useChat.ts` | M |
-| S0.8 | Ekstrak komponen assessment inline | `features/assessment/components/` (AssessmentCard, PredictionCard, ZScoreBadge) | M |
-| S0.9 | Ekstrak komponen nutrition inline | `features/nutrition/components/` (NutritionCard, FoodTagList) | S |
-| S0.10 | Ekstrak komponen chat inline | `features/chat/components/` (ChatBubble, ChatInput, SuggestedChips) | M |
-| S0.11 | Barrel export per feature | `features/assessment/index.ts`, `features/nutrition/index.ts`, `features/chat/index.ts` | S |
-| S0.12 | Perluas mock in-memory store | `services/mock.ts` | M |
+| ID | Task | File | Complexity | Status |
+|----|------|------|------------|--------|
+| S0.1 | Buat assessment service dual-mode | `features/assessment/services/assessment.service.ts` | M | ✅ |
+| S0.2 | Buat prediction service dual-mode | `features/assessment/services/prediction.service.ts` | M | ⏭️ merged ke assessment service |
+| S0.3 | Buat hook `usePrediction` dgn React Query polling | `features/assessment/hooks/usePrediction.ts` | M | ⏭️ merged ke useAssessment |
+| S0.4 | Buat nutrition service dual-mode | `features/nutrition/services/nutrition.service.ts` | M | ✅ |
+| S0.5 | Buat hook `useNutrition` | `features/nutrition/hooks/useNutrition.ts` | M | ✅ |
+| S0.6 | Buat chat service dual-mode | `features/chat/services/chat.service.ts` | M | ✅ |
+| S0.7 | Buat hook `useChat` | `features/chat/hooks/useChat.ts` | M | ✅ |
+| S0.8 | Ekstrak komponen assessment inline | `features/assessment/components/` | M | ✅ |
+| S0.9 | Ekstrak komponen nutrition inline | `features/nutrition/components/` | S | ✅ |
+| S0.10 | Ekstrak komponen chat inline | `features/chat/components/` | M | ✅ |
+| S0.11 | Barrel export per feature | `features/*/index.ts` | S | ✅ |
+| S0.12 | Perluas mock in-memory store | `services/mock.ts` | M | ✅ |
 
 ---
 
@@ -160,18 +159,18 @@ Screen untuk tenaga medis: lihat semua pasien, filter/search, akses detail & VC.
 
 ---
 
-## Sprint 7 — Medium Priority
+## Sprint 7 — Medium Priority (SELESAI)
 
-| ID | Task | Complexity |
-|----|------|------------|
-| S7.1 | Edit Child screen | M |
-| S7.2 | Register edit child route | S |
-| S7.3 | Nutrition History List real API polish | M |
-| S7.4 | PDF reports service | M |
-| S7.5 | PDF reports screen/actions | L |
-| S7.6 | POSYANDU module skeleton | L |
-| S7.7 | Blockchain verification service | M |
-| S7.8 | Blockchain verification screen | M |
+| ID | Task | Complexity | Status |
+|----|------|------------|--------|
+| S7.1 | Edit Child screen | M | ✅ |
+| S7.2 | Register edit child route | S | ✅ |
+| S7.3 | Nutrition History List real API polish | M | ✅ |
+| S7.4 | PDF reports service | M | ✅ |
+| S7.5 | PDF reports screen/actions | L | ✅ |
+| S7.6 | POSYANDU module skeleton | L | ⚠️ no server endpoint |
+| S7.7 | Blockchain verification service | M | ✅ |
+| S7.8 | Blockchain verification screen | M | ✅ |
 
 ---
 
@@ -190,7 +189,14 @@ Screen untuk tenaga medis: lihat semua pasien, filter/search, akses detail & VC.
 ## Catatan Teknis Arsitektur
 
 ### Service Pattern
-Setiap service wajib dual-mode (mock/real) dengan `USE_MOCK` toggle.
+Setiap service module mengikuti pola single-function per method dengan ternary `USE_MOCK` inline. **Tidak ada** fungsi `mockXxx`/`realXxx` terpisah. Transform server→client DTO ditulis sebagai fungsi helper stateless.
+
+### Service to Server Mapping (transform layer)
+Server return flat `PredictionResponse` → mobile transform ke nested `AssessmentResponseDTO` di service layer (helper `toAssessmentResponseDTO`). Detail:
+- `assessmentId` + `childId` + `childName` → `{ id, child: { id, name }, ... }`
+- Prediction fields → `prediction: AssessmentPredictionDTO`
+- Blockchain fields → `blockchain?: BlockchainAnchorDTO`
+- Chat: `content` + `role` → `reply` + `sender` di client
 
 ### React Query Key Pattern
 - `ASSESSMENTS_QUERY_KEY`, `assessmentQueryKey(id)`, `childAssessmentsQueryKey(childId)`

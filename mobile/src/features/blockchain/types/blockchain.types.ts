@@ -19,3 +19,15 @@ export type BlockchainAnchor = {
   anchorStatus: 'CONFIRMED' | 'PENDING';
   explorerUrl: string;
 };
+
+// ── Server raw response types ────────────────────────────────────────────
+
+export type ServerVerifyResponse = {
+  assessmentId: string;
+  isValid: boolean;
+  recordHash: string;
+  anchoredAt: string;
+  txHash: string;
+  blockNumber: number;
+  explorerUrl: string;
+};

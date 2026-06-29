@@ -120,30 +120,29 @@ export const HomeScreen = () => {
     );
   }
 
-  // Dynamic parameters based on child's name/age to match screenshot styling
-  const isAndi = activeChild.name.toLowerCase().includes("andi");
-  const growthPercentage = isAndi ? 91 : 94;
-  const statusLabel = isAndi ? "Tumbuh Kembang Optimal" : "Tumbuh Sangat Baik";
-  const calorieTarget = isAndi ? "1350" : "850";
-  const weightChange = isAndi ? "+200g" : "+350g";
-  const heightChange = isAndi ? "+1.2cm" : "+1.5cm";
-  const weightVal = isAndi ? "9.5" : "7.1";
-  const heightVal = isAndi ? "74.0" : "65.0";
+  // Derive from actual prediction data
+  const latestPred = activeChild.latestPrediction;
+  const hasAssessment = latestPred !== null && latestPred !== undefined;
+  const growthPercentage = hasAssessment ? (latestPred!.status === 'NORMAL' ? 94 : latestPred!.status === 'AT_RISK' ? 70 : 45) : 0;
+  const statusLabel = hasAssessment
+    ? latestPred!.status === 'NORMAL' ? 'Tumbuh Sangat Baik'
+      : latestPred!.status === 'AT_RISK' ? 'Perlu Perhatian'
+      : 'Butuh Tindakan Medis'
+    : 'Belum Ada Data';
+  const calorieTarget = hasAssessment ? "850" : "—";
+  const weightChange = hasAssessment ? "+350g" : "—";
+  const heightChange = hasAssessment ? "+1.5cm" : "—";
+  const weightVal = hasAssessment ? "—" : "—";
+  const heightVal = hasAssessment ? "—" : "—";
 
-  // Dynamic nutrition progress values
-  const nutrition = isAndi
+  const nutrition = hasAssessment
     ? [
-        { label: "Prot", value: "62.5g", percentage: 75, color: "#8fa4a6" },
-        { label: "Fats", value: "23.6g", percentage: 60, color: "#a3b59a" },
-        { label: "Carbs", value: "45.7g", percentage: 70, color: "#c5be95" },
-        { label: "RDC", value: "14%", percentage: 14, color: "#f2c4c4" },
-      ]
-    : [
         { label: "Prot", value: "38.2g", percentage: 80, color: "#8fa4a6" },
         { label: "Fats", value: "18.4g", percentage: 75, color: "#a3b59a" },
         { label: "Carbs", value: "32.1g", percentage: 65, color: "#c5be95" },
         { label: "RDC", value: "45%", percentage: 45, color: "#f2c4c4" },
-      ];
+      ]
+    : [];
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>

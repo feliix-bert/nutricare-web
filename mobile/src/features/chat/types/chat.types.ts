@@ -12,6 +12,30 @@ export type ChatRequest = {
   message: string;
 };
 
+// ── Server raw response types ────────────────────────────────────────────
+
+export type ServerChatMessage = {
+  role: string;
+  content: string;
+  timestamp: string;
+};
+
+export type ServerChatResponse = {
+  sessionId: string;
+  predictionId: string;
+  role: string;
+  content: string;
+  timestamp: string;
+};
+
+export type ServerChatHistoryResponse = {
+  sessionId: string;
+  predictionId: string;
+  messages: ServerChatMessage[];
+};
+
+// ── Mobile DTOs ──────────────────────────────────────────────────────────
+
 export type ChatResponse = {
   sessionId: string;
   reply: string;

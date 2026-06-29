@@ -35,7 +35,7 @@ export const ChildDetailScreen = () => {
 
         return {
           date: a.createdAt,
-          value: activeCategory === 'weight_age' ? a.weight : a.height,
+          value: activeCategory === 'weight_age' ? (a.weight ?? 0) : (a.height ?? 0),
           label,
           status: a.prediction.status,
         };

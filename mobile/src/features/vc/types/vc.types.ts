@@ -33,6 +33,58 @@ export type VcRecord = {
   claims?: VcClaims;
 };
 
-export type VcIssueRequest = { childId: string; type: VcType; assessmentId?: string };
-export type VcRevokeRequest = { vcId: string; reason?: string };
+// ── Server raw response types ────────────────────────────────────────────
+
+export type ServerIssueVcResponse = {
+  id: string;
+  childId: string;
+  childAnonId: string;
+  issuerId: string;
+  issuerWallet: string;
+  vcType: string;
+  ipfsCid: string;
+  txHash: string;
+  expiresAt: string | null;
+  createdAt: string;
+  qrPayload: string;
+};
+
+export type ServerVcDetailResponse = {
+  id: string;
+  context?: string[];
+  type?: string[];
+  issuer: Record<string, unknown>;
+  issuanceDate: string;
+  expirationDate: string | null;
+  credentialSubject: Record<string, unknown>;
+  isRevoked: boolean;
+  ipfsCid: string;
+  txHash: string | null;
+};
+
+export type ServerVcStatusResponse = {
+  vc: ServerVcDetailResponse | null;
+};
+
+export type ServerVerifyQrResponse = {
+  valid: boolean;
+  vcId: string;
+  vcType: string;
+  childAnonId: string;
+  issuerName: string;
+  issuedAt: string;
+  expiresAt: string | null;
+  isRevoked: boolean;
+  verificationMethod: string;
+  ipfsCid: string;
+};
+
+// ── Request DTOs (match server) ──────────────────────────────────────────
+
+export type VcIssueRequest = {
+  childId: string;
+  vcType: VcType;
+  expiresAt?: string;
+};
+export type VcRevokeRequest = { vcId: string };
 export type VcVerificationResult = { isValid: boolean; vc: VcRecord | null; verifiedAt: string; message: string };

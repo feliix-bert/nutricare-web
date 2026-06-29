@@ -37,7 +37,9 @@ export const useAuth = () => {
     setIsLoading(true);
     setError(null);
     try {
-      await authService.register(data);
+      const response = await authService.register(data);
+      setAuth(response.accessToken, response.refreshToken, response.user);
+      router.replace('/(app)/(tabs)/' as never);
       return true;
     } catch (err) {
       const msg =

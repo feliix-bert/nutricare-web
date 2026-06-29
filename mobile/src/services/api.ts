@@ -32,11 +32,11 @@ apiClient.interceptors.response.use(
           logout();
           return Promise.reject(error);
         }
-        const res = await axios.post<{ accessToken: string }>(
+        const res = await axios.post<{ accessToken: string; refreshToken: string; user: unknown }>(
           `${BASE_URL}/api/auth/refresh`,
           { refreshToken },
         );
-        setAuth(res.data.accessToken, refreshToken, useAuthStore.getState().user!);
+        setAuth(res.data.accessToken, res.data.refreshToken, useAuthStore.getState().user!);
         original.headers.Authorization = `Bearer ${res.data.accessToken}`;
         return apiClient(original);
       } catch {

@@ -1,10 +1,12 @@
-# API.md — Tumbuh Sehat
+# API.md — Tumbuh Sehat (GiziChain)
+
+> Cocok dengan implementasi server Spring Boot actual. Update terakhir: 2026-06-29.
 
 ## Konvensi
 
 - **Base URL**: `http://localhost:8080` (dev) / `https://api.stunting-ai.com` (prod)
 - **Content-Type**: `application/json` (kecuali upload foto: `multipart/form-data`)
-- **Auth**: Semua endpoint kecuali `/api/auth/**` memerlukan header:
+- **Auth**: Semua endpoint kecuali `/api/auth/**` dan `/api/verify` memerlukan header:
   ```
   Authorization: Bearer <accessToken>
   ```
@@ -28,13 +30,14 @@
     "totalPages": 5
   }
   ```
+- **Primary Key**: CUID (`util/CuidGenerator.java`)
 
 ---
 
 ## Auth — `/api/auth`
 
 ### POST `/api/auth/register`
-Registrasi akun baru. Hanya untuk role `PARENT` (self-register).
+Registrasi akun baru. Hanya untuk role `PARENT` (self-register). Langsung return token (auto-login).
 `MEDIC` dan `ADMIN` dibuat oleh ADMIN via `/api/admin/users`.
 
 **Auth**: ❌ Tidak diperlukan
@@ -51,10 +54,17 @@ Registrasi akun baru. Hanya untuk role `PARENT` (self-register).
 **Response `201 Created`**:
 ```json
 {
-  "id": "clx1234567890",
-  "email": "orang.tua@email.com",
-  "name": "Budi Santoso",
-  "role": "PARENT"
+  "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
+  "tokenType": "Bearer",
+  "user": {
+    "id": "clx1234567890",
+    "name": "Budi Santoso",
+    "email": "orang.tua@email.com",
+    "role": "PARENT",
+    "isActive": true,
+    "walletAddress": null
+  }
 }
 ```
 
@@ -78,15 +88,17 @@ Login dan dapatkan JWT.
 **Response `200 OK`**:
 ```json
 {
-  "accessToken": "eyJhbGci...",
-  "refreshToken": "eyJhbGci...",
+  "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiJ9...",
+  "tokenType": "Bearer",
   "user": {
-  "id": "clx1234567890",
-  "email": "orang.tua@email.com",
-  "name": "Budi Santoso",
-  "role": "PARENT",
-  "walletAddress": null
-}
+    "id": "clx1234567890",
+    "name": "Budi Santoso",
+    "email": "orang.tua@email.com",
+    "role": "PARENT",
+    "isActive": true,
+    "walletAddress": null
+  }
 }
 ```
 
@@ -95,25 +107,20 @@ Login dan dapatkan JWT.
 ---
 
 ### POST `/api/auth/refresh`
-Dapatkan access token baru menggunakan refresh token.
+Dapatkan access token baru + refresh token baru (token rotation — refresh token lama direvoke).
 
 **Auth**: ❌ Tidak diperlukan
 
 **Request Body**:
 ```json
 {
-  "refreshToken": "eyJhbGci..."
+  "refreshToken": "eyJhbGciOiJIUzI1NiJ9..."
 }
 ```
 
-**Response `200 OK`**:
-```json
-{
-  "accessToken": "eyJhbGci..."
-}
-```
+**Response `200 OK`**: Sama seperti login — full `AuthResponse` (accessToken baru + refreshToken baru + user).
 
-**Errors**: `401` refresh token invalid atau expired
+**Errors**: `404` refresh token invalid atau expired
 
 ---
 
@@ -125,11 +132,16 @@ Revoke refresh token aktif.
 **Request Body**:
 ```json
 {
-  "refreshToken": "eyJhbGci..."
+  "refreshToken": "eyJhbGciOiJIUzI1NiJ9..."
 }
 ```
 
-**Response `204 No Content`**
+**Response `200 OK`**:
+```json
+{
+  "message": "Logout berhasil"
+}
+```
 
 ---
 
@@ -142,9 +154,11 @@ Ambil data user yang sedang login.
 ```json
 {
   "id": "clx1234567890",
-  "email": "orang.tua@email.com",
   "name": "Budi Santoso",
-  "role": "PARENT"
+  "email": "orang.tua@email.com",
+  "role": "PARENT",
+  "isActive": true,
+  "walletAddress": null
 }
 ```
 
@@ -157,7 +171,7 @@ Ambil semua anak milik user yang login.
 
 **Auth**: ✅ PARENT (own), MEDIC & ADMIN (semua anak)
 
-**Query Params**: `page` (default 0), `size` (default 10)
+**Query Params**: `page` (default 0), `size` (default 10), `search`, `status`
 
 **Response `200 OK`**:
 ```json
@@ -166,11 +180,14 @@ Ambil semua anak milik user yang login.
     {
       "id": "clx_child_001",
       "name": "Andi Santoso",
-      "birthDate": "2023-01-15",
       "gender": "MALE",
+      "birthDate": "2023-01-15",
+      "anonId": "anon_abc123",
       "ageMonths": 18,
+      "createdAt": "2025-07-01T00:00:00Z",
       "latestPrediction": {
         "status": "AT_RISK",
+        "riskLevel": 2,
         "createdAt": "2025-07-01T00:00:00Z"
       }
     }
@@ -187,7 +204,7 @@ Ambil semua anak milik user yang login.
 ### POST `/api/children`
 Tambah data anak baru.
 
-**Auth**: ✅ PARENT
+**Auth**: ✅ PARENT, ADMIN
 
 **Request Body**:
 ```json
@@ -198,23 +215,14 @@ Tambah data anak baru.
 }
 ```
 
-**Response `201 Created`**:
-```json
-{
-  "id": "clx_child_001",
-  "name": "Andi Santoso",
-  "birthDate": "2023-01-15",
-  "gender": "MALE",
-  "ageMonths": 18
-}
-```
+**Response `201 Created`**: Sama seperti item di GET `/api/children`.
 
 **Errors**: `400` validasi gagal
 
 ---
 
 ### GET `/api/children/{childId}`
-Ambil detail anak beserta riwayat assessment terbaru.
+Ambil detail anak beserta riwayat assessment + prediksi lengkap.
 
 **Auth**: ✅ PARENT (own), MEDIC & ADMIN (semua)
 
@@ -223,18 +231,38 @@ Ambil detail anak beserta riwayat assessment terbaru.
 {
   "id": "clx_child_001",
   "name": "Andi Santoso",
-  "birthDate": "2023-01-15",
   "gender": "MALE",
+  "birthDate": "2023-01-15",
+  "anonId": "anon_abc123",
   "ageMonths": 18,
+  "createdAt": "2025-07-01T00:00:00Z",
   "assessments": [
     {
       "id": "clx_assessment_001",
       "weight": 9.5,
       "height": 74.0,
+      "headCircumference": 45.5,
+      "bfExclusive": true,
+      "mpasiAge": 6,
+      "mealFreq": 3,
+      "illnessHistory": "Diare 2 kali dalam 3 bulan terakhir",
       "createdAt": "2025-07-01T00:00:00Z",
       "prediction": {
+        "id": "clx_pred_001",
         "status": "AT_RISK",
-        "riskLevel": 2
+        "predictionStatus": "COMPLETED",
+        "riskLevel": 2,
+        "zscoreWa": -1.8,
+        "zscoreHa": -2.1,
+        "zscoreWh": -1.2,
+        "summary": "Tinggi badan Andi berada di bawah -2 SD dari median WHO.",
+        "recommendations": [
+          "Tingkatkan frekuensi makan menjadi 5–6 kali sehari",
+          "Berikan makanan padat gizi: telur, tempe, sayuran hijau",
+          "Konsultasi dengan dokter anak dalam 2 minggu"
+        ],
+        "nextAssessmentDate": "2025-10-24",
+        "createdAt": "2025-07-01T00:00:00Z"
       }
     }
   ]
@@ -246,28 +274,29 @@ Ambil detail anak beserta riwayat assessment terbaru.
 ---
 
 ### PUT `/api/children/{childId}`
-Update data anak (hanya nama dan tanggal lahir).
+Update data anak (nama, tanggal lahir, gender).
 
-**Auth**: ✅ PARENT (own)
+**Auth**: ✅ PARENT (own), ADMIN
 
 **Request Body**:
 ```json
 {
   "name": "Andi Budi Santoso",
-  "birthDate": "2023-01-15"
+  "birthDate": "2023-01-15",
+  "gender": "MALE"
 }
 ```
 
-**Response `200 OK`**: Data anak terbaru
+**Response `200 OK`**: Data anak terbaru (sama seperti POST).
 
 ---
 
 ## Assessments — `/api/assessments`
 
 ### POST `/api/assessments`
-Submit assessment baru. Prediksi AI di-generate otomatis secara async.
+Submit assessment baru. Prediksi di-generate secara **async** (`@Async`). Response langsung return PredictionResponse dengan `predictionStatus: "PENDING"`.
 
-**Auth**: ✅ PARENT
+**Auth**: ✅ PARENT, ADMIN
 
 **Request Body**:
 ```json
@@ -296,93 +325,92 @@ Submit assessment baru. Prediksi AI di-generate otomatis secara async.
 **Response `201 Created`**:
 ```json
 {
-  "id": "clx_assessment_001",
+  "id": "clx_pred_001",
+  "assessmentId": "clx_assessment_001",
   "childId": "clx_child_001",
-  "weight": 9.5,
-  "height": 74.0,
-  "createdAt": "2025-07-24T10:00:00Z",
-    "prediction": {
-    "id": "clx_pred_001",
-    "status": "PENDING",
-    "message": "Prediksi sedang diproses, harap tunggu."
-  },
-  "blockchain": null
+  "childName": "Andi Santoso",
+  "status": "AT_RISK",
+  "predictionStatus": "PENDING",
+  "riskLevel": 2,
+  "statusLabel": "Berisiko Stunting",
+  "statusColor": "yellow",
+  "zscoreWa": -1.8,
+  "zscoreHa": -2.1,
+  "zscoreWh": -1.2,
+  "summary": "Tinggi badan Andi berada di bawah -2 SD dari median WHO.",
+  "recommendations": [
+    "Tingkatkan frekuensi makan menjadi 5–6 kali sehari"
+  ],
+  "nextAssessmentDate": "2025-10-24",
+  "disclaimer": "Hasil ini bersifat skrining awal dan bukan diagnosis medis. Konsultasikan dengan dokter atau tenaga kesehatan.",
+  "blockchain": null,
+  "createdAt": "2025-07-24T10:00:00Z"
 }
 ```
+
+> Catatan: Saat `predictionStatus: "PENDING"`, field z-score, summary, recommendations akan null. Client perlu pooling GET `/api/assessments/{id}` sampai `predictionStatus: "COMPLETED"`. Retry job otomatis tiap 5 menit untuk yang gagal.
 
 ---
 
 ### GET `/api/assessments/{assessmentId}`
-Ambil detail assessment beserta prediksinya.
+Ambil detail prediksi assessment (flat structure — `PredictionResponse`).
 
 **Auth**: ✅ PARENT (own), MEDIC & ADMIN (semua)
 
 **Response `200 OK`**:
 ```json
 {
-  "id": "clx_assessment_001",
-  "child": {
-    "id": "clx_child_001",
-    "name": "Andi Santoso",
-    "ageMonths": 18
-  },
-  "weight": 9.5,
-  "height": 74.0,
-  "headCircumference": 45.5,
-  "bfExclusive": true,
-  "mpasiAge": 6,
-  "mealFreq": 3,
-  "illnessHistory": "Diare 2 kali dalam 3 bulan terakhir",
-  "createdAt": "2025-07-24T10:00:00Z",
-  "prediction": {
-    "id": "clx_pred_001",
-    "status": "AT_RISK",
-    "predictionStatus": "COMPLETED",
-    "zscoreWa": -1.8,
-    "zscoreHa": -2.1,
-    "zscoreWh": -1.2,
-    "riskLevel": 2,
-    "summary": "Tinggi badan Andi berada di bawah -2 SD dari median WHO.",
-    "recommendations": [
-      "Tingkatkan frekuensi makan menjadi 5–6 kali sehari",
-      "Berikan makanan padat gizi: telur, tempe, sayuran hijau",
-      "Konsultasi dengan dokter anak dalam 2 minggu"
-    ],
-    "nextAssessmentDate": "2025-10-24",
-    "disclaimer": "Hasil ini bersifat skrining awal dan bukan diagnosis medis. Konsultasikan dengan dokter atau tenaga kesehatan."
-  },
+  "id": "clx_pred_001",
+  "assessmentId": "clx_assessment_001",
+  "childId": "clx_child_001",
+  "childName": "Andi Santoso",
+  "status": "AT_RISK",
+  "predictionStatus": "COMPLETED",
+  "riskLevel": 2,
+  "statusLabel": "Berisiko Stunting",
+  "statusColor": "yellow",
+  "zscoreWa": -1.8,
+  "zscoreHa": -2.1,
+  "zscoreWh": -1.2,
+  "summary": "Tinggi badan Andi berada di bawah -2 SD dari median WHO.",
+  "recommendations": [
+    "Tingkatkan frekuensi makan menjadi 5–6 kali sehari",
+    "Berikan makanan padat gizi: telur, tempe, sayuran hijau",
+    "Konsultasi dengan dokter anak dalam 2 minggu"
+  ],
+  "nextAssessmentDate": "2025-10-24",
+  "disclaimer": "Hasil ini bersifat skrining awal dan bukan diagnosis medis. Konsultasikan dengan dokter atau tenaga kesehatan.",
   "blockchain": {
-    "id": "clx_anchor_001",
-    "anchored": true,
-    "recordHash": "0xabc123...def456",
-    "txHash": "0xabc123...def456",
-    "blockNumber": 48291034,
     "anchorStatus": "CONFIRMED",
-    "explorerUrl": "https://polygonscan.com/tx/0xabc123...def456",
-    "verifyUrl": "/api/blockchain/verify/clx_assessment_001"
-  }
+    "txHash": "0xabc123...def456",
+    "polygonscanUrl": "https://amoy.polygonscan.com/tx/0xabc123...def456",
+    "isVerified": true
+  },
+  "createdAt": "2025-07-24T10:00:00Z"
 }
 ```
+
+> Catatan: Server return struktur FLAT, **bukan** nested seperti `{ child, weight, height, prediction, blockchain }`. Field anthropometry tidak ada di response ini — hanya z-score. Untuk detail anthropometry + prediction + child info, gunakan `GET /api/children/{childId}`.
 
 ---
 
 ### GET `/api/assessments/child/{childId}`
-Ambil semua riwayat assessment seorang anak.
+Ambil semua riwayat prediksi seorang anak (paginated).
 
 **Auth**: ✅ PARENT (own), MEDIC & ADMIN (semua)
 
 **Query Params**: `page`, `size`
 
-**Response `200 OK`**: Paginated list assessment
+**Response `200 OK`**: Paginated list `PredictionResponse` (sama format seperti GET assessment detail).
 
 ---
 
 ## Nutrition — `/api/nutrition`
 
 ### POST `/api/nutrition`
-Upload foto makanan dan analisis kandungan gizi.
+Upload foto makanan dan analisis kandungan gizi via Gemini Vision.
 
-**Auth**: ✅ PARENT
+**Auth**: ✅ PARENT, ADMIN
 
 **Content-Type**: `multipart/form-data`
 
@@ -397,16 +425,14 @@ Upload foto makanan dan analisis kandungan gizi.
 {
   "id": "clx_nutrition_001",
   "childId": "clx_child_001",
-  "photoUrl": "https://[project].supabase.co/storage/v1/object/public/meal-photos/...",
+  "photoUrl": "https://[project].supabase.co/storage/v1/object/public/food-photos/...",
   "foodDetected": ["nasi putih", "ayam goreng", "sayur bayam"],
   "portionEstimate": "porsi sedang (~300g)",
-  "nutrition": {
-    "calories": 420.0,
-    "protein": 18.0,
-    "carbs": 52.0,
-    "fat": 14.0,
-    "fiber": 3.0
-  },
+  "calories": 420.0,
+  "protein": 18.0,
+  "carbs": 52.0,
+  "fat": 14.0,
+  "fiber": 3.0,
   "adequacyNote": "Cukup untuk anak 12–18 bulan (1 kali makan)",
   "mpasiRecommendation": "Tambahkan sumber zat besi seperti hati ayam 2x seminggu",
   "createdAt": "2025-07-24T10:00:00Z"
@@ -424,7 +450,16 @@ Ambil riwayat log gizi seorang anak.
 
 **Query Params**: `page`, `size`
 
-**Response `200 OK`**: Paginated list nutrition logs
+**Response `200 OK`**: Paginated list `NutritionResponse` (sama format seperti POST).
+
+---
+
+### DELETE `/api/nutrition/{logId}`
+Hapus log nutrisi.
+
+**Auth**: ✅ PARENT (own)
+
+**Response `204 No Content`**
 
 ---
 
@@ -433,7 +468,7 @@ Ambil riwayat log gizi seorang anak.
 ### POST `/api/chat`
 Kirim pesan ke chatbot konsultasi.
 
-**Auth**: ✅ PARENT
+**Auth**: ✅ PARENT, ADMIN
 
 **Request Body**:
 ```json
@@ -447,15 +482,14 @@ Kirim pesan ke chatbot konsultasi.
 ```json
 {
   "sessionId": "clx_session_001",
-  "reply": "Berdasarkan kondisi Andi (status AT_RISK, z-score TB/U -2.1), susah makan bisa disebabkan oleh...",
-  "suggestedQuestions": [
-    "Makanan apa yang sebaiknya dihindari?",
-    "Berapa kali idealnya Andi makan dalam sehari?"
-  ]
+  "predictionId": "clx_pred_001",
+  "role": "assistant",
+  "content": "Berdasarkan kondisi Andi (status AT_RISK, z-score TB/U -2.1), susah makan bisa disebabkan oleh...",
+  "timestamp": "2025-07-24T10:00:00Z"
 }
 ```
 
-**Errors**: `400` prediksi belum ada atau masih PENDING, `404` prediksi tidak ditemukan
+**Errors**: `400` prediksi belum PENDING/FAILED, `404` prediksi tidak ditemukan, `403` bukan milik user
 
 ---
 
@@ -480,20 +514,37 @@ Ambil riwayat percakapan untuk prediksi tertentu.
       "content": "Berdasarkan kondisi Andi...",
       "timestamp": "2025-07-24T10:00:05Z"
     }
-  ],
-  "updatedAt": "2025-07-24T10:00:05Z"
+  ]
 }
 ```
 
 ---
 
+## Reports — `/api/reports`
+
+### GET `/api/reports/child/{childId}`
+Generate dan unduh laporan PDF untuk seorang anak.
+
+**Auth**: ✅ PARENT (own), MEDIC & ADMIN (semua)
+
+**Query Params**:
+| Param | Tipe | Default | Keterangan |
+|-------|------|---------|-----------|
+| `from` | Date | 30 hari lalu | Filter tanggal mulai |
+| `to` | Date | hari ini | Filter tanggal akhir |
+
+**Response `200 OK`**:
+- Content-Type: `application/pdf`
+- Content-Disposition: `attachment; filename="laporan-anak-[id].pdf"`
+
+---
+
 ## Blockchain — `/api/blockchain`
-> Endpoint untuk meng-anchor hash data assessment ke Polygon dan memverifikasi integritasnya.
 
 ### POST `/api/blockchain/anchor`
-Anchor hash assessment ke blockchain Polygon. Dipanggil otomatis oleh server setelah prediksi selesai.
+Anchor hash assessment ke blockchain Polygon. Dipanggil otomatis oleh server (`@Async` setelah prediksi selesai), **bukan oleh client**.
 
-**Auth**: ✅ SERVER (internal, tidak dipanggil langsung oleh client)
+**Auth**: ✅ Server internal (tidak dipanggil langsung oleh client)
 
 **Response `200 OK`**:
 ```json
@@ -527,7 +578,7 @@ Verifikasi integritas data assessment dengan membandingkan hash on-chain.
   "anchoredAt": "2025-07-24T10:00:00Z",
   "txHash": "0xabc123...def456",
   "blockNumber": 48291034,
-  "explorerUrl": "https://polygonscan.com/tx/0xabc123...def456"
+  "explorerUrl": "https://amoy.polygonscan.com/tx/0xabc123...def456"
 }
 ```
 
@@ -536,10 +587,9 @@ Verifikasi integritas data assessment dengan membandingkan hash on-chain.
 ---
 
 ## Verifiable Credential — `/api/vc`
-> Kelola Verifiable Credential (W3C) untuk status gizi dan imunisasi anak. VC disimpan di IPFS via Pinata dan dicatat di smart contract.
 
 ### POST `/api/vc/issue`
-Terbitkan Verifiable Credential baru untuk seorang anak.
+Terbitkan Verifiable Credential baru untuk seorang anak. Data disimpan di IPFS via Pinata dan dicatat di smart contract (simulasi).
 
 **Auth**: ✅ MEDIC, ADMIN
 
@@ -574,15 +624,15 @@ Terbitkan Verifiable Credential baru untuk seorang anak.
 ---
 
 ### GET `/api/vc/{vcId}`
-Ambil detail VC (publik, data anonim — tanpa PII).
+Ambil detail VC dalam format W3C (publik, data anonim — tanpa PII).
 
-**Auth**: ✅ ANY
+**Auth**: ✅ ANY (publik)
 
 **Response `200 OK`**:
 ```json
 {
   "id": "clx_vc_001",
-  "@context": ["https://www.w3.org/2018/credentials/v1"],
+  "context": ["https://www.w3.org/2018/credentials/v1"],
   "type": ["VerifiableCredential", "ChildHealthCredential"],
   "issuer": {
     "id": "did:polygon:0xMedicWalletAddress",
@@ -605,6 +655,33 @@ Ambil detail VC (publik, data anonim — tanpa PII).
 
 ---
 
+### GET `/api/vc/child/{childId}`
+Mendapatkan VC aktif terbaru milik seorang anak.
+
+**Auth**: ✅ ANY (publik)
+
+**Response `200 OK`**:
+```json
+{
+  "vc": {
+    "id": "clx_vc_001",
+    "context": ["https://www.w3.org/2018/credentials/v1"],
+    "type": ["VerifiableCredential", "ChildHealthCredential"],
+    "issuer": { ... },
+    "issuanceDate": "...",
+    "expirationDate": "...",
+    "credentialSubject": { ... },
+    "isRevoked": false,
+    "ipfsCid": "Qm...",
+    "txHash": "0x..."
+  }
+}
+```
+
+`vc` bisa `null` jika anak belum punya VC aktif.
+
+---
+
 ### POST `/api/vc/revoke`
 Cabut (revoke) VC yang sudah diterbitkan. Hanya issuer yang bisa revoke.
 
@@ -617,15 +694,7 @@ Cabut (revoke) VC yang sudah diterbitkan. Hanya issuer yang bisa revoke.
 }
 ```
 
-**Response `200 OK`**:
-```json
-{
-  "id": "clx_vc_001",
-  "isRevoked": true,
-  "revokeTxHash": "0xdef789...abc012",
-  "revokedAt": "2025-07-25T10:00:00Z"
-}
-```
+**Response `200 OK`**: Return full `VcDetailResponse` dengan `isRevoked: true`.
 
 **Errors**: `403` bukan issuer VC ini, `400` VC sudah di-revoke sebelumnya
 
@@ -661,50 +730,103 @@ Verifikasi QR code VC. Endpoint publik tanpa auth — bisa diakses oleh faskes m
 
 ---
 
-## Reports — `/api/reports`
-
-### GET `/api/reports/child/{childId}`
-Generate dan unduh laporan PDF untuk seorang anak.
-
-**Auth**: ✅ PARENT (own), MEDIC & ADMIN (semua)
-
-**Query Params**:
-| Param | Tipe | Default | Keterangan |
-|-------|------|---------|-----------|
-| `from` | Date | 30 hari lalu | Filter tanggal mulai |
-| `to` | Date | hari ini | Filter tanggal akhir |
-
-**Response `200 OK`**:
-- Content-Type: `application/pdf`
-- Content-Disposition: `attachment; filename="laporan-anak-[id].pdf"`
-
----
-
 ## Medic — `/api/medic`
-> Semua endpoint ini memerlukan role `MEDIC` atau `ADMIN`.
 
 ### GET `/api/medic/patients`
 Ambil daftar semua anak yang terdaftar di sistem.
 
 **Auth**: ✅ MEDIC, ADMIN
 
-**Query Params**: `page`, `size`, `search` (nama anak/orang tua), `status` (filter stunt status)
+**Query Params**: `page`, `size`, `search` (nama anak/orang tua), `status` (filter StuntStatus)
 
-**Response `200 OK`**: Paginated list anak beserta prediksi terbaru
+**Response `200 OK`**: Paginated list Map:
+```json
+{
+  "data": [
+    {
+      "id": "clx_child_001",
+      "name": "Andi Santoso",
+      "gender": "MALE",
+      "birthDate": "2023-01-15",
+      "ageMonths": 18,
+      "parentName": "Budi Santoso",
+      "latestPrediction": {
+        "status": "AT_RISK",
+        "riskLevel": 2,
+        "createdAt": "2025-07-01T00:00:00Z"
+      }
+    }
+  ],
+  "page": 0,
+  "size": 10,
+  "totalElements": 1,
+  "totalPages": 1
+}
+```
+
+> Catatan: Response berupa dynamic `Map<String, Object>`, bukan DTO tetap. Field: `id, name, gender, birthDate, ageMonths, parentName, latestPrediction`.
 
 ---
 
 ### GET `/api/medic/patients/{childId}/summary`
-Ringkasan lengkap seorang anak: semua assessment, prediksi, dan log gizi.
+Ringkasan lengkap seorang anak: data anak, semua assessment + prediksi, dan log gizi (7 terakhir).
 
 **Auth**: ✅ MEDIC, ADMIN
 
-**Response `200 OK`**: Data lengkap anak
+**Response `200 OK`**:
+```json
+{
+  "id": "clx_child_001",
+  "name": "Andi Santoso",
+  "gender": "MALE",
+  "birthDate": "2023-01-15",
+  "ageMonths": 18,
+  "anonId": "anon_abc123",
+  "parent": {
+    "id": "clx_user_001",
+    "name": "Budi Santoso",
+    "email": "orang.tua@email.com"
+  },
+  "assessments": [
+    {
+      "id": "clx_assessment_001",
+      "weight": 9.5,
+      "height": 74.0,
+      "headCircumference": 45.5,
+      "bfExclusive": true,
+      "mealFreq": 3,
+      "illnessHistory": "...",
+      "createdAt": "...",
+      "prediction": {
+        "id": "clx_pred_001",
+        "status": "AT_RISK",
+        "predictionStatus": "COMPLETED",
+        "zscoreHa": -2.1,
+        "zscoreWa": -1.8,
+        "zscoreWh": -1.2,
+        "riskLevel": 2,
+        "summary": "...",
+        "recommendations": ["..."],
+        "nextAssessmentDate": "2025-10-24",
+        "createdAt": "..."
+      }
+    }
+  ],
+  "recentNutritionLogs": [
+    {
+      "id": "clx_nutrition_001",
+      "photoUrl": "https://...",
+      "foodDetected": ["nasi", "ayam"],
+      "calories": 420.0,
+      "createdAt": "..."
+    }
+  ]
+}
+```
 
 ---
 
 ## Admin — `/api/admin`
-> Semua endpoint ini memerlukan role `ADMIN`.
 
 ### GET `/api/admin/users`
 Daftar semua akun pengguna.
@@ -713,12 +835,31 @@ Daftar semua akun pengguna.
 
 **Query Params**: `page`, `size`, `role`, `search`
 
-**Response `200 OK`**: Paginated list user
+**Response `200 OK`**: Paginated list `UserAdminResponse`:
+```json
+{
+  "data": [
+    {
+      "id": "clx_user_001",
+      "email": "orang.tua@email.com",
+      "name": "Budi Santoso",
+      "role": "PARENT",
+      "isActive": true,
+      "walletAddress": null,
+      "createdAt": "2025-07-01T00:00:00Z"
+    }
+  ],
+  "page": 0,
+  "size": 10,
+  "totalElements": 3,
+  "totalPages": 1
+}
+```
 
 ---
 
 ### POST `/api/admin/users`
-Buat akun baru untuk role `MEDIC` atau `ADMIN`.
+Buat akun baru untuk role `MEDIC`, `POSYANDU`, atau `ADMIN`.
 
 **Auth**: ✅ ADMIN
 
@@ -732,7 +873,16 @@ Buat akun baru untuk role `MEDIC` atau `ADMIN`.
 }
 ```
 
-**Response `201 Created`**: Data user baru
+**Response `201 Created`**:
+```json
+{
+  "id": "clx_user_002",
+  "email": "dokter@puskesmas.go.id",
+  "name": "dr. Siti Rahayu",
+  "role": "MEDIC",
+  "isActive": true
+}
+```
 
 ---
 
@@ -748,7 +898,7 @@ Aktifkan atau nonaktifkan akun user.
 }
 ```
 
-**Response `200 OK`**: Data user terbaru
+**Response `200 OK`**: Data user terbaru (`UserAdminResponse`).
 
 ---
 
@@ -764,20 +914,19 @@ Ubah role user.
 }
 ```
 
-**Response `200 OK`**: Data user terbaru
+**Response `200 OK`**: Data user terbaru (`UserAdminResponse`).
 
 ---
 
 ### GET `/api/admin/stats`
-Statistik agregat stunting (untuk peta sebaran dan dashboard).
+Statistik agregat stunting (untuk dashboard).
 
 **Auth**: ✅ ADMIN
-
-**Query Params**: `from`, `to`
 
 **Response `200 OK`**:
 ```json
 {
+  "totalUsers": 10,
   "totalChildren": 1240,
   "totalAssessments": 3820,
   "distribution": {
@@ -786,11 +935,7 @@ Statistik agregat stunting (untuk peta sebaran dan dashboard).
     "STUNTED": 155,
     "SEVERELY_STUNTED": 55
   },
-  "percentageStunted": 16.9,
-  "period": {
-    "from": "2025-01-01",
-    "to": "2025-07-24"
-  }
+  "percentageStunted": 16.9
 }
 ```
 
@@ -808,6 +953,20 @@ Statistik agregat stunting (untuk peta sebaran dan dashboard).
 | `403` | Forbidden — role tidak punya akses |
 | `404` | Not Found |
 | `409` | Conflict — data duplikat (email sudah ada) |
-| `422` | Unprocessable Entity — data valid tapi tidak bisa diproses (misal foto tidak dikenali Gemini, VC expired) |
+| `422` | Unprocessable Entity — data valid tapi tidak bisa diproses |
 | `500` | Internal Server Error |
 | `503` | Service Unavailable — Gemini, Supabase, atau blockchain RPC tidak bisa dijangkau |
+
+## Status Label Mapping
+
+| `StuntStatus` | `statusLabel` | `statusColor` |
+|---------------|---------------|---------------|
+| `NORMAL` | "Normal" | "green" |
+| `AT_RISK` | "Berisiko Stunting" | "yellow" |
+| `STUNTED` | "Stunting" | "orange" |
+| `SEVERELY_STUNTED` | "Stunting Berat" | "red" |
+
+## Disclaimer
+
+Semua response prediksi menyertakan disclaimer berikut:
+> "Hasil ini bersifat skrining awal dan bukan diagnosis medis. Konsultasikan dengan dokter atau tenaga kesehatan."

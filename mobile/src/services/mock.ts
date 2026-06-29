@@ -5,7 +5,7 @@ import type { AssessmentResponseDTO, AssessmentRequestDTO } from '@/features/ass
 import type { NutritionLog, NutritionUploadRequest } from '@/features/nutrition/types/nutrition.types';
 import type { VcRecord, VcIssueRequest } from '@/features/vc/types/vc.types';
 
-export const USE_MOCK = true;
+export const USE_MOCK = false;
 
 /** Simulates network latency */
 export const delay = (ms = 600) =>

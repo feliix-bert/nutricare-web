@@ -196,12 +196,12 @@ export const ResultsScreen = () => {
             </View>
             <View className="flex-row justify-between">
               <Text className="text-xs text-outline font-medium">Block Number</Text>
-              <Text className="text-xs font-bold text-on-surface">{assessment.blockchain.blockNumber || "1206148"}</Text>
+              <Text className="text-xs font-bold text-on-surface">{assessment.blockchain?.blockNumber ?? "1206148"}</Text>
             </View>
             <View className="flex-row justify-between">
               <Text className="text-xs text-outline font-medium">TX Hash</Text>
               <Text className="text-xs font-mono text-on-surface text-right max-w-[200px]" numberOfLines={1} ellipsizeMode="middle">
-                {assessment.blockchain.txHash || "0xabc123...def789"}
+                {assessment.blockchain?.txHash || "0xabc123...def789"}
               </Text>
             </View>
           </Card>

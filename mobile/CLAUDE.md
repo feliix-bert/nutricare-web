@@ -126,7 +126,7 @@ src/
 
 ### Base URL
 ```
-DEV:  http://localhost:8080
+DEV:  http://<laptop-ip>:8080 (localhost di HP fisik ga jalan — pake IP)
 PROD: https://api.stunting-ai.com
 ```
 Env: `EXPO_PUBLIC_API_URL`
@@ -144,9 +144,9 @@ Env: `EXPO_PUBLIC_API_URL`
 ### Auth (no Bearer required)
 | Method | Endpoint | Request | Response | Status |
 |--------|----------|---------|----------|--------|
-| POST | `/api/auth/register` | `{ email, password, name }` | `{ id, email, name, role }` | 201 |
+| POST | `/api/auth/register` | `{ email, password, name }` | `{ id, email, name, role, isActive?, createdAt?, updatedAt? }` | 201 |
 | POST | `/api/auth/login` | `{ email, password }` | `{ accessToken, refreshToken, user }` | 200 |
-| POST | `/api/auth/refresh` | `{ refreshToken }` | `{ accessToken }` | 200 |
+| POST | `/api/auth/refresh` | `{ refreshToken }` | `{ accessToken, refreshToken, user }` | 200 |
 | POST | `/api/auth/logout` | `{ refreshToken }` | — | 204 |
 | GET | `/api/auth/me` | — | `{ id, email, name, role }` | 200 |
 
@@ -154,16 +154,16 @@ Env: `EXPO_PUBLIC_API_URL`
 | Method | Endpoint | Query/Params | Request | Response | Status |
 |--------|----------|--------------|---------|----------|--------|
 | GET | `/api/children` | `?page=0&size=10` | — | `PageResponse<Child>` | 200 |
-| POST | `/api/children` | — | `{ name, birthDate, gender }` | `Child` | 201 |
-| GET | `/api/children/{childId}` | — | — | `ChildDetail` (with assessments) | 200 |
+| POST | `/api/children` | — | `{ name, birthDate, gender }` | `Child` + `anonId, createdAt` | 201 |
+| GET | `/api/children/{childId}` | — | — | `ChildDetail` (with `assessments[]` including prediction) | 200 |
 | PUT | `/api/children/{childId}` | — | `{ name, birthDate }` | `Child` | 200 |
 
 ### Assessments (Bearer required)
 | Method | Endpoint | Request | Response |
 |--------|----------|---------|----------|
-| POST | `/api/assessments` | `{ childId, weight, height, headCircumference?, bfExclusive, mpasiAge?, mealFreq, illnessHistory? }` | `AssessmentResponseDTO` (prediction=PENDING) |
-| GET | `/api/assessments/{assessmentId}` | — | `AssessmentResponseDTO` (full + blockchain) |
-| GET | `/api/assessments/child/{childId}` | `?page&size` | `PageResponse<AssessmentResponseDTO>` |
+| POST | `/api/assessments` | `{ childId, weight, height, headCircumference?, bfExclusive, mpasiAge?, mealFreq, illnessHistory? }` | `PredictionResponse` (flat: assessmentId, childId, childName, createdAt + prediction fields + blockchain info) |
+| GET | `/api/assessments/{assessmentId}` | — | `PredictionResponse` (sama skema, full data) |
+| GET | `/api/assessments/child/{childId}` | `?page&size` | `PageResponse<PredictionResponse>` |
 
 **Validasi Assessment**:
 | Field | Rule |
@@ -184,28 +184,29 @@ Env: `EXPO_PUBLIC_API_URL`
 ### Chat (Bearer required)
 | Method | Endpoint | Request | Response |
 |--------|----------|---------|----------|
-| POST | `/api/chat` | `{ predictionId, message }` | `{ sessionId, reply, suggestedQuestions[] }` |
-| GET | `/api/chat/{predictionId}` | — | `{ sessionId, predictionId, messages[], updatedAt }` |
+| POST | `/api/chat` | `{ predictionId, message }` | `{ sessionId, content, role, timestamp }` (message object) |
+| GET | `/api/chat/{predictionId}` | — | `{ sessionId, predictionId, messages: [{ role, content, timestamp }], updatedAt }` |
 
 **Guard**: Chat only works if prediction status = `COMPLETED`.
 
 ### Blockchain
 | Method | Endpoint | Auth | Response |
 |--------|----------|------|----------|
-| GET | `/api/blockchain/verify/{assessmentId}` | ANY (public) | `{ isValid, recordHash, txHash, blockNumber, explorerUrl }` |
+| GET | `/api/blockchain/verify/{assessmentId}` | ANY (public) | `{ isValid, recordHash, txHash, blockNumber, explorerUrl, anchoredAt, anchorStatus }` |
 
 ### Reports
 | Method | Endpoint | Query | Auth |
 |--------|----------|-------|------|
 | GET | `/api/reports/child/{childId}` | `?from&to` | PARENT (own), MEDIC, ADMIN — returns PDF |
 
-### Verifiable Credential (future endpoint)
-| Method | Endpoint | Auth |
-|--------|----------|------|
-| POST | `/api/vc/issue` | MEDIC, ADMIN |
-| GET | `/api/vc/{vcId}` | ANY (public) |
-| POST | `/api/vc/revoke` | MEDIC, ADMIN |
-| GET | `/api/verify` | ANY (public) — verifikasi QR |
+### Verifiable Credential
+| Method | Endpoint | Auth | Request (json) | Response |
+|--------|----------|------|----------------|----------|
+| POST | `/api/vc/issue` | MEDIC, ADMIN | `{ childId, vcType, expiresAt? }` | `{ id, childId, vcType, issuerId, issuerWallet, ipfsCid, txHash, createdAt, expiresAt }` |
+| POST | `/api/vc/revoke` | MEDIC, ADMIN | `{ vcId }` | — |
+| GET | `/api/vc/{vcId}` | ANY (public) | — | W3C VerifiableCredential JSON (`@context, type[], issuer, issuanceDate, credentialSubject, isRevoked, expirationDate, ipfsCid, txHash`) |
+| GET | `/api/vc/child/{childId}` | ANY (public) | — | `{ vc: W3CVerifiableCredential } | null` |
+| GET | `/api/verify` | ANY (public) | `?vcId` | `{ isValid, vc, verifiedAt, message }` |
 
 ---
 
@@ -220,26 +221,46 @@ type PageResponse<T> = { data: T[]; page: number; size: number; totalElements: n
 ### auth.types.ts
 ```typescript
 type Role = 'PARENT' | 'MEDIC' | 'POSYANDU' | 'ADMIN'
-type User = { id: string; email: string; name: string; role: Role; walletAddress: string | null }
+type User = { id: string; email: string; name: string; role: Role; walletAddress: string | null; isActive?: boolean }
 type LoginRequest = { email: string; password: string }
 type RegisterRequest = { email: string; password: string; name: string }
-type AuthResponse = { accessToken: string; refreshToken: string; user: User }
-type RefreshResponse = { accessToken: string }
+type AuthResponse = { accessToken: string; refreshToken: string; user: User }  // register juga return ini
+type RefreshResponse = { accessToken: string; refreshToken: string; user: User }  // refresh return full tokens
 ```
 
 ### child.types.ts
 ```typescript
 type Gender = 'MALE' | 'FEMALE'
 type StuntStatus = 'NORMAL' | 'AT_RISK' | 'STUNTED' | 'SEVERELY_STUNTED'
-type LatestPrediction = { status: StuntStatus; createdAt: string }
-type Child = { id: string; name: string; birthDate: string; gender: Gender; ageMonths: number; latestPrediction: LatestPrediction | null }
-type ChildDetail = Child & { assessments: Array<{ id: string; weight: number; height: number; createdAt: string; prediction: { status: StuntStatus; riskLevel: number } }> }
+type LatestPrediction = { status: StuntStatus; riskLevel?: number; createdAt: string }
+type Child = { id: string; name: string; birthDate: string; gender: Gender; ageMonths: number; anonId?: string; createdAt?: string; latestPrediction: LatestPrediction | null }
+type ChildDetail = Child & {
+  assessments: Array<{
+    id: string; weight?: number; height?: number; headCircumference?: number;
+    bfExclusive?: boolean; mpasiAge?: number; mealFreq?: number; illnessHistory?: string;
+    createdAt: string;
+    prediction?: { id?: string; status: StuntStatus; predictionStatus?: string; riskLevel: number;
+      zscoreWa?: number; zscoreHa?: number; zscoreWh?: number; summary?: string;
+      recommendations?: string[]; nextAssessmentDate?: string; createdAt?: string } | null
+  }>
+}
 type ChildRequest = { name: string; birthDate: string; gender: Gender }
 type ChildUpdateRequest = { name: string; birthDate: string }
 ```
 
-### assessment.types.ts
+### assessment.types.ts — flat ServerPredictionResponse → nested DTOs
 ```typescript
+// — Server raw —
+type ServerPredictionResponse = {
+  id: string; assessmentId: string; childId: string; childName: string;
+  createdAt: string; status: StuntStatus; predictionStatus: string;
+  zscoreWa: number; zscoreHa: number; zscoreWh: number;
+  riskLevel: number; summary: string; recommendations: string[];
+  nextAssessmentDate: string; disclaimer: string;
+  blockchain?: { anchorStatus: string; isVerified?: boolean; txHash?: string; polygonscanUrl?: string } | null;
+}
+
+// — Mobile DTOs (hasil transform) —
 type AssessmentPredictionDTO = {
   id: string; status: StuntStatus;
   predictionStatus: 'COMPLETED' | 'PENDING' | 'FAILED';
@@ -253,15 +274,17 @@ type BlockchainAnchorDTO = {
   explorerUrl: string; verifyUrl: string;
 }
 type AssessmentResponseDTO = {
-  id: string; child: { id: string; name: string; ageMonths: number };
-  weight: number; height: number; headCircumference: number;
-  bfExclusive: boolean; mpasiAge: number; mealFreq: number;
-  illnessHistory: string; createdAt: string;
-  prediction: AssessmentPredictionDTO; blockchain: BlockchainAnchorDTO;
+  id: string;
+  child: { id: string; name: string; ageMonths?: number };
+  weight?: number; height?: number; headCircumference?: number;
+  bfExclusive?: boolean; mpasiAge?: number; mealFreq?: number;
+  illnessHistory?: string; createdAt: string;
+  prediction: AssessmentPredictionDTO;
+  blockchain?: BlockchainAnchorDTO;   // opsional
 }
 type AssessmentRequestDTO = {
-  childId: string; weight: number; height: number; headCircumference: number;
-  bfExclusive: boolean; mpasiAge: number; mealFreq: number; illnessHistory: string;
+  childId: string; weight: number; height: number; headCircumference?: number;
+  bfExclusive: boolean; mpasiAge?: number; mealFreq: number; illnessHistory?: string;
 }
 ```
 
@@ -321,9 +344,9 @@ Actions: addRecord → generates mock blockNumber, txHash, gasFee
 ## 8. MOCK SYSTEM
 
 ### Mechanism
-- Flag `USE_MOCK = true` di `services/mock.ts`
-- Service files toggle: `USE_MOCK ? mockImplementation : realApiCall`
-- Mock uses in-memory arrays (no persistence)
+- Flag `USE_MOCK = false` di `services/mock.ts` (sekarang real API)
+- Service files toggle: `if (USE_MOCK) { ... } else { apiClient.get(...) }`
+- **Tidak ada** fungsi `mockXxx`/`realXxx` terpisah — query method tunggal per method
 
 ### Mock Data
 ```
@@ -346,7 +369,7 @@ status = height < 60 ? 'SEVERELY_STUNTED'
 - Refresh token selalu dianggap valid
 
 ### Switch to Real API
-Set `USE_MOCK = false` di `services/mock.ts`. Service akan otomatis pakai `apiClient` yang mengarah ke `EXPO_PUBLIC_API_URL`.
+Set `USE_MOCK = true` untuk fallback ke mock in-memory. Saat `USE_MOCK = false` service pakai `apiClient` yang mengarah ke `EXPO_PUBLIC_API_URL`.
 
 ---
 
@@ -449,22 +472,22 @@ Di `ConsultScreen.tsx` ada banner warning sticky di bawah header:
 
 | Fitur | Status | Mock? | Prioritas |
 |-------|--------|-------|-----------|
-| Auth (Login/Register/Refresh/Logout) | ✅ Complete | ✅ Mock | Critical |
-| Children (List/Create/Detail/Edit) | ✅ Complete | ✅ Mock | Critical |
-| Assessment 5-Step (Body → Feeding → Illness → Review → Results) | ✅ Complete | ✅ Mock | Critical |
-| Loading PENDING + polling prediction | ✅ Complete | ✅ Mock | High |
-| WHO Growth Chart proper | ✅ Complete | ✅ Mock | High |
-| Nutrition Scanner/Camera | ⚠️ Simulated UI | ✅ Mock | High |
-| Nutrition History List | ✅ Complete | ✅ Mock | Medium |
-| Chatbot AI | ✅ Complete | ✅ Mock | High |
+| Auth (Login/Register/Refresh/Logout) | ✅ Complete | Real API | Critical |
+| Children (List/Create/Detail/Edit) | ✅ Complete | Real API | Critical |
+| Assessment 5-Step (Body → Feeding → Illness → Review → Results) | ✅ Complete | Real API | Critical |
+| Loading PENDING + polling prediction | ✅ Complete | Real API | High |
+| WHO Growth Chart proper | ✅ Complete | Real API | High |
+| Nutrition Scanner/Camera | ⚠️ Simulated UI | Real API | High |
+| Nutrition History List | ✅ Complete | Real API | Medium |
+| Chatbot AI | ✅ Complete | Real API | High |
 | Chat History Persistent | ❌ Missing | — | Medium |
-| PDF Reports | ✅ Complete | ✅ Mock | Medium |
-| MEDIC Dashboard | ✅ Complete | ✅ Mock | High |
-| POSYANDU Screens | ⚠️ Partial | ✅ Mock | Medium |
+| PDF Reports | ✅ Complete | Real API | Medium |
+| MEDIC Dashboard | ✅ Complete | Real API | High |
+| POSYANDU Screens | ⚠️ Partial (no server endpoint) | Fallback Mock | Medium |
 | ADMIN Screens | ❌ Missing | — | Low |
-| QR Scanner (VC) | ✅ Complete | ✅ Mock | High |
-| VC Status on Child Detail | ❌ Missing | — | High |
-| Blockchain Verification | ✅ Complete | ✅ Mock | Medium |
+| QR Scanner (VC) | ✅ Complete | Real API | High |
+| VC Status on Child Detail | ✅ Complete | Real API | High |
+| Blockchain Verification | ✅ Complete | Real API | Medium |
 | Push Notifications | ❌ Missing | — | Low |
 | Maps / Faskes Terdekat | ❌ Missing | — | Low |
 | Offline Mode | ❌ Missing | — | Low |
@@ -500,28 +523,27 @@ Di `ConsultScreen.tsx` ada banner warning sticky di bawah header:
 
 ## 17. SERVICE PATTERN (WAJIB DIIKUTI)
 
-Setiap service module harus mengikuti pola dual-mode (mock/real):
+Setiap service module harus mengikuti pola dual-mode (mock/real) dengan **satu fungsi per method**:
 
 ```typescript
-// 1. Mock implementation
-const mockGetData = async (): Promise<DataType> => {
-  await delay()
-  // ... in-memory logic
-  return result
-}
-
-// 2. Real implementation
-const realGetData = async (): Promise<DataType> => {
-  const res = await apiClient.get<DataType>('/api/endpoint')
-  return res.data
-}
-
-// 3. Export toggle
 export const myService = {
-  getData: USE_MOCK ? mockGetData : realGetData,
-}
+  getData: async (params: Params): Promise<DataType> => {
+    if (USE_MOCK) {
+      await delay();
+      // ... in-memory logic langsung di sini
+      return result;
+    }
+    const res = await apiClient.get<DataType>('/api/endpoint', { params });
+    return res.data;
+  },
+};
 ```
-Gunakan `delay(ms)` dari `mock.ts` untuk simulasi network latency (default 600ms).
+
+**Aturan:**
+- Hanya 1 fungsi per method — tidak ada fungsi `mockXxx`/`realXxx` terpisah
+- Ternary `USE_MOCK` inline di badan fungsi
+- Transform server→client DTO ditulis sebagai fungsi helper (bukan class/static method) di file yang sama
+- Gunakan `delay(ms)` dari `mock.ts` untuk simulasi network latency (default 600ms)
 
 ---
 
@@ -537,7 +559,7 @@ Gunakan `delay(ms)` dari `mock.ts` untuk simulasi network latency (default 600ms
 
 ## 19. SERVICE & HOOK STATUS
 
-✅ **Semua service/hook utama sudah dibuat dengan pola dual-mode (mock/real):**
+✅ **Semua service/hook sudah connect ke real API (USE_MOCK=false):**
 
 | Fitur | Service | Hook |
 |-------|---------|------|
@@ -549,7 +571,7 @@ Gunakan `delay(ms)` dari `mock.ts` untuk simulasi network latency (default 600ms
 | Blockchain | `blockchain/services/blockchain.service.ts` ✅ | `blockchain/hooks/useBlockchain.ts` ✅ |
 | Medic | `medic/services/medic.service.ts` ✅ | `medic/hooks/useMedic.ts` ✅ |
 | Vc | `vc/services/vc.service.ts` ✅ | `vc/hooks/useVc.ts` ✅ |
-| Posyandu | `posyandu/services/posyandu.service.ts` ✅ | `posyandu/hooks/usePosyandu.ts` ✅ |
+| Posyandu | `posyandu/services/posyandu.service.ts` ⚠️ (falls back to mock, no server endpoint) | `posyandu/hooks/usePosyandu.ts` ⚠️ |
 | Report | `report/services/report.service.ts` ✅ | `report/hooks/useReport.ts` ✅ |
 
 **Masih perlu dibuat:** Prediction service/hook (polling prediksi PENDING → COMPLETED).

@@ -8,6 +8,14 @@ const calcAgeMonths = (birthDate: string): number => {
   return (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
 };
 
+/** Helper to wrap Supabase queries with a timeout to prevent infinite hanging */
+const withTimeout = <T>(promise: PromiseLike<T>, ms = 8000): Promise<T> => {
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error(`Request timed out after ${ms}ms`)), ms)
+  );
+  return Promise.race([promise, timeout]);
+};
+
 const mapChild = (row: {
   id: string;
   name: string;
@@ -30,11 +38,15 @@ export const childrenService = {
     const from = page * size;
     const to = from + size - 1;
 
-    const { data, error, count } = await supabase
-      .from("children")
-      .select("*", { count: "exact" })
-      .order("created_at", { ascending: false })
-      .range(from, to);
+    const { data, error, count } = await withTimeout(
+      (async () => {
+        return await supabase
+          .from("children")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .range(from, to);
+      })()
+    );
 
     if (error) throw error;
 
@@ -52,32 +64,40 @@ export const childrenService = {
   getChild: async (childId: string): Promise<ChildDetail> => {
     const supabase = createClient();
 
-    const { data: child, error } = await supabase
-      .from("children")
-      .select("*")
-      .eq("id", childId)
-      .single();
+    const { data: child, error } = await withTimeout(
+      (async () => {
+        return await supabase
+          .from("children")
+          .select("*")
+          .eq("id", childId)
+          .single();
+      })()
+    );
 
     if (error) throw error;
 
     // Fetch assessments + predictions
-    const { data: assessments } = await supabase
-      .from("assessments")
-      .select(
-        `
-        id,
-        weight,
-        height,
-        created_at,
-        predictions ( stunt_status, risk_level )
-      `,
-      )
-      .eq("child_id", childId)
-      .order("created_at", { ascending: false });
+    const { data: assessments } = await withTimeout(
+      (async () => {
+        return await supabase
+          .from("assessments")
+          .select(
+            `
+            id,
+            weight,
+            height,
+            created_at,
+            predictions ( stunt_status, risk_level )
+          `
+          )
+          .eq("child_id", childId)
+          .order("created_at", { ascending: false });
+      })()
+    );
 
     return {
       ...mapChild(child),
-      assessments: (assessments ?? []).map((a) => {
+      assessments: (assessments ?? []).map((a: any) => {
         const pred = Array.isArray(a.predictions) ? a.predictions[0] : a.predictions;
         return {
           id: a.id,

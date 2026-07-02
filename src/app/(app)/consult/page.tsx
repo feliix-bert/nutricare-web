@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Info, Send, ChevronDown, Bot, AlertCircle, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Avatar } from "@/components/common/Avatar";
 import { PageShell } from "@/components/layout/PageShell";
 import { useChatHistory, useSendMessage, usePredictionContextQuery } from "@/features/consult/hooks/useChat";
 import { useSearchParams } from "next/navigation";
-import type { PredictionContext } from "@/features/consult/types/consult.types";
 import { useChildrenList } from "@/features/children/hooks/useChildren";
 
 // ---------------------------------------------------------------------------
@@ -239,6 +238,200 @@ function ErrorBanner({ message, onRetry }: { message: string; onRetry: () => voi
 }
 
 // ---------------------------------------------------------------------------
+// ChatView — di-extract supaya key=predictionId reset state otomatis
+// ---------------------------------------------------------------------------
+
+function ChatView({
+  context,
+  predictionId,
+}: {
+  context: NonNullable<ReturnType<typeof usePredictionContextQuery>["data"]>;
+  predictionId: string;
+}) {
+  const [inputText, setInputText] = useState("");
+  const [localMessages, setLocalMessages] = useState<
+    { id: string; role: "user" | "assistant"; content: string; timestamp: string }[]
+  >([]);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null);
+  const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
+
+  const { data: historyData } = useChatHistory(predictionId);
+  const sendMutation = useSendMessage(predictionId);
+
+  // Render-time init: sync history ke local state sekali (set-state di render aman, gak cascade)
+  const historyMessages = useMemo(() => historyData?.messages ?? [], [historyData]);
+  const initialized = useRef(false);
+  if (historyMessages.length > 0 && localMessages.length === 0 && !initialized.current) {
+    initialized.current = true;
+    setLocalMessages(historyMessages);
+  }
+
+  // Auto-scroll ke bawah
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [localMessages, sendMutation.isPending]);
+
+  const handleSend = useCallback(
+    async (text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed || sendMutation.isPending) return;
+
+      setSendError(null);
+      setLastFailedMessage(null);
+      setInputText("");
+
+      const optimisticUserMsg = {
+        id: `optimistic_user_${Date.now()}`,
+        role: "user" as const,
+        content: trimmed,
+        timestamp: new Date().toISOString(),
+      };
+      setLocalMessages((prev) => [...prev, optimisticUserMsg]);
+
+      try {
+        const result = await sendMutation.mutateAsync({
+          predictionId,
+          message: trimmed,
+          context,
+        });
+
+        const aiMsg = {
+          id: `ai_${Date.now()}`,
+          role: "assistant" as const,
+          content: result.reply,
+          timestamp: new Date().toISOString(),
+        };
+        setLocalMessages((prev) => {
+          const filtered = prev.filter((m) => m.id !== optimisticUserMsg.id);
+          return [...filtered, optimisticUserMsg, aiMsg];
+        });
+
+        if (result.suggestedQuestions?.length) {
+          setSuggestedQuestions(result.suggestedQuestions);
+        }
+      } catch (err: unknown) {
+        setLocalMessages((prev) => prev.filter((m) => m.id !== optimisticUserMsg.id));
+        setSendError(
+          err instanceof Error
+            ? err.message
+            : "Gagal mengirim pesan. Periksa koneksi internet Anda.",
+        );
+        setLastFailedMessage(trimmed);
+      }
+    },
+    [predictionId, context, sendMutation],
+  );
+
+  const quickPrompts =
+    suggestedQuestions.length > 0
+      ? suggestedQuestions
+      : [
+          "Bagaimana cara mencegah stunting?",
+          "Jadwal MPASI 6 bulan",
+          "ASI eksklusif vs MPASI",
+          "Kebutuhan zat besi bayi",
+        ];
+
+  return (
+    <>
+      {/* ── Chat Area ── */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 bg-surface-warm">
+        {/* Pesan sapaan awal jika belum ada history */}
+        {localMessages.length === 0 && (
+          <MessageBubble
+            role="assistant"
+            content={`Halo! Saya siap membantu konsultasi tumbuh kembang ${context.childName} (${context.ageMonths} bulan). Status saat ini: ${STATUS_LABEL[context.status]?.label ?? context.status}. Silakan ajukan pertanyaan seputar gizi, MPASI, atau tumbuh kembang si kecil.`}
+            timestamp={new Date().toISOString()}
+          />
+        )}
+
+        <AnimatePresence mode="popLayout">
+          {localMessages.map((msg) => (
+            <MessageBubble
+              key={msg.id}
+              role={msg.role}
+              content={msg.content}
+              timestamp={msg.timestamp}
+            />
+          ))}
+        </AnimatePresence>
+
+        {sendMutation.isPending && <TypingIndicator />}
+
+        {sendError && (
+          <ErrorBanner
+            message={sendError}
+            onRetry={() => {
+              if (lastFailedMessage) {
+                void handleSend(lastFailedMessage);
+              }
+            }}
+          />
+        )}
+
+        <div ref={scrollRef} />
+      </div>
+
+      {/* ── Input Area ── */}
+      <div className="bg-surface-warm pt-3 pb-24 lg:pb-6 px-4 flex flex-col gap-3 flex-shrink-0 border-t border-outline-variant/5">
+        <div className="flex flex-col gap-2">
+          <span className="text-[10px] font-extrabold text-on-surface-variant/50 uppercase tracking-widest pl-1">
+            Saran Pertanyaan:
+          </span>
+          <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">
+            {quickPrompts.map((prompt) => (
+              <button
+                key={prompt}
+                onClick={() => void handleSend(prompt)}
+                disabled={sendMutation.isPending}
+                className="flex-shrink-0 px-4 py-2 bg-primary-container/30 border border-primary/10 rounded-full text-[13px] font-bold text-primary-on-container hover:bg-primary-container/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 mt-1">
+          <div className="flex-1 bg-surface-high rounded-full flex items-center px-5 py-3.5 shadow-inner">
+            <input
+              id="chat-input"
+              type="text"
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              placeholder={`Tanya soal ${context.childName}...`}
+              disabled={sendMutation.isPending}
+              className="flex-1 bg-transparent outline-none text-[14px] text-on-surface font-medium placeholder:text-on-surface-variant/40 disabled:cursor-not-allowed"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  void handleSend(inputText);
+                }
+              }}
+            />
+            <button
+              id="chat-send-button"
+              onClick={() => void handleSend(inputText)}
+              disabled={!inputText.trim() || sendMutation.isPending}
+              aria-label="Kirim pesan"
+              className={`ml-2 w-7 h-7 flex items-center justify-center transition-all ${
+                inputText.trim() && !sendMutation.isPending
+                  ? "text-primary scale-110"
+                  : "text-on-surface-variant/30"
+              }`}
+            >
+              <Send size={18} strokeWidth={2.5} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Halaman Utama
 // ---------------------------------------------------------------------------
 
@@ -247,13 +440,6 @@ export default function ConsultPage() {
   const predictionIdFromUrl = searchParams.get('predictionId');
 
   const [selectedPredictionId, setSelectedPredictionId] = useState<string | null>(predictionIdFromUrl);
-  const [inputText, setInputText] = useState("");
-  const [localMessages, setLocalMessages] = useState<{ id: string; role: "user" | "assistant"; content: string; timestamp: string }[]>([]);
-  const [sendError, setSendError] = useState<string | null>(null);
-  const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null);
-  const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
-
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { data: context } = usePredictionContextQuery(selectedPredictionId);
 
@@ -267,98 +453,6 @@ export default function ConsultPage() {
       ageMonths: child.ageMonths,
       status: child.latestPrediction?.status,
     })) || [];
-
-  const { data: historyData } = useChatHistory(selectedPredictionId);
-  const sendMutation = useSendMessage(selectedPredictionId);
-
-  // Sinkronisasi localMessages dengan history dari server/mock
-  useEffect(() => {
-    if (historyData?.messages) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setLocalMessages(historyData.messages);
-    }
-  }, [historyData]);
-
-  // Reset state saat pindah anak
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLocalMessages([]);
-    setSendError(null);
-    setLastFailedMessage(null);
-    setInputText("");
-  }, [selectedPredictionId]);
-
-  // Auto-scroll ke bawah
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [localMessages, sendMutation.isPending]);
-
-  const handleSend = useCallback(
-    async (text: string) => {
-      const trimmed = text.trim();
-      if (!trimmed || !selectedPredictionId || !context || sendMutation.isPending) return;
-
-      setSendError(null);
-      setLastFailedMessage(null);
-      setInputText("");
-
-      // Optimistic update: tambahkan pesan user langsung ke UI
-      const optimisticUserMsg = {
-        id: `optimistic_user_${Date.now()}`,
-        role: "user" as const,
-        content: trimmed,
-        timestamp: new Date().toISOString(),
-      };
-      setLocalMessages((prev) => [...prev, optimisticUserMsg]);
-
-      try {
-        const result = await sendMutation.mutateAsync({
-          predictionId: selectedPredictionId,
-          message: trimmed,
-          context,
-        });
-
-        // Tambahkan balasan AI ke local state
-        const aiMsg = {
-          id: `ai_${Date.now()}`,
-          role: "assistant" as const,
-          content: result.reply,
-          timestamp: new Date().toISOString(),
-        };
-        setLocalMessages((prev) => {
-          // Hapus optimistic user msg, ganti dengan data nyata
-          const filtered = prev.filter((m) => m.id !== optimisticUserMsg.id);
-          return [...filtered, optimisticUserMsg, aiMsg];
-        });
-
-        // Tampilkan suggested questions setelah balasan
-        if (result.suggestedQuestions?.length) {
-          setSuggestedQuestions(result.suggestedQuestions);
-        }
-      } catch (err: unknown) {
-        // Hapus optimistic message jika gagal
-        setLocalMessages((prev) => prev.filter((m) => m.id !== optimisticUserMsg.id));
-        const errMsg =
-          err instanceof Error
-            ? err.message
-            : "Gagal mengirim pesan. Periksa koneksi internet Anda.";
-        setSendError(errMsg);
-        setLastFailedMessage(trimmed);
-      }
-    },
-    [selectedPredictionId, context, sendMutation],
-  );
-
-  // Quick prompts default (berubah setelah AI menjawab)
-  const quickPrompts =
-    suggestedQuestions.length > 0
-      ? suggestedQuestions
-      : [
-          "Bagaimana cara mencegah stunting?",
-          "Jadwal MPASI 6 bulan",
-          "ASI eksklusif vs MPASI",
-          "Kebutuhan zat besi bayi",
-        ];
 
   const hasContext = !!selectedPredictionId && !!context;
 
@@ -390,7 +484,7 @@ export default function ConsultPage() {
             />
           </div>
 
-          {/* ── Disclaimer Banner (Wajib per CONTEXT.md) ── */}
+          {/* ── Disclaimer Banner ── */}
           <div className="bg-tertiary-container/40 border-b border-tertiary/15 px-5 py-3 flex items-start gap-2.5 flex-shrink-0">
             <Info size={14} className="text-tertiary-on-container flex-shrink-0 mt-0.5" strokeWidth={2.5} />
             <p className="text-[11px] md:text-[12px] text-tertiary-on-container leading-relaxed font-bold">
@@ -398,108 +492,15 @@ export default function ConsultPage() {
             </p>
           </div>
 
-          {/* ── Chat Area ── */}
-          <div className="flex-1 overflow-y-auto px-4 py-4 bg-surface-warm">
+          {/* ── Chat Area — key= selectedPredictionId resets state on switch ── */}
+          <div key={selectedPredictionId ?? "no-selection"} className="flex-1 flex flex-col overflow-hidden">
             {!hasContext ? (
-              <EmptyState />
+              <div className="flex-1 flex items-center justify-center">
+                <EmptyState />
+              </div>
             ) : (
-              <>
-                {/* Pesan sapaan awal jika belum ada history */}
-                {localMessages.length === 0 && (
-                  <MessageBubble
-                    role="assistant"
-                    content={`Halo! Saya siap membantu konsultasi tumbuh kembang ${context.childName} (${context.ageMonths} bulan). Status saat ini: ${STATUS_LABEL[context.status]?.label ?? context.status}. Silakan ajukan pertanyaan seputar gizi, MPASI, atau tumbuh kembang si kecil.`}
-                    timestamp={new Date().toISOString()}
-                  />
-                )}
-
-                <AnimatePresence mode="popLayout">
-                  {localMessages.map((msg) => (
-                    <MessageBubble
-                      key={msg.id}
-                      role={msg.role}
-                      content={msg.content}
-                      timestamp={msg.timestamp}
-                    />
-                  ))}
-                </AnimatePresence>
-
-                {sendMutation.isPending && <TypingIndicator />}
-
-                {sendError && (
-                  <ErrorBanner
-                    message={sendError}
-                    onRetry={() => {
-                      if (lastFailedMessage) {
-                        void handleSend(lastFailedMessage);
-                      }
-                    }}
-                  />
-                )}
-              </>
+              <ChatView context={context} predictionId={selectedPredictionId} />
             )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* ── Input Area ── */}
-          <div className="bg-surface-warm pt-3 pb-24 lg:pb-6 px-4 flex flex-col gap-3 flex-shrink-0 border-t border-outline-variant/5">
-
-            {/* Quick Prompts */}
-            <div className="flex flex-col gap-2">
-              <span className="text-[10px] font-extrabold text-on-surface-variant/50 uppercase tracking-widest pl-1">
-                Saran Pertanyaan:
-              </span>
-              <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1">
-                {quickPrompts.map((prompt) => (
-                  <button
-                    key={prompt}
-                    onClick={() => void handleSend(prompt)}
-                    disabled={!hasContext || sendMutation.isPending}
-                    className="flex-shrink-0 px-4 py-2 bg-primary-container/30 border border-primary/10 rounded-full text-[13px] font-bold text-primary-on-container hover:bg-primary-container/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {prompt}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Input Field */}
-            <div className="flex items-center gap-2 mt-1">
-              <div className="flex-1 bg-surface-high rounded-full flex items-center px-5 py-3.5 shadow-inner">
-                <input
-                  id="chat-input"
-                  type="text"
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  placeholder={
-                    hasContext
-                      ? `Tanya soal ${context.childName}...`
-                      : "Pilih anak terlebih dahulu..."
-                  }
-                  disabled={!hasContext || sendMutation.isPending}
-                  className="flex-1 bg-transparent outline-none text-[14px] text-on-surface font-medium placeholder:text-on-surface-variant/40 disabled:cursor-not-allowed"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      void handleSend(inputText);
-                    }
-                  }}
-                />
-                <button
-                  id="chat-send-button"
-                  onClick={() => void handleSend(inputText)}
-                  disabled={!inputText.trim() || !hasContext || sendMutation.isPending}
-                  aria-label="Kirim pesan"
-                  className={`ml-2 w-7 h-7 flex items-center justify-center transition-all ${
-                    inputText.trim() && hasContext && !sendMutation.isPending
-                      ? "text-primary scale-110"
-                      : "text-on-surface-variant/30"
-                  }`}
-                >
-                  <Send size={18} strokeWidth={2.5} />
-                </button>
-              </div>
-            </div>
           </div>
 
         </div>

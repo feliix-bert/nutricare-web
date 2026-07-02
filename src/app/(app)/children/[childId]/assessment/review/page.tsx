@@ -73,24 +73,7 @@ export default function ReviewPage() {
       resetForm();
       setIsSubmitting(false);
 
-      // 4. Navigate to results page with full prediction DTO params
-      const searchParams = new URLSearchParams({
-        predictionId: resDto.prediction?.id || '',
-        status: resDto.prediction?.status || 'PENDING',
-        weight: String(wNum),
-        height: String(hNum),
-        headCircumference: String(hcNum),
-        txHash: resDto.blockchain?.txHash || '',
-        blockNumber: String(resDto.blockchain?.blockNumber || 0),
-        zscoreWa: String(resDto.prediction?.zscoreWa || 0),
-        zscoreHa: String(resDto.prediction?.zscoreHa || 0),
-        zscoreWh: String(resDto.prediction?.zscoreWh || 0),
-        summary: resDto.prediction?.summary || 'Menunggu hasil',
-        recommendations: JSON.stringify(resDto.prediction?.recommendations || []),
-        nextAssessmentDate: resDto.prediction?.nextAssessmentDate || '',
-        disclaimer: resDto.prediction?.disclaimer || '',
-      });
-
+      // 4. Navigate to results page
       router.push(`/children/${child.id}/assessment/results?assessmentId=${resDto.id}`);
     } catch (error) {
       console.error("Failed to submit assessment:", error);

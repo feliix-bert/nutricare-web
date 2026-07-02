@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "motion/react";
 import { Card } from "@/components/ui/Card";
 import { Plus, Activity, HeartPulse, Scale, Ruler, Star, Clock } from "lucide-react";
 
@@ -19,7 +18,7 @@ type ActivityItem = {
   icon: React.ElementType;
 };
 
-export function ActivityTimeline({ childId, assessments = [], nutritionLogs = [] }: { childId: string, assessments: any[], nutritionLogs: any[] }) {
+export function ActivityTimeline({ assessments = [], nutritionLogs = [] }: { childId: string, assessments: { id: string; createdAt: string; weight: number; height: number }[], nutritionLogs: { id: string; createdAt: string; calories: number; protein: number }[] }) {
   const activities: ActivityItem[] = [];
 
   assessments.forEach(a => {

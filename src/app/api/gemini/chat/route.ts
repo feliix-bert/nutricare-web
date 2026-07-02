@@ -7,6 +7,7 @@
  * 3. Simpan messages ke chat_sessions
  */
 import { NextResponse } from "next/server";
+import { after } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createClient } from "@/lib/supabase/server";
 
@@ -17,17 +18,9 @@ type ChatMessage = {
 
 export async function POST(request: Request) {
   try {
-    // ── Auth ────────────────────────────────────────────────────────────
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // ── Parse ───────────────────────────────────────────────────────────
-    const body = (await request.json()) as {
+    // ── Auth + Parse — paralel ─────────────────────────────────────────
+    const supabasePromise = createClient();
+    const bodyPromise = request.json() as Promise<{
       predictionId: string;
       message: string;
       history: ChatMessage[];
@@ -42,7 +35,16 @@ export async function POST(request: Request) {
         summary: string;
         recommendations: string[];
       };
-    };
+    }>;
+
+    const [supabase, body] = await Promise.all([supabasePromise, bodyPromise]);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const { predictionId, message, history, context } = body;
 
@@ -116,7 +118,6 @@ export async function POST(request: Request) {
     // ── Generate suggested questions from prediction context ────────────
     const suggestedQuestions = getSuggestedQuestions(
       context.status,
-      context.ageMonths,
     );
 
     // ── Save to chat_sessions ────────────────────────────────────────────
@@ -151,7 +152,9 @@ export async function POST(request: Request) {
       suggestedQuestions,
     });
   } catch (error) {
-    console.error("[gemini/chat] Error:", error);
+    after(() => {
+      console.error("[gemini/chat] Error:", error);
+    });
     return NextResponse.json(
       { error: "Chat failed", detail: String(error) },
       { status: 500 },
@@ -163,7 +166,6 @@ export async function POST(request: Request) {
 
 function getSuggestedQuestions(
   status: string,
-  _ageMonths: number,
 ): string[] {
   const base = [
     "Apa saja makanan yang baik untuk tumbuh kembang anak?",

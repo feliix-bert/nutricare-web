@@ -2,7 +2,7 @@
 
 import { motion } from "motion/react";
 import { Card } from "@/components/ui/Card";
-import { Calendar, Syringe, ClipboardList, ShieldAlert, ArrowRight } from "lucide-react";
+import { Calendar, ClipboardList, ArrowRight } from "lucide-react";
 
 type ReminderItem = {
   id: string;
@@ -15,7 +15,7 @@ type ReminderItem = {
   iconColor: string;
 };
 
-export function ReminderCard({ childId, assessments = [], nutritionLogs = [] }: { childId: string, assessments: any[], nutritionLogs: any[] }) {
+export function ReminderCard({ assessments = [], nutritionLogs = [] }: { childId: string, assessments: { id: string; createdAt: string }[], nutritionLogs: { id: string; createdAt: string }[] }) {
   const reminders: ReminderItem[] = [];
 
   const hasAssessmentThisMonth = assessments.some(a => {

@@ -3,9 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { chatService } from "@/features/consult/services/chat.service";
 import { createClient } from "@/lib/supabase/client";
 import type {
-  ChatRouteRequest,
   ChatRouteResponse,
-  ChatMessage,
   PredictionContext,
 } from "@/features/consult/types/consult.types";
 

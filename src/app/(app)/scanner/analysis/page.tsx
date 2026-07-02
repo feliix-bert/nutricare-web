@@ -36,17 +36,16 @@ export default function AnalysisPage() {
 
       try {
         const childId = childrenData.data[0].id;
-        
-        // Progress steps automatically
+
+        // Progress steps automatically — guard with ref
         const stepInterval = setInterval(() => {
           setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 2));
         }, 1500);
-
         // Upload to real API
         const log = await nutritionService.uploadNutritionPhoto(childId, photoFile);
-        
+
         clearInterval(stepInterval);
-        
+
         if (mounted) {
           setCurrentStep(STEPS.length); // complete
           addLog(log);

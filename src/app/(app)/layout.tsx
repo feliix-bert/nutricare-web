@@ -12,11 +12,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isHydrated = useAuthStore((s) => s.isHydrated);
 
+  // Fallback timeout to clear white screen if hydration completely fails
   useEffect(() => {
+    let timeout: NodeJS.Timeout;
     if (!isHydrated) {
-      useAuthStore.getState().hydrate();
+      timeout = setTimeout(() => {
+        console.warn("Layout hydration timeout, forcing redirect");
+        router.replace("/auth/sign-in");
+      }, 8000); // 8 seconds maximum wait
     }
-  }, [isHydrated]);
+    return () => clearTimeout(timeout);
+  }, [isHydrated, router]);
 
   useEffect(() => {
     if (isHydrated && !isAuthenticated) {
@@ -25,9 +31,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [isHydrated, isAuthenticated, router]);
 
   if (!isHydrated) {
-    // Return null to avoid a flashy double-animation sequence. 
-    // This allows the app to feel like it loads instantly once hydrated.
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin" />
+          <p className="text-sm font-medium text-on-surface-variant animate-pulse">
+            Menyiapkan sesi...
+          </p>
+        </div>
+      </div>
+    );
   }
 
   const shouldHideNav =

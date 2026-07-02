@@ -51,12 +51,7 @@ export default function SignInPage() {
             className="object-cover object-center"
           />
           {/* Overlay gradient */}
-          <div
-            className="absolute inset-0"
-            style={{
-              background: "linear-gradient(to bottom, rgba(10,35,30,0.55) 0%, rgba(10,35,30,0.30) 35%, rgba(10,35,30,0.70) 70%, rgba(10,35,30,0.92) 100%)",
-            }}
-          />
+          <div className="absolute inset-0 gradient-auth-overlay" />
           {/* Brand — centered vertically & horizontally in the image */}
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-7 z-10">
             <BrandLogo variant="compact" priority onDark />
@@ -135,12 +130,7 @@ export default function SignInPage() {
           sizes="52vw"
           className="object-cover object-center"
         />
-        <div
-          className="absolute inset-0"
-          style={{
-            background: "linear-gradient(to bottom, rgba(10,35,30,0.55) 0%, rgba(10,35,30,0.30) 35%, rgba(10,35,30,0.70) 70%, rgba(10,35,30,0.90) 100%)",
-          }}
-        />
+        <div className="absolute inset-0 gradient-auth-overlay-signin" />
         <div className="absolute inset-0 flex flex-col justify-between p-10 xl:p-14">
           <div>
             <BrandLogo variant="compact" priority onDark />

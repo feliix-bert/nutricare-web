@@ -2,12 +2,12 @@ import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+  const supabase = createServerClient(supabaseUrl, supabaseKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll();
@@ -25,9 +25,16 @@ export async function proxy(request: NextRequest) {
   });
 
   // Refresh session
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user: import("@supabase/supabase-js").User | null = null;
+  try {
+    const {
+      data: { user: u },
+    } = await supabase.auth.getUser();
+    user = u;
+  } catch {
+    // Network error — allow request through, auth check skipped
+    return supabaseResponse;
+  }
 
   const pathname = request.nextUrl.pathname;
 

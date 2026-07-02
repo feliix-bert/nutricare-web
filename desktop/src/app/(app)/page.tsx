@@ -14,6 +14,7 @@ import { UtensilsIcon } from "@/components/icons/utensils";
 import { useChildrenList, useChild } from "@/features/children/hooks/useChildren";
 import { useNutritionHistory } from "@/features/nutrition/hooks/useNutrition";
 import { useAuthStore } from "@/stores/authStore";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 
 /* ── Small bar chart inside metric card ── */
 const SparkBars = React.memo(({ color }: { color: string }) => (
@@ -75,7 +76,7 @@ function ChildPill({
 }
 
 /* ── Home Page ── */
-export default function HomePage() {
+function HomePageInner() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
 
@@ -83,32 +84,51 @@ export default function HomePage() {
     if (user?.role === "MEDIC") {
       router.replace("/medic");
     }
-  }, [user, router]);
+  }, [user?.role, router]);
 
-  const { data, isLoading } = useChildrenList();
+  const { data, isLoading, isError, error } = useChildrenList();
   const children = data?.data ?? [];
   const [activeChildId, setActiveChildId] = useState<string | null>(null);
 
-  // If user is medic, render null while redirecting to avoid flashing
-  if (user?.role === "MEDIC") return null;
-
-  // Set default active child
-  React.useEffect(() => {
-    if (!activeChildId && children.length > 0) {
-      setActiveChildId(children[0].id);
-    }
-  }, [children, activeChildId]);
-
-  const activeChild = children.find((c) => c.id === activeChildId) ?? children[0];
+  // Derive default child — no setState in effect
+  const resolvedChildId = activeChildId ?? (children.length > 0 ? children[0].id : null);
+  const activeChild = children.find((c: any) => c.id === resolvedChildId) ?? children[0];
 
   const { data: childDetail } = useChild(activeChild?.id ?? "");
   const { data: nutritionData } = useNutritionHistory(activeChild?.id ?? "");
+
+  // If user is medic, render null while redirecting to avoid flashing
+  if (user?.role === "MEDIC") return null;
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="w-8 h-8 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin" />
       </div>
+    );
+  }
+
+  // Handle error (e.g. timeout or RLS permission error)
+  if (isError) {
+    return (
+      <PageShell>
+        <Empty>
+          <EmptyHeader>
+            <div className="w-16 h-16 rounded-full bg-danger/10 flex items-center justify-center mb-2 text-danger">
+              <span className="text-2xl font-bold">!</span>
+            </div>
+            <EmptyTitle>Gagal Memuat Data</EmptyTitle>
+            <EmptyDescription>
+              Terjadi kesalahan saat memuat data dari server. ({error instanceof Error ? error.message : "Kesalahan tidak diketahui"})
+            </EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <Button onClick={() => window.location.reload()} variant="outline">
+              Coba Lagi
+            </Button>
+          </EmptyContent>
+        </Empty>
+      </PageShell>
     );
   }
 
@@ -236,7 +256,7 @@ export default function HomePage() {
 
             {/* ── Child pills ── */}
             <div className="flex gap-2 overflow-x-auto no-scrollbar">
-              {children.map((child) => (
+              {children.map((child: any) => (
                 <ChildPill
                   key={child.id}
                   child={child}
@@ -478,5 +498,13 @@ export default function HomePage() {
         </div>
       </PageShell>
     </motion.div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <ErrorBoundary>
+      <HomePageInner />
+    </ErrorBoundary>
   );
 }

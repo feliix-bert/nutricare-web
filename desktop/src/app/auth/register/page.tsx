@@ -64,12 +64,7 @@ export default function RegisterPage() {
             className="object-cover object-center"
           />
           {/* Overlay gradient */}
-          <div
-            className="absolute inset-0"
-            style={{
-              background: "linear-gradient(to bottom, rgba(10,35,30,0.55) 0%, rgba(10,35,30,0.28) 40%, rgba(10,35,30,0.78) 80%, rgba(10,35,30,0.96) 100%)",
-            }}
-          />
+          <div className="absolute inset-0 gradient-auth-overlay-register" />
           {/* Back button — top left */}
           <button
             onClick={() => router.back()}
@@ -160,12 +155,7 @@ export default function RegisterPage() {
           sizes="52vw"
           className="object-cover object-center"
         />
-        <div
-          className="absolute inset-0"
-          style={{
-            background: "linear-gradient(to bottom, rgba(10,35,30,0.55) 0%, rgba(10,35,30,0.28) 30%, rgba(10,35,30,0.72) 68%, rgba(10,35,30,0.92) 100%)",
-          }}
-        />
+        <div className="absolute inset-0 gradient-auth-overlay-register" />
         <div className="absolute inset-0 flex flex-col justify-between p-10 xl:p-14">
           <BrandLogo variant="compact" priority onDark />
           <motion.div

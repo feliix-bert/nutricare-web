@@ -105,7 +105,7 @@ export default function MedicDashboardPage() {
                   </td>
                 </tr>
               ) : (
-                patients.map((p, i) => (
+                patients.map((p) => (
                   <tr
                     key={p.childId}
                     className="border-b border-outline-variant/5 hover:bg-surface-low/50 transition-colors cursor-pointer"

@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion } from "motion/react";
+import { useState } from "react";
 import { Avatar } from "@/components/common/Avatar";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { HomeIcon } from "@/components/icons/home";
@@ -34,7 +35,9 @@ const MEDIC_ROUTES: NavRoute[] = [
 
 export function SideNavBar() {
   const pathname = usePathname();
+  const router = useRouter();
   const user = useAuthStore((s) => s.user);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const isMedic = user?.role === "MEDIC";
   const routes = isMedic ? MEDIC_ROUTES : PARENT_ROUTES;
@@ -115,18 +118,32 @@ export function SideNavBar() {
         {/* Divider */}
         <div className="h-px bg-outline-variant/10 my-4 mx-2" />
 
-        {/* Profile Card */}
-        <Link
-          href={isMedic ? "/medic/profile" : "/profile"}
-          className="flex items-center gap-3 p-3 rounded-2xl bg-surface-warm hover:shadow-card transition-all duration-300 hover-lift border border-outline-variant/8"
-        >
-          <Avatar seed={userName} variant={avatarVariant as any} size="md" />
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold text-on-surface truncate">{userName}</p>
-            <p className="text-xs text-on-surface-variant truncate">{userLabel}</p>
-          </div>
-          <div className="w-2 h-2 rounded-full bg-secondary flex-shrink-0" />
-        </Link>
+        {/* Profile Card & Logout */}
+        <div className="flex items-center gap-2">
+          <Link
+            href={isMedic ? "/medic/profile" : "/profile"}
+            className="flex-1 flex items-center gap-3 p-3 rounded-2xl bg-surface-warm hover:shadow-card transition-all duration-300 hover-lift border border-outline-variant/8"
+          >
+            <Avatar seed={userName} variant={avatarVariant} size="md" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold text-on-surface truncate">{userName}</p>
+              <p className="text-xs text-on-surface-variant truncate">{userLabel}</p>
+            </div>
+          </Link>
+          <button
+            onClick={() => {
+              if (loggingOut) return;
+              setLoggingOut(true);
+              useAuthStore.getState().logout();
+              window.location.href = "/auth/sign-in";
+            }}
+            disabled={loggingOut}
+            aria-label="Logout"
+            className={`p-3 rounded-2xl bg-danger/5 text-danger hover:bg-danger hover:text-white transition-all duration-300 hover-lift border border-danger/10 ${loggingOut ? "opacity-50 pointer-events-none" : ""}`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+          </button>
+        </div>
       </div>
     </nav>
   );

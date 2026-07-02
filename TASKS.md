@@ -62,7 +62,7 @@
 - [x] **4.1** Service layer → Supabase langsung (children, assessment, nutrition, medic, chat)
 - [ ] **4.2** `/children/[id]` — detail anak + riwayat assessment
 - [ ] **4.3** `/children/[id]/edit` — edit data anak
-- [ ] **4.4** `/assessments/[id]` — detail assessment + prediksi
+- [x] **4.4** `/assessments/[id]` — detail assessment + prediksi ✅ (results page pake polling via `usePredictionPolling`)
 - [ ] **4.5** `/nutrition` — riwayat log makanan (read-only)
 - [ ] **4.6** Notification bell — jadwal assessment berikutnya
 
@@ -70,35 +70,18 @@
 
 ## Fase 5: Z-Score Calculator (port dari Java)
 
-- [ ] **5.1** `lib/zscore.ts`
-  - Tabel referensi WHO (BB/U, TB/U, BB/TB)
-  - Fungsi `calculateZScoreWA(weight, age, gender)`
-  - Fungsi `calculateZScoreHA(height, age, gender)`
-  - Fungsi `calculateZScoreWH(weight, height, gender)`
-  - Fungsi `classifyStunting(zscoreHA)` → `stunt_enum`
-- [ ] **5.2** Test — bandingkan output dengan Java original
+- [x] **5.1** `lib/zscore.ts` — port lengkap ZScoreCalculator.java ✅
+- [x] **5.2** Test — 12/12 pass, formulae identik Java ✅
 
 ---
 
 ## Fase 6: Gemini AI Integration
 
-- [ ] **6.1** `app/api/gemini/predict/route.ts`
-  - Terima `assessmentId`
-  - Hitung z-score via `lib/zscore.ts`
-  - Prompt ke Gemini: data assessment + z-score → interpretasi + rekomendasi
-  - Insert ke `predictions` table
-  - Trigger blockchain anchor async
-- [ ] **6.2** `app/api/gemini/nutrition/route.ts`
-  - Terima `photoUrl` + `childId`
-  - Gemini Vision → analisis makanan
-  - Return: food_detected, calories, protein, carbs, fat, fiber
-- [ ] **6.3** `app/api/gemini/chat/route.ts`
-  - Terima `predictionId` + `message`
-  - Load context prediksi + riwayat chat
-  - Kirim ke Gemini, simpan response ke `chat_sessions`
-- [ ] **6.4** Polling prediction status (TanStack Query)
-  - Query `predictions` by `assessment_id`
-  - Auto-refresh sampai status COMPLETED / FAILED
+- [x] **6.1** `app/api/gemini/predict/route.ts` ✅
+- [x] **6.2** `app/api/gemini/nutrition/route.ts` ✅
+- [x] **6.3** `app/api/gemini/chat/route.ts` ✅
+- [x] **6.4** Polling prediction status (TanStack Query) ✅
+  - `usePredictionPolling` hook with auto-refetch
 
 ---
 

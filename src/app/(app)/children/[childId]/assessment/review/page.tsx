@@ -91,7 +91,7 @@ export default function ReviewPage() {
         disclaimer: resDto.prediction?.disclaimer || '',
       });
 
-      router.push(`/children/${child.id}/assessment/results?${searchParams.toString()}`);
+      router.push(`/children/${child.id}/assessment/results?assessmentId=${resDto.id}`);
     } catch (error) {
       console.error("Failed to submit assessment:", error);
       setIsSubmitting(false);

@@ -46,6 +46,7 @@ export const useSendMessage = (predictionId: string | null) => {
         [];
 
       return chatService.sendMessage({
+        predictionId: payload.predictionId,
         message: payload.message,
         history,
         context: payload.context,

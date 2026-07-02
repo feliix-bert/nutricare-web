@@ -26,8 +26,9 @@ export type PredictionContext = {
   recommendations: string[];
 };
 
-/** Request ke Next.js Route Handler /api/chat */
+/** Request ke Next.js Route Handler /api/gemini/chat */
 export type ChatRouteRequest = {
+  predictionId: string;
   message: string;
   history: Array<{ role: ChatRole; content: string }>;
   context: PredictionContext;

@@ -9,7 +9,10 @@ import { useAuth } from "@/features/auth/hooks/useAuth";
 import Link from "next/link";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 
-type FormErrors = { email?: string; password?: string };
+type FormErrors = {
+  email?: string;
+  password?: string;
+};
 
 const validate = (email: string, password: string): FormErrors => {
   const errs: FormErrors = {};
@@ -29,17 +32,18 @@ export default function SignInPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs = validate(emailRef.current, passwordRef.current);
-    if (Object.keys(errs).length > 0) { setFormErrors(errs); return; }
+    if (Object.keys(errs).length > 0) {
+      setFormErrors(errs);
+      return;
+    }
     setFormErrors({});
     await login({ email: emailRef.current, password: passwordRef.current });
   };
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-white relative overflow-hidden lg:overflow-auto">
-
       {/* ── Mobile UI ── */}
       <div className="lg:hidden flex flex-col min-h-screen bg-white">
-
         {/* Hero image with overlay */}
         <div className="relative h-[50vh] min-h-[280px] flex-shrink-0 overflow-hidden">
           <Image
@@ -47,11 +51,18 @@ export default function SignInPage() {
             alt="TumbuhSehat"
             fill
             priority
+            quality={100}
             sizes="100vw"
-            className="object-cover object-center"
+            className="object-cover object-[center_25%]"
           />
           {/* Overlay gradient */}
-          <div className="absolute inset-0 gradient-auth-overlay" />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(to bottom, rgba(10,35,30,0.55) 0%, rgba(10,35,30,0.30) 35%, rgba(10,35,30,0.70) 70%, rgba(10,35,30,0.92) 100%)",
+            }}
+          />
           {/* Brand — centered vertically & horizontally in the image */}
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-7 z-10">
             <BrandLogo variant="compact" priority onDark />
@@ -63,7 +74,9 @@ export default function SignInPage() {
 
         {/* Form card — slides up over the image */}
         <div className="flex-1 bg-white rounded-t-[2.5rem] -mt-16 relative z-10 px-7 pt-8 pb-10 flex flex-col shadow-[0_-8px_30px_rgba(0,0,0,0.10)]">
-          <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight mb-1">Selamat Datang</h2>
+          <h2 className="text-2xl font-extrabold text-gray-900 tracking-tight mb-1">
+            Selamat Datang
+          </h2>
           <p className="text-sm font-medium text-gray-500 mb-8">
             Masuk ke akun <span className="font-bold text-primary">TumbuhSehat</span> Anda
           </p>
@@ -76,25 +89,41 @@ export default function SignInPage() {
             )}
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Email</label>
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                Email
+              </label>
               <input
                 type="email"
                 placeholder="contoh@email.com"
                 className="w-full bg-gray-50 border border-gray-200 focus:border-primary/50 focus:bg-white rounded-2xl px-4 py-3.5 text-sm font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all placeholder-gray-400"
-                onChange={(e) => { emailRef.current = e.target.value; }}
+                onChange={(e) => {
+                  emailRef.current = e.target.value;
+                }}
               />
-              {formErrors.email && <span className="text-[11px] text-red-500 font-medium mt-0.5">{formErrors.email}</span>}
+              {formErrors.email && (
+                <span className="text-[11px] text-red-500 font-medium mt-0.5">
+                  {formErrors.email}
+                </span>
+              )}
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Password</label>
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                Password
+              </label>
               <input
                 type="password"
                 placeholder="Minimal 8 karakter"
                 className="w-full bg-gray-50 border border-gray-200 focus:border-primary/50 focus:bg-white rounded-2xl px-4 py-3.5 text-sm font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all placeholder-gray-400"
-                onChange={(e) => { passwordRef.current = e.target.value; }}
+                onChange={(e) => {
+                  passwordRef.current = e.target.value;
+                }}
               />
-              {formErrors.password && <span className="text-[11px] text-red-500 font-medium mt-0.5">{formErrors.password}</span>}
+              {formErrors.password && (
+                <span className="text-[11px] text-red-500 font-medium mt-0.5">
+                  {formErrors.password}
+                </span>
+              )}
             </div>
 
             <div className="flex justify-end -mt-1">
@@ -127,14 +156,22 @@ export default function SignInPage() {
           alt="TumbuhSehat"
           fill
           priority
-          sizes="52vw"
-          className="object-cover object-center"
+          quality={100}
+          sizes="(max-width: 1024px) 100vw, 55vw"
+          className="object-cover object-[center_25%]"
         />
-        <div className="absolute inset-0 gradient-auth-overlay-signin" />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to bottom, rgba(10,35,30,0.55) 0%, rgba(10,35,30,0.30) 35%, rgba(10,35,30,0.70) 70%, rgba(10,35,30,0.90) 100%)",
+          }}
+        />
         <div className="absolute inset-0 flex flex-col justify-between p-10 xl:p-14">
           <div>
             <BrandLogo variant="compact" priority onDark />
           </div>
+
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -180,26 +217,37 @@ export default function SignInPage() {
                 {error.message}
               </motion.p>
             )}
+
             <InputField
               label="Email"
               type="email"
               placeholder="contoh@email.com"
-              onChange={(e) => { emailRef.current = e.target.value; }}
+              onChange={(e) => {
+                emailRef.current = e.target.value;
+              }}
               error={formErrors.email}
             />
+
             <InputField
               label="Password"
               type="password"
               placeholder="Minimal 8 karakter"
-              onChange={(e) => { passwordRef.current = e.target.value; }}
+              onChange={(e) => {
+                passwordRef.current = e.target.value;
+              }}
               error={formErrors.password}
               showPasswordToggle
             />
+
             <div className="flex justify-end -mt-1">
-              <button type="button" className="text-xs font-semibold text-primary hover:text-primary-hover transition-colors">
+              <button
+                type="button"
+                className="text-xs font-semibold text-primary hover:text-primary-hover transition-colors"
+              >
                 Lupa password?
               </button>
             </div>
+
             <Button type="submit" loading={isLoading} variant="glow" className="w-full mt-1">
               Masuk
             </Button>
@@ -207,7 +255,10 @@ export default function SignInPage() {
 
           <p className="text-center text-sm text-on-surface-variant mt-6">
             Belum punya akun?{" "}
-            <Link href="/auth/register" className="font-bold text-primary hover:text-primary-hover transition-colors">
+            <Link
+              href="/auth/register"
+              className="font-bold text-primary hover:text-primary-hover transition-colors"
+            >
               Daftar sekarang
             </Link>
           </p>

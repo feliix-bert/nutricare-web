@@ -60,11 +60,17 @@ export default function RegisterPage() {
             alt="TumbuhSehat"
             fill
             priority
+            quality={100}
             sizes="100vw"
-            className="object-cover object-center"
+            className="object-cover object-[center_25%]"
           />
           {/* Overlay gradient */}
-          <div className="absolute inset-0 gradient-auth-overlay-register" />
+          <div
+            className="absolute inset-0"
+            style={{
+              background: "linear-gradient(to bottom, rgba(10,35,30,0.55) 0%, rgba(10,35,30,0.28) 40%, rgba(10,35,30,0.78) 80%, rgba(10,35,30,0.96) 100%)",
+            }}
+          />
           {/* Back button — top left */}
           <button
             onClick={() => router.back()}
@@ -152,10 +158,16 @@ export default function RegisterPage() {
           alt="TumbuhSehat"
           fill
           priority
-          sizes="52vw"
-          className="object-cover object-center"
+          quality={100}
+          sizes="(max-width: 1024px) 100vw, 55vw"
+          className="object-cover object-[center_25%]"
         />
-        <div className="absolute inset-0 gradient-auth-overlay-register" />
+        <div
+          className="absolute inset-0"
+          style={{
+            background: "linear-gradient(to bottom, rgba(10,35,30,0.55) 0%, rgba(10,35,30,0.28) 30%, rgba(10,35,30,0.72) 68%, rgba(10,35,30,0.92) 100%)",
+          }}
+        />
         <div className="absolute inset-0 flex flex-col justify-between p-10 xl:p-14">
           <BrandLogo variant="compact" priority onDark />
           <motion.div

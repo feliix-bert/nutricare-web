@@ -1,81 +1,103 @@
-import { apiClient } from '@/services/api';
-import { USE_MOCK } from '@/services/mock';
+import { createClient } from "@/lib/supabase/client";
 
-import type {
-  AuthResponse,
-  LoginRequest,
-  RefreshResponse,
-  RegisterRequest,
-  User,
-} from '@/features/auth/types/auth.types';
+import type { LoginRequest, RegisterRequest, AuthResponse, User } from "@/features/auth/types/auth.types";
+import type { RoleEnum } from "@/types/supabase";
 
 // ---------------------------------------------------------------------------
-// Mock implementations
+// Helpers
 // ---------------------------------------------------------------------------
 
-const mockLogin = async (data: LoginRequest): Promise<AuthResponse> => {
-  // Sesuai ARCHITECTURE.md: auth selalu melalui Spring Boot agar JWT valid.
-  // JWT nyata diperlukan untuk semua endpoint terproteksi (termasuk /api/chat).
-  const res = await apiClient.post<AuthResponse>('/api/auth/login', data);
-  return res.data;
-};
-
-
-const mockRegister = async (data: RegisterRequest): Promise<User> => {
-  // Sesuai ARCHITECTURE.md: register harus ke Spring Boot agar user tersimpan di DB.
-  // User yang hanya ada di mock store tidak bisa login karena mockLogin meneruskan ke Spring Boot.
-  const res = await apiClient.post<AuthResponse>('/api/auth/register', data);
-  return res.data.user;
-};
-
-const mockRefreshToken = async (token: string): Promise<RefreshResponse> => {
-  // Sesuai ARCHITECTURE.md: semua auth melalui Spring Boot
-  const res = await apiClient.post<RefreshResponse>('/api/auth/refresh', {
-    refreshToken: token,
-  });
-  return res.data;
-};
-
-const mockGetMe = async (): Promise<User> => {
-  // Sesuai ARCHITECTURE.md: semua auth melalui Spring Boot
-  const res = await apiClient.get<User>('/api/auth/me');
-  return res.data;
-};
+const mapSupabaseUser = (supaUser: { id: string; email?: string | null; user_metadata?: { name?: string } }): User => ({
+  id: supaUser.id,
+  email: supaUser.email ?? "",
+  name: supaUser.user_metadata?.name ?? "User",
+  role: "PARENT" as RoleEnum,
+  walletAddress: null,
+});
 
 // ---------------------------------------------------------------------------
-// Real implementations
-// ---------------------------------------------------------------------------
-
-const realLogin = async (data: LoginRequest): Promise<AuthResponse> => {
-  const res = await apiClient.post<AuthResponse>('/api/auth/login', data);
-  return res.data;
-};
-
-const realRegister = async (data: RegisterRequest): Promise<User> => {
-  // Spring Boot register mengembalikan AuthResponse, bukan User secara langsung
-  const res = await apiClient.post<AuthResponse>('/api/auth/register', data);
-  return res.data.user;
-};
-
-const realRefreshToken = async (token: string): Promise<RefreshResponse> => {
-  const res = await apiClient.post<RefreshResponse>('/api/auth/refresh', {
-    refreshToken: token,
-  });
-  return res.data;
-};
-
-const realGetMe = async (): Promise<User> => {
-  const res = await apiClient.get<User>('/api/auth/me');
-  return res.data;
-};
-
-// ---------------------------------------------------------------------------
-// Exports — toggle between mock and real via USE_MOCK flag
+// Auth service — via Supabase Auth
 // ---------------------------------------------------------------------------
 
 export const authService = {
-  login: USE_MOCK ? mockLogin : realLogin,
-  register: USE_MOCK ? mockRegister : realRegister,
-  refreshToken: USE_MOCK ? mockRefreshToken : realRefreshToken,
-  getMe: USE_MOCK ? mockGetMe : realGetMe,
+  login: async (data: LoginRequest): Promise<AuthResponse> => {
+    const supabase = createClient();
+    const { data: authData, error } = await supabase.auth.signInWithPassword({
+      email: data.email,
+      password: data.password,
+    });
+
+    if (error) throw new Error(error.message);
+    if (!authData.session) throw new Error("No session returned");
+
+    const user = mapSupabaseUser(authData.user);
+
+    // Fetch profile from public.users for role & walletAddress
+    const { data: profile } = await supabase
+      .from("users")
+      .select("role, wallet_address")
+      .eq("id", authData.user.id)
+      .single();
+
+    if (profile) {
+      user.role = profile.role as RoleEnum;
+      user.walletAddress = profile.wallet_address;
+    }
+
+    return {
+      accessToken: authData.session.access_token,
+      refreshToken: authData.session.refresh_token,
+      user,
+    };
+  },
+
+  register: async (data: RegisterRequest): Promise<User> => {
+    const supabase = createClient();
+    const { data: authData, error } = await supabase.auth.signUp({
+      email: data.email,
+      password: data.password,
+      options: {
+        data: { name: data.name },
+      },
+    });
+
+    if (error) throw new Error(error.message);
+    if (!authData.user) throw new Error("No user returned");
+
+    return mapSupabaseUser(authData.user);
+  },
+
+  refreshToken: async (): Promise<{ accessToken: string; refreshToken: string }> => {
+    const supabase = createClient();
+    const { data, error } = await supabase.auth.refreshSession();
+
+    if (error || !data.session) throw new Error("Session refresh failed");
+
+    return {
+      accessToken: data.session.access_token,
+      refreshToken: data.session.refresh_token,
+    };
+  },
+
+  getMe: async (): Promise<User> => {
+    const supabase = createClient();
+    const { data: { user: supaUser }, error } = await supabase.auth.getUser();
+
+    if (error || !supaUser) throw new Error("Not authenticated");
+
+    const user = mapSupabaseUser(supaUser);
+
+    const { data: profile } = await supabase
+      .from("users")
+      .select("role, wallet_address")
+      .eq("id", supaUser.id)
+      .single();
+
+    if (profile) {
+      user.role = profile.role as RoleEnum;
+      user.walletAddress = profile.wallet_address;
+    }
+
+    return user;
+  },
 };

@@ -50,6 +50,7 @@ export const nutritionService = {
     const photoUrl = urlData.publicUrl;
 
     // 3. Call Gemini nutrition analysis via Next.js API
+    // API route handles both Gemini analysis AND saving to nutrition_logs
     const res = await fetch(`/api/gemini/nutrition`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -60,24 +61,14 @@ export const nutritionService = {
 
     const result = await res.json();
 
-    // 4. Save result to nutrition_logs
+    // 4. Fetch the saved log (most recent for this child + photoUrl)
     const { data: log, error } = await supabase
       .from("nutrition_logs")
-      .insert({
-        child_id: childId,
-        photo_url: photoUrl,
-        food_detected: result.foodDetected ?? [],
-        portion_estimate: result.portionEstimate,
-        calories: result.calories,
-        protein: result.protein,
-        carbs: result.carbs,
-        fat: result.fat,
-        fiber: result.fiber,
-        adequacy_note: result.adequacyNote,
-        mpasi_recommendation: result.mpasiRecommendation,
-        gemini_raw: result,
-      })
-      .select()
+      .select("*")
+      .eq("child_id", childId)
+      .eq("photo_url", photoUrl)
+      .order("created_at", { ascending: false })
+      .limit(1)
       .single();
 
     if (error) throw error;

@@ -41,9 +41,15 @@ export const useSendMessage = (predictionId: string | null) => {
     mutationFn: async (
       payload: SendMessagePayload,
     ): Promise<ChatRouteResponse> => {
-      // Build chat history for context
-      const history: Array<{ role: "user" | "assistant"; content: string }> =
-        [];
+      // Load actual chat history from cache untuk dikirim sebagai context
+      const historyData = queryClient.getQueryData<{
+        messages: { role: "user" | "assistant"; content: string }[];
+      }>(chatHistoryQueryKey(payload.predictionId));
+
+      const history = historyData?.messages?.map((m) => ({
+        role: m.role as "user" | "assistant",
+        content: typeof m.content === "string" ? m.content : "",
+      })) ?? [];
 
       return chatService.sendMessage({
         predictionId: payload.predictionId,

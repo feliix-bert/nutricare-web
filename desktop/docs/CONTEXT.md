@@ -1,4 +1,4 @@
-# CONTEXT.md — Tumbuh Sehat
+# CONTEXT.md — Tumbuh Sehat (GiziChain)
 
 ## Gambaran Proyek
 
@@ -12,6 +12,52 @@ Tagline: *"Data Gizi Anak: Teranalisis oleh AI, Dijamin oleh Blockchain."*
 
 Platform ini bukan pengganti diagnosis medis. Setiap output AI wajib disertai disclaimer
 dan anjuran konsultasi ke tenaga kesehatan.
+
+---
+
+## Arsitektur Baru (2026)
+
+```
+┌──────────────────────────────────────────┐
+│              Supabase Cloud              │
+│  ┌──────────┐  ┌────────┐  ┌─────────┐  │
+│  │   Auth   │  │Postgres│  │ Storage │  │
+│  │ (bawaan) │  │ + RLS  │  │ + RLS   │  │
+│  └──────────┘  └────────┘  └─────────┘  │
+│  ┌──────────┐  ┌────────┐               │
+│  │ Realtime │  │ Edge   │               │
+│  │ (WS)     │  │ Func   │               │
+│  └──────────┘  └────────┘               │
+└──────────────────────────────────────────┘
+        ▲                    ▲
+        │ supabase-js SDK    │ supabase-js SDK
+        │ (service role)     │ (anon + RLS)
+  ┌─────┴──────────┐  ┌─────┴──────────┐
+  │   Next.js      │  │   Expo Mobile  │
+  │  (Server       │  │  (Client       │
+  │   Actions +    │  │   langsung     │
+  │   API Routes)  │  │   ke DB via    │
+  │                │  │   RLS)         │
+  │ - Gemini AI    │  │                │
+  │ - Web3 (RPC    │  │  - Camera      │
+  │   token rahasia)│  │  - QR Scanner  │
+  └────────────────┘  └────────────────┘
+```
+
+### Perubahan Besar dari Arsitektur Lama
+
+| Aspek | Sebelum (Java) | Sesudah (Fullstack JS) |
+|-------|---------------|----------------------|
+| Backend | Spring Boot 3.2.0 (Java 17) | Next.js API Routes + Server Actions |
+| Auth | JWT manual + Spring Security | Supabase Auth (built-in, RLS native) |
+| DB | JPA/Hibernate + Flyway | Supabase PostgreSQL + RLS |
+| Storage | REST client manual | Supabase Storage SDK |
+| Realtime | WebSocket manual | Supabase Realtime (WS built-in) |
+| AI Gemini | GeminiService.java | `@google/generative-ai` SDK |
+| Blockchain | Web3j (Java) | Wagmi + ethers.js (frontend) |
+| IPFS | IpfsService.java (Pinata REST) | Pinata SDK JS |
+| PDF | iText (Java) | `@pdf-lib` atau `puppeteer` |
+| Report | ReportService.java | Next.js API Route |
 
 ---
 
@@ -64,7 +110,7 @@ Orang tua atau wali anak.
 - Mengunduh laporan PDF
 
 **Batasan:**
-- Hanya bisa mengakses data anak miliknya sendiri
+- Hanya bisa mengakses data anak miliknya sendiri (via RLS)
 - Tidak bisa melihat data pasien lain
 
 ---
@@ -187,6 +233,7 @@ Form multi-step (5 langkah) yang mengumpulkan:
 10. **VC hanya boleh diterbitkan oleh MEDIC** yang memiliki `walletAddress` terdaftar
 11. **QR VC tidak boleh diterbitkan** sebelum tx blockchain terkonfirmasi dan CID IPFS tersedia
 12. VC dapat dicabut (revoke) oleh issuer — status revoke dicatat on-chain
+13. **Semua akses client ke Supabase diamankan via RLS** — service_role key hanya dipakai di Next.js server
 
 ---
 
@@ -206,3 +253,18 @@ Sistem **tidak menjawab**:
 
 Respons default untuk pertanyaan di luar domain:
 > *"Pertanyaan ini di luar cakupan aplikasi. Untuk pertanyaan medis lebih lanjut, silakan konsultasi langsung dengan dokter atau bidan."*
+
+---
+
+## Keunggulan Arsitektur Baru
+
+| Aspek | Java Lama | Fullstack JS Baru |
+|-------|-----------|-------------------|
+| **Kecepatan develop** | Lambat — setup manual semua | Cepat — SDK siap pakai |
+| **Auth** | JWT manual + 3 file security | Supabase Auth — 1 baris RLS |
+| **Realtime** | WebSocket handler manual | Supabase Realtime — subscribe channel |
+| **Storage** | REST client ke Supabase | SDK langsung dari client |
+| **Jumlah backend** | 2 (Java + Next.js) | 1 (Next.js) |
+| **Web3 library** | Web3j (java, jelek) | ethers.js / Wagmi (mature) |
+| **Deploy** | Server VPS + config | Vercel + Supabase (0 server mgmt) |
+| **Cocok lomba** | ❌ Overkill | ✅ Cepat hasil |

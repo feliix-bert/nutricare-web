@@ -1,11 +1,16 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { chatService } from '@/features/consult/services/chat.service';
-import type { ChatApiResponse, PredictionContext } from '@/features/consult/types/consult.types';
-import { apiClient } from '@/services/api';
+import { chatService } from "@/features/consult/services/chat.service";
+import { createClient } from "@/lib/supabase/client";
+import type {
+  ChatRouteRequest,
+  ChatRouteResponse,
+  ChatMessage,
+  PredictionContext,
+} from "@/features/consult/types/consult.types";
 
 export const chatHistoryQueryKey = (predictionId: string) =>
-  ['chat', 'history', predictionId] as const;
+  ["chat", "history", predictionId] as const;
 
 // ---------------------------------------------------------------------------
 // Hook: load riwayat chat berdasarkan predictionId
@@ -13,16 +18,14 @@ export const chatHistoryQueryKey = (predictionId: string) =>
 
 export const useChatHistory = (predictionId: string | null) =>
   useQuery({
-    queryKey: chatHistoryQueryKey(predictionId ?? ''),
+    queryKey: chatHistoryQueryKey(predictionId ?? ""),
     queryFn: () => chatService.getHistory(predictionId!),
     enabled: !!predictionId,
-    staleTime: 0, // selalu ambil fresh untuk chat
+    staleTime: 0,
   });
 
 // ---------------------------------------------------------------------------
-// Hook: kirim pesan dan mutasi cache
-// Sesuai ARCHITECTURE.md: semua AI dipanggil oleh Spring Boot.
-// Mock mode maupun real mode sama-sama meneruskan request ke Spring Boot.
+// Hook: kirim pesan ke Next.js /api/chat
 // ---------------------------------------------------------------------------
 
 type SendMessagePayload = {
@@ -35,11 +38,17 @@ export const useSendMessage = (predictionId: string | null) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (payload: SendMessagePayload): Promise<ChatApiResponse> => {
-      // Baik mock mode maupun real mode: teruskan ke Spring Boot via chatService
+    mutationFn: async (
+      payload: SendMessagePayload,
+    ): Promise<ChatRouteResponse> => {
+      // Build chat history for context
+      const history: Array<{ role: "user" | "assistant"; content: string }> =
+        [];
+
       return chatService.sendMessage({
-        predictionId: payload.predictionId,
         message: payload.message,
+        history,
+        context: payload.context,
       });
     },
     onSuccess: () => {
@@ -53,27 +62,63 @@ export const useSendMessage = (predictionId: string | null) => {
 };
 
 // ---------------------------------------------------------------------------
-// Hook: bangun context dari predictionId (untuk keperluan UI)
+// Hook: build PredictionContext dari predictionId
 // ---------------------------------------------------------------------------
 
 export const usePredictionContextQuery = (predictionId: string | null) =>
   useQuery({
-    queryKey: ['assessment', predictionId],
+    queryKey: ["prediction-context", predictionId],
     queryFn: async () => {
-      const res = await apiClient.get<import('@/features/assessment/types/assessment.types').AssessmentResponseDTO>(`/api/assessments/${predictionId}`);
-      const data = res.data;
-      const ctx: PredictionContext = {
-        predictionId: data.prediction.id,
-        childName: data.child.name,
-        ageMonths: data.child.ageMonths,
-        gender: 'MALE', // Hardcoded as AssessmentResponseDTO doesn't include gender for now
-        status: data.prediction.status,
-        zscoreHa: data.prediction.zscoreHa,
-        zscoreWa: data.prediction.zscoreWa,
-        zscoreWh: data.prediction.zscoreWh,
-        summary: data.prediction.summary,
-        recommendations: data.prediction.recommendations,
+      const supabase = createClient();
+
+      const { data: prediction } = await supabase
+        .from("predictions")
+        .select(
+          `
+          id,
+          stunt_status,
+          zscore_ha,
+          zscore_wa,
+          zscore_wh,
+          summary,
+          recommendations,
+          assessment:assessments(
+            child:children(
+              id, name, birth_date, gender
+            )
+          )
+        `,
+        )
+        .eq("id", predictionId!)
+        .single();
+
+      if (!prediction) throw new Error("Prediction not found");
+
+      const assessment = prediction.assessment as unknown as {
+        child: { id: string; name: string; birth_date: string; gender: string };
       };
+      const child = assessment.child;
+
+      // Calculate age in months
+      const birth = new Date(child.birth_date);
+      const now = new Date();
+      const ageMonths =
+        (now.getFullYear() - birth.getFullYear()) * 12 +
+        (now.getMonth() - birth.getMonth());
+
+      const ctx: PredictionContext = {
+        predictionId: prediction.id,
+        childName: child.name,
+        ageMonths: Math.max(0, ageMonths),
+        gender: child.gender as "MALE" | "FEMALE",
+        status: prediction.stunt_status as PredictionContext["status"],
+        zscoreHa: prediction.zscore_ha ?? 0,
+        zscoreWa: prediction.zscore_wa ?? 0,
+        zscoreWh: prediction.zscore_wh ?? 0,
+        summary: prediction.summary ?? "",
+        recommendations: (prediction.recommendations as string[]) ?? [],
+      };
+
       return ctx;
     },
     enabled: !!predictionId,

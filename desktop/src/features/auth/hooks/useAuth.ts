@@ -1,9 +1,9 @@
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
-import { authService } from '@/features/auth/services/auth.service';
-import { useAuthStore } from '@/stores/authStore';
-import type { LoginRequest, RegisterRequest } from '@/features/auth/types/auth.types';
+import { authService } from "@/features/auth/services/auth.service";
+import { useAuthStore } from "@/stores/authStore";
+import type { LoginRequest, RegisterRequest } from "@/features/auth/types/auth.types";
 
 type AuthError = { message: string } | null;
 
@@ -22,12 +22,11 @@ export const useAuth = () => {
     setError(null);
     try {
       const response = await authService.login(data);
-      setAuth(response.accessToken, response.refreshToken, response.user);
-      router.replace('/');
+      setAuth(response.user);
+      router.replace("/");
     } catch (err) {
       const msg =
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (err as any)?.response?.data?.message ?? 'Terjadi kesalahan. Coba lagi.';
+        err instanceof Error ? err.message : "Terjadi kesalahan. Coba lagi.";
       setError({ message: msg });
     } finally {
       setIsLoading(false);
@@ -42,8 +41,7 @@ export const useAuth = () => {
       return true;
     } catch (err) {
       const msg =
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (err as any)?.response?.data?.message ?? 'Registrasi gagal. Coba lagi.';
+        err instanceof Error ? err.message : "Registrasi gagal. Coba lagi.";
       setError({ message: msg });
       return false;
     } finally {
@@ -53,7 +51,7 @@ export const useAuth = () => {
 
   const logout = () => {
     storeLogout();
-    router.replace('/auth/sign-in');
+    router.replace("/auth/sign-in");
   };
 
   return {

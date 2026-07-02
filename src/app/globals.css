@@ -168,19 +168,6 @@ body {
   background: linear-gradient(180deg, #faf8f5 0%, #f5f0e8 50%, #fdf9f4 100%);
 }
 
-/* ── Auth overlay gradients ── */
-.gradient-auth-overlay {
-  background: linear-gradient(to bottom, rgba(10,35,30,0.55) 0%, rgba(10,35,30,0.30) 35%, rgba(10,35,30,0.70) 70%, rgba(10,35,30,0.92) 100%);
-}
-
-.gradient-auth-overlay-signin {
-  background: linear-gradient(to bottom, rgba(10,35,30,0.55) 0%, rgba(10,35,30,0.30) 35%, rgba(10,35,30,0.70) 70%, rgba(10,35,30,0.90) 100%);
-}
-
-.gradient-auth-overlay-register {
-  background: linear-gradient(to bottom, rgba(10,35,30,0.55) 0%, rgba(10,35,30,0.28) 30%, rgba(10,35,30,0.72) 68%, rgba(10,35,30,0.92) 100%);
-}
-
 /* ═══════════════════════════════════════════════════
    Animated Keyframes
    ═══════════════════════════════════════════════════ */

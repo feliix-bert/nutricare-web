@@ -1,11 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { useAuthStore } from "@/stores/authStore";
 import { Mail, Shield, Wallet, Settings, ChevronRight, LogOut, TrendingUp, Users, FileBadge, CalendarClock } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Avatar } from "@/components/common/Avatar";
 import { PageShell } from "@/components/layout/PageShell";
+import { LogoutConfirmModal } from "@/components/common/LogoutConfirmModal";
 
 const STATS = [
   { label: "Pasien Aktif", value: "24", icon: Users },
@@ -21,13 +22,8 @@ const SETTINGS_ITEMS = [
 ];
 
 export default function MedicProfilePage() {
-  const { user, logout } = useAuthStore();
-  const router = useRouter();
-
-  const handleLogout = () => {
-    logout();
-    router.replace("/auth/sign-in");
-  };
+  const { user } = useAuthStore();
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   if (!user) {
     return (
@@ -142,13 +138,12 @@ export default function MedicProfilePage() {
           >
             <h3 className="font-bold text-on-surface-variant text-[13px] uppercase tracking-wider mb-3 px-1">Pengaturan Medis</h3>
             <div className="bg-white rounded-2xl border border-outline-variant/10 shadow-sm overflow-hidden flex flex-col">
-              {SETTINGS_ITEMS.map((item, index, arr) => {
+              {SETTINGS_ITEMS.map((item) => {
                 const Icon = item.icon;
-                const isLast = index === arr.length - 1;
                 return (
                   <button
                     key={item.label}
-                    className={`group flex items-center gap-4 p-4 hover:bg-surface-low transition-colors text-left ${!isLast ? "border-b border-outline-variant/10" : ""}`}
+                    className="group flex items-center gap-4 p-4 hover:bg-surface-low transition-colors text-left border-b border-outline-variant/10"
                   >
                     <div className="w-8 h-8 rounded-full bg-surface-dim flex items-center justify-center flex-shrink-0">
                       <Icon size={16} className="text-on-surface-variant group-hover:text-primary transition-colors" strokeWidth={2} />
@@ -161,26 +156,30 @@ export default function MedicProfilePage() {
                   </button>
                 );
               })}
+              
+              {/* Logout Button (Proportional styling as the last setting item) */}
+              <button
+                onClick={() => setIsLogoutModalOpen(true)}
+                className="group flex items-center gap-4 p-4 hover:bg-rose-50 transition-colors text-left"
+              >
+                <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center flex-shrink-0">
+                  <LogOut size={16} className="text-rose-500 group-hover:text-rose-600 transition-colors" strokeWidth={2.5} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-rose-600 group-hover:text-rose-700 transition-colors">Keluar dari Akun</p>
+                  <p className="text-[12px] text-rose-500/70 font-medium mt-0.5">Akhiri sesi Anda saat ini</p>
+                </div>
+              </button>
             </div>
           </motion.div>
         </div>
-
-        {/* ── Logout ── */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="mt-4 flex justify-center md:justify-start"
-        >
-          <button
-            onClick={handleLogout}
-            className="group flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl bg-danger-light/30 border border-danger/10 text-danger font-semibold hover:bg-danger hover:text-white hover:border-danger transition-all duration-300 shadow-sm w-full md:w-auto"
-          >
-            <LogOut size={18} strokeWidth={2.5} className="group-hover:-translate-x-1 transition-transform" />
-            Keluar dari Akun
-          </button>
-        </motion.div>
       </div>
+
+      {/* Logout Modal */}
+      <LogoutConfirmModal 
+        isOpen={isLogoutModalOpen} 
+        onClose={() => setIsLogoutModalOpen(false)} 
+      />
     </PageShell>
   );
 }

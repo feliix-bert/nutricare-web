@@ -62,6 +62,38 @@
   /* ── Typography ── */
   --font-sans: var(--font-jakarta);
   --font-mono: var(--font-geist-mono);
+
+  /* ── Medic Portal — Medica Style ── */
+  --color-medic-bg-gradient-start: #e0f2fe; /* Light sky blue */
+  --color-medic-bg-gradient-end: #fce7f3; /* Light pink/peach */
+  --color-medic-surface:         #ffffff;
+  --color-medic-surface-dim:     #f8fafc;
+  
+  --color-medic-text:            #111827; /* Near black */
+  --color-medic-text-muted:      #6b7280;
+  --color-medic-text-subtle:     #9ca3af;
+  
+  --color-medic-border:          #f1f5f9;
+  
+  --color-medic-primary:         #0f172a; /* Dark slate for prominent buttons/headers */
+  --color-medic-primary-hover:   #1e293b;
+  
+  --color-medic-accent:          #14b8a6; /* Teal */
+  --color-medic-accent-light:    #ccfbf1;
+  --color-medic-accent-hover:    #0d9488;
+  
+  --color-medic-lime:            #d9f99d; /* Lime/Yellow from reference */
+  --color-medic-lime-text:       #4d7c0f;
+  
+  --color-medic-blue:            #bae6fd;
+  --color-medic-blue-text:       #0369a1;
+
+  --color-medic-critical:        #ef4444;
+  --color-medic-critical-bg:     #fee2e2;
+  --color-medic-warning:         #f59e0b;
+  --color-medic-warning-bg:      #fef3c7;
+  --color-medic-success:         #10b981;
+  --color-medic-success-bg:      #d1fae5;
 }
 
 /* ═══════════════════════════════════════════════════
@@ -129,6 +161,12 @@ body {
   box-shadow:
     0 4px 20px rgba(212, 164, 84, 0.10),
     0 1px 4px rgba(30, 42, 42, 0.04);
+}
+
+.shadow-medica {
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.04),
+    0 1px 4px rgba(0, 0, 0, 0.02);
 }
 
 /* ═══════════════════════════════════════════════════

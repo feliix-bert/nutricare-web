@@ -23,7 +23,9 @@ export const useAuth = () => {
     try {
       const response = await authService.login(data);
       setAuth(response.user);
-      router.replace("/");
+      // Role-based redirect: MEDIC goes to doctor portal, others to home
+      const destination = response.user.role === "MEDIC" ? "/medic" : "/";
+      router.replace(destination);
     } catch (err) {
       const msg =
         err instanceof Error ? err.message : "Terjadi kesalahan. Coba lagi.";

@@ -8,6 +8,7 @@ import { FileTextIcon } from "@/components/icons/file-text";
 import { MessageCircleIcon } from "@/components/icons/message-circle";
 import { ScanLineIcon } from "@/components/icons/scan-line";
 import { UserIcon } from "@/components/icons/user";
+import { Bell, Users } from "lucide-react";
 
 import { useAuthStore } from "@/stores/authStore";
 
@@ -21,6 +22,9 @@ const PARENT_TABS = [
 
 const MEDIC_TABS = [
   { name: "Dashboard", path: "/medic", Icon: HomeIcon },
+  { name: "Pasien", path: "/medic/patients", Icon: Users as React.FC<{ size?: number; className?: string }> },
+  { name: "Konsultasi", path: "/medic/consultations", Icon: MessageCircleIcon },
+  { name: "Peringatan", path: "/medic/alerts", Icon: Bell as React.FC<{ size?: number; className?: string }> },
   { name: "Profil", path: "/medic/profile", Icon: UserIcon },
 ];
 

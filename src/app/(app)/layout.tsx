@@ -11,6 +11,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isHydrated = useAuthStore((s) => s.isHydrated);
+  const user = useAuthStore((s) => s.user);
 
   // Fallback timeout to clear white screen if hydration completely fails
   useEffect(() => {
@@ -27,8 +28,21 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isHydrated && !isAuthenticated) {
       router.replace("/auth/sign-in");
+      return;
     }
-  }, [isHydrated, isAuthenticated, router]);
+    if (isHydrated && isAuthenticated && user) {
+      const isMedic = user.role === "MEDIC";
+      const onMedicRoute = pathname.startsWith("/medic");
+      // PARENT accessing /medic → bounce to home
+      if (!isMedic && onMedicRoute) {
+        router.replace("/");
+      }
+      // MEDIC accessing non-medic routes → bounce to /medic
+      if (isMedic && !onMedicRoute) {
+        router.replace("/medic");
+      }
+    }
+  }, [isHydrated, isAuthenticated, user, pathname, router]);
 
   if (!isHydrated) {
     return (

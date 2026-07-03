@@ -13,7 +13,7 @@ type AuthState = {
   hydrate: () => Promise<void>;
 };
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isAuthenticated: false,
   isHydrated: false,
@@ -27,6 +27,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: () => {
+    const { isAuthenticated } = get();
+    if (!isAuthenticated) return; // Prevent infinite loop on SIGNED_OUT event
+
     const supabase = createClient();
     supabase.auth.signOut();
     // Hapus cookies langsung biar proxy.ts ga detek session lama
@@ -79,3 +82,36 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 }));
+
+// Initialize store in browser environment (safe for SSR/HMR)
+if (typeof window !== "undefined") {
+  const store = useAuthStore.getState();
+  
+  // 1. Kick off hydration immediately for this specific store instance
+  store.hydrate();
+
+  // 2. Setup auth state listener independently of React lifecycle
+  const supabase = createClient();
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    if (event === "SIGNED_IN" && session?.user) {
+      // Fetch profile
+      const { data: profile } = await supabase
+        .from("users")
+        .select("role, wallet_address")
+        .eq("id", session.user.id)
+        .single();
+
+      store.setAuth({
+        id: session.user.id,
+        email: session.user.email ?? "",
+        name: session.user.user_metadata?.name ?? "User",
+        role: (profile?.role as "PARENT" | "MEDIC" | "POSYANDU" | "ADMIN") ?? "PARENT",
+        walletAddress: profile?.wallet_address ?? null,
+      });
+    } else if (event === "SIGNED_OUT") {
+      store.logout();
+    } else if (event === "TOKEN_REFRESHED") {
+      store.hydrate();
+    }
+  });
+}

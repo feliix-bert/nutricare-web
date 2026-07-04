@@ -220,7 +220,7 @@ function HomePageInner() {
                   aria-label="Profil"
                 >
                   <Avatar
-                    seed="Ibu Ani"
+                    seed={user?.name || "Ibu/Bapak"}
                     variant="parent"
                     size="md"
                     className="ring-2 ring-white shadow-sm"
@@ -228,7 +228,7 @@ function HomePageInner() {
                 </button>
                 <div className="leading-tight">
                   <p className="text-[13px] text-on-surface-variant font-medium">Halo,</p>
-                  <h1 className="text-[18px] font-extrabold text-on-surface tracking-tight">Ibu Ani</h1>
+                  <h1 className="text-[18px] font-extrabold text-on-surface tracking-tight">{user?.name || "Ibu/Bapak"}</h1>
                 </div>
               </div>
 

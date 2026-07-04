@@ -43,56 +43,28 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   hydrate: async () => {
+    // Kami membiarkan onAuthStateChange('INITIAL_SESSION') yang menangani fetch profile dan sesi
+    // untuk mencegah race condition. Di sini kita cukup menambahkan fallback timeout 5 detik
+    // untuk menghindari white screen jika listener macet.
     try {
-      const supabase = createClient();
-      
-      const fetchSession = async () => {
-        const { data } = await supabase.auth.getSession();
-        if (data.session?.user) {
-          let role: User["role"] = "PARENT";
-          let walletAddress: string | null = null;
-          try {
-            // Tambahkan timeout 3 detik untuk fetch profile agar tidak hang
-            const profilePromise = supabase
-              .from("users")
-              .select("role, wallet_address")
-              .eq("id", data.session.user.id)
-              .single();
-              
-            const profileRes = await Promise.race([
-              profilePromise,
-              new Promise((_, reject) => setTimeout(() => reject(new Error("Profile timeout")), 3000))
-            ]) as any;
-
-            if (profileRes?.data) {
-              role = profileRes.data.role as User["role"];
-              walletAddress = profileRes.data.wallet_address;
-            }
-          } catch {
-            // Profile fetch optional — fallback ke default
+      const waitHydration = new Promise<void>((resolve) => {
+        const check = setInterval(() => {
+          if (get().isHydrated) {
+            clearInterval(check);
+            resolve();
           }
+        }, 100);
+      });
 
-          const user: User = {
-            id: data.session.user.id,
-            email: data.session.user.email ?? "",
-            name: data.session.user.user_metadata?.name ?? "User",
-            role,
-            walletAddress,
-          };
-          set({ user, isAuthenticated: true, isHydrated: true });
-        } else {
-          set({ isHydrated: true });
-        }
-      };
-
-      // Tambahkan batas waktu 5 detik untuk seluruh proses hydrate
       await Promise.race([
-        fetchSession(),
+        waitHydration,
         new Promise((_, reject) => setTimeout(() => reject(new Error("Hydrate timeout")), 5000))
       ]);
     } catch (err) {
       console.error("Auth hydrate error:", err);
-      set({ isHydrated: true }); // tetap set biar ga white screen
+      if (!get().isHydrated) {
+        set({ isHydrated: true });
+      }
     }
   },
 }));

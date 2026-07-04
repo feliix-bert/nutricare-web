@@ -39,6 +39,14 @@ export const createClient = () => {
     supabaseUrl!,
     supabaseKey!,
     {
+      auth: {
+        // BYPASS: navigator.locks can deadlock in some browsers or after a crash.
+        // This causes getSession() and any .from() query to hang indefinitely.
+        // We override the lock implementation to just execute the acquire function immediately.
+        lock: async (name, acquire) => {
+          return await acquire();
+        }
+      },
       global: {
         fetch: axiosFetch, // Force Supabase to use Axios (XHR) instead of native fetch
       },

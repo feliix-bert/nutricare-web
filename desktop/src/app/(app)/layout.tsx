@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { useAuthStore } from "@/stores/authStore";
+import { useAuthStore, useAuthHydration } from "@/stores/authStore";
 import { BottomTabBar } from "@/components/navigation/BottomTabBar";
 import { SideNavBar } from "@/components/navigation/SideNavBar";
 
@@ -12,6 +12,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isHydrated = useAuthStore((s) => s.isHydrated);
   const user = useAuthStore((s) => s.user);
+
+  useAuthHydration();
 
   // Fallback timeout to clear white screen if hydration completely fails
   useEffect(() => {

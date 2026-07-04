@@ -8,6 +8,8 @@ import { PageShell } from "@/components/layout/PageShell";
 import { useChatHistory, useSendMessage, usePredictionContextQuery } from "@/features/consult/hooks/useChat";
 import { useSearchParams } from "next/navigation";
 import { useChildrenList } from "@/features/children/hooks/useChildren";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -54,7 +56,11 @@ const MessageBubble = React.memo(function MessageBubble({ role, content, timesta
             : "gradient-primary shadow-sm text-white rounded-[1.25rem] rounded-br-sm"
         }`}
       >
-        <p className="text-[14.5px] leading-relaxed whitespace-pre-wrap">{content}</p>
+        <div className="text-[14.5px] leading-relaxed markdown-content">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {content}
+          </ReactMarkdown>
+        </div>
         <span className={`absolute bottom-2 right-3 text-[10px] font-medium ${isAi ? "text-on-surface-variant/50" : "text-white/70"}`}>
           {formatTimeLocal(timestamp)}
         </span>

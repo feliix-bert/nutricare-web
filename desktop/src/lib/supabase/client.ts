@@ -43,7 +43,7 @@ export const createClient = () => {
         // BYPASS: navigator.locks can deadlock in some browsers or after a crash.
         // This causes getSession() and any .from() query to hang indefinitely.
         // We override the lock implementation to just execute the acquire function immediately.
-        lock: async (name, acquire) => {
+        lock: async (name, acquireTimeout, acquire) => {
           return await acquire();
         }
       },

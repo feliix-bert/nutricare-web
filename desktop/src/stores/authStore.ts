@@ -43,29 +43,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   hydrate: async () => {
-    // Kami membiarkan onAuthStateChange('INITIAL_SESSION') yang menangani fetch profile dan sesi
-    // untuk mencegah race condition. Di sini kita cukup menambahkan fallback timeout 5 detik
-    // untuk menghindari white screen jika listener macet.
-    try {
-      const waitHydration = new Promise<void>((resolve) => {
-        const check = setInterval(() => {
-          if (get().isHydrated) {
-            clearInterval(check);
-            resolve();
-          }
-        }, 100);
-      });
-
-      await Promise.race([
-        waitHydration,
-        new Promise((_, reject) => setTimeout(() => reject(new Error("Hydrate timeout")), 5000))
-      ]);
-    } catch (err) {
-      console.error("Auth hydrate error:", err);
-      if (!get().isHydrated) {
-        set({ isHydrated: true });
-      }
-    }
+    // We handle initial hydration explicitly in useAuthHydration.
+    // This is just a fallback for TOKEN_REFRESHED if we ever need it.
   },
 }));
 
@@ -74,51 +53,104 @@ export function useAuthHydration() {
     const store = useAuthStore.getState();
     let mounted = true;
 
-    // 1. Kick off hydration immediately when component mounts
-    store.hydrate();
-
-    // 2. Setup auth state listener independently of React lifecycle
     const supabase = createClient();
+
+    // 1. Manually fetch the current session to ensure hydration completes
+    const initSession = async () => {
+      console.log("[Auth] Fetching session manually for hydration...");
+      try {
+        const sessionPromise = supabase.auth.getSession();
+        const sessionTimeout = new Promise((_, reject) => 
+           setTimeout(() => reject(new Error("getSession timeout")), 5000)
+        );
+        
+        const { data: { session }, error } = (await Promise.race([
+           sessionPromise, 
+           sessionTimeout
+        ])) as any;
+        
+        if (error) {
+           console.error("[Auth] getSession error:", error);
+           if (mounted) useAuthStore.setState({ isHydrated: true });
+           return;
+        }
+
+        if (session?.user) {
+          console.log("[Auth] Session found, fetching profile...");
+          try {
+            // Add a timeout to the profile fetch just in case it hangs
+            const profilePromise = supabase
+              .from("users")
+              .select("role, wallet_address")
+              .eq("id", session.user.id)
+              .single();
+              
+            const timeoutPromise = new Promise((_, reject) => 
+               setTimeout(() => reject(new Error("Profile fetch timeout")), 5000)
+            );
+
+            const { data: profile, error: profileError } = (await Promise.race([
+               profilePromise, 
+               timeoutPromise
+            ])) as any;
+
+            console.log(`[Auth] Profile fetch result. Error: ${profileError?.message}`);
+
+            if (mounted) {
+              store.setAuth({
+                id: session.user.id,
+                email: session.user.email ?? "",
+                name: session.user.user_metadata?.name ?? "User",
+                role: (profile?.role as "PARENT" | "MEDIC" | "POSYANDU" | "ADMIN") ?? "PARENT",
+                walletAddress: profile?.wallet_address ?? null,
+              });
+              useAuthStore.setState({ isHydrated: true });
+            }
+          } catch (e) {
+            console.error("[Auth] Profile fetch exception:", e);
+            if (mounted) {
+              // Fallback to basic parent if profile fetch fails
+              store.setAuth({
+                id: session.user.id,
+                email: session.user.email ?? "",
+                name: session.user.user_metadata?.name ?? "User",
+                role: "PARENT",
+                walletAddress: null,
+              });
+              useAuthStore.setState({ isHydrated: true });
+            }
+          }
+        } else {
+          console.log("[Auth] No session found.");
+          if (mounted) {
+            useAuthStore.setState({ isHydrated: true });
+          }
+        }
+      } catch (err) {
+        console.error("[Auth] Fatal error during initSession:", err);
+        if (mounted) {
+          useAuthStore.setState({ isHydrated: true });
+        }
+      }
+    };
+
+    initSession();
+
+    // 2. Listen for future auth changes (login/logout/refresh)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log(`[Auth] onAuthStateChange event: ${event}`);
       if (!mounted) return;
       
-      // INITIAL_SESSION merespons instan dari cache lokal (sangat cepat)
-      if ((event === "INITIAL_SESSION" || event === "SIGNED_IN") && session?.user) {
-        try {
-          const { data: profile } = await supabase
-            .from("users")
-            .select("role, wallet_address")
-            .eq("id", session.user.id)
-            .single();
-
-          if (!mounted) return;
-          store.setAuth({
-            id: session.user.id,
-            email: session.user.email ?? "",
-            name: session.user.user_metadata?.name ?? "User",
-            role: (profile?.role as "PARENT" | "MEDIC" | "POSYANDU" | "ADMIN") ?? "PARENT",
-            walletAddress: profile?.wallet_address ?? null,
-          });
-          useAuthStore.setState({ isHydrated: true });
-        } catch (e) {
-          if (!mounted) return;
-          store.setAuth({
-            id: session.user.id,
-            email: session.user.email ?? "",
-            name: session.user.user_metadata?.name ?? "User",
-            role: "PARENT",
-            walletAddress: null,
-          });
-          useAuthStore.setState({ isHydrated: true });
-        }
-      } else if (event === "INITIAL_SESSION" && !session) {
-        useAuthStore.setState({ isHydrated: true });
+      if (event === "SIGNED_IN" && session?.user) {
+        // Handle login manually if needed, or rely on page redirect
+        initSession(); 
       } else if (event === "SIGNED_OUT") {
         store.logout();
       } else if (event === "TOKEN_REFRESHED") {
-        store.hydrate();
+        // Just re-fetch profile if token refreshed
+        initSession();
       }
     });
 

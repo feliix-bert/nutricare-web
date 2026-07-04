@@ -92,6 +92,13 @@ export async function POST(request: Request) {
     const model = genAI.getGenerativeModel({
       model: "gemini-2.0-flash",
       generationConfig: { maxOutputTokens: 1024 },
+      // Disable safety blocks to prevent spurious errors on food photos
+      safetySettings: [
+        { category: "HARM_CATEGORY_HARASSMENT" as any, threshold: "BLOCK_NONE" as any },
+        { category: "HARM_CATEGORY_HATE_SPEECH" as any, threshold: "BLOCK_NONE" as any },
+        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT" as any, threshold: "BLOCK_NONE" as any },
+        { category: "HARM_CATEGORY_DANGEROUS_CONTENT" as any, threshold: "BLOCK_NONE" as any },
+      ],
     });
 
     const prompt = buildNutritionPrompt({
@@ -105,26 +112,39 @@ export async function POST(request: Request) {
     ]);
 
     const response = result.response;
+    
+    // Safety check: if response was blocked
+    if (response.promptFeedback && response.promptFeedback.blockReason) {
+       throw new Error(`Prompt blocked: ${response.promptFeedback.blockReason}`);
+    }
+    
     const text = response.text();
 
     // ── Parse JSON dari response ────────────────────────────────────────
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    let parsed: GeminiNutritionResponse;
+    let parsed: GeminiNutritionResponse = {
+      foodDetected: [],
+      portionEstimate: "Tidak terdeteksi",
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fat: 0,
+      fiber: 0,
+      adequacyNote: "Tidak dapat menganalisis foto",
+      mpasiRecommendation: "",
+    };
 
-    if (jsonMatch) {
-      parsed = JSON.parse(jsonMatch[0]) as GeminiNutritionResponse;
-    } else {
-      parsed = {
-        foodDetected: [],
-        portionEstimate: "Tidak terdeteksi",
-        calories: 0,
-        protein: 0,
-        carbs: 0,
-        fat: 0,
-        fiber: 0,
-        adequacyNote: "Tidak dapat menganalisis foto",
-        mpasiRecommendation: "",
-      };
+    try {
+      // Find JSON block robustly
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        // Strip any weird trailing commas before closing braces if possible, though JSON5 is better if we had it.
+        // We'll rely on standard JSON parse but wrapped in try-catch
+        const rawJson = jsonMatch[0];
+        parsed = { ...parsed, ...JSON.parse(rawJson) };
+      }
+    } catch (parseErr) {
+      console.warn("JSON Parse Failed for Gemini Response:", text);
+      // Fallback object already assigned
     }
 
     // ── Save to nutrition_logs ──────────────────────────────────────────
@@ -133,15 +153,15 @@ export async function POST(request: Request) {
       .insert({
         child_id: childId,
         photo_url: photoUrl,
-        food_detected: parsed.foodDetected,
-        portion_estimate: parsed.portionEstimate,
-        calories: parsed.calories,
-        protein: parsed.protein,
-        carbs: parsed.carbs,
-        fat: parsed.fat,
-        fiber: parsed.fiber,
-        adequacy_note: parsed.adequacyNote,
-        mpasi_recommendation: parsed.mpasiRecommendation,
+        food_detected: Array.isArray(parsed.foodDetected) ? parsed.foodDetected : [],
+        portion_estimate: String(parsed.portionEstimate || ""),
+        calories: Number(parsed.calories) || 0,
+        protein: Number(parsed.protein) || 0,
+        carbs: Number(parsed.carbs) || 0,
+        fat: Number(parsed.fat) || 0,
+        fiber: Number(parsed.fiber) || 0,
+        adequacy_note: String(parsed.adequacyNote || ""),
+        mpasi_recommendation: String(parsed.mpasiRecommendation || ""),
         gemini_raw: { raw: text },
       });
 

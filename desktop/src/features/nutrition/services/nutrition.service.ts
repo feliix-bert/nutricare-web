@@ -57,7 +57,11 @@ export const nutritionService = {
       body: JSON.stringify({ childId, photoUrl }),
     });
 
-    if (!res.ok) throw new Error("Nutrition analysis failed");
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error("API Error Details:", errorText);
+      throw new Error(`Nutrition analysis failed: ${errorText}`);
+    }
 
     // 4. Fetch the saved log (most recent for this child + photoUrl)
     const { data: log, error } = await supabase

@@ -1,0 +1,10 @@
+{
+  "contractName": "GiziChainRegistry",
+  "address": "0x_ISI_SETELAH_DEPLOY",
+  "network": "polygon-amoy",
+  "chainId": 80002,
+  "rpcUrl": "https://rpc-amoy.polygon.technology",
+  "explorerUrl": "https://amoy.polygonscan.com/address/0x_ISI_SETELAH_DEPLOY",
+  "deployedAt": "2026-07-03T00:00:00.000Z",
+  "deployer": "0x_DEPLOYER_ADDRESS"
+}

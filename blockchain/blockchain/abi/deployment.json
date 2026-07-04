@@ -1,0 +1,10 @@
+{
+  "contractName": "GiziChainRegistry",
+  "address": "0x8B728afA92Da992b756644A56C0099dCcC4B6D5e",
+  "network": "polygon-amoy",
+  "chainId": 80002,
+  "rpcUrl": "https://rpc-amoy.polygon.technology",
+  "explorerUrl": "https://amoy.polygonscan.com/address/0x8B728afA92Da992b756644A56C0099dCcC4B6D5e",
+  "deployedAt": "2026-07-04T07:05:36.976Z",
+  "deployer": "0x68D76Ef4619b1AF3f56f9a96aFF579c65AfB8312"
+}

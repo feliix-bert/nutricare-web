@@ -1,0 +1,60 @@
+# ============================================================================
+# GiziChain — Supabase Configuration
+# ============================================================================
+# Generated for local development & self-hosting.
+# Reference: https://supabase.com/docs/reference/config/introduction
+# ============================================================================
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+
+[db]
+port = 54322
+# Override via .env: SUPABASE_DB_PASSWORD
+password = "postgres"
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000/**"]
+jwt_expiry = 3600
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = false
+enable_confirmations = false
+
+# ── Storage ───────────────────────────────────────────────────────────────────
+
+[storage]
+enabled = true
+file_size_limit = 52428800 # 50MB
+
+# ── Realtime ───────────────────────────────────────────────────────────────────
+
+[realtime]
+enabled = true
+
+# ── Edge Functions ─────────────────────────────────────────────────────────────
+
+[edge_runtime]
+enabled = false
+policy = "per_worker"
+inspector_port = 0
+
+# ── Analytics ──────────────────────────────────────────────────────────────────
+
+[analytics]
+enabled = false
+port = 54327
+
+[experimental]
+orioledb_version = ""

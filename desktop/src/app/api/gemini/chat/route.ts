@@ -7,7 +7,6 @@
  * 3. Simpan messages ke chat_sessions
  */
 import { NextResponse } from "next/server";
-import { getGeminiModel } from "@/lib/gemini";
 import { after } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createClient } from "@/lib/supabase/server";
@@ -87,12 +86,11 @@ export async function POST(request: Request) {
     }
 
     const systemPrompt = buildChatSystemPrompt(context);
-    const model = getGeminiModel(
-      apiKey, 
-      "gemini-2.5-flash", 
-      { maxOutputTokens: 2048 },
-      systemPrompt
-    );
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      generationConfig: { maxOutputTokens: 2048 },
+    });
 
     const chat = model.startChat({
       history: [
@@ -114,7 +112,7 @@ export async function POST(request: Request) {
         },
         // ── Riwayat chat dari session ──────────────────────────────────
         ...history.map((h) => ({
-          role: h.role === "assistant" ? "model" : "user",
+          role: (h.role === "assistant" ? "model" : "user") as "user" | "model",
           parts: [{ text: h.content }],
         })),
       ],

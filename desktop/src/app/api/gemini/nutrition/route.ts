@@ -7,7 +7,7 @@
  * 3. Parse response → simpan ke nutrition_logs
  */
 import { NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { createClient } from "@/lib/supabase/server";
 
 export const maxDuration = 60;
@@ -96,7 +96,50 @@ export async function POST(request: Request) {
       model: "gemini-2.5-flash",
       generationConfig: { 
         maxOutputTokens: 1024,
-        responseMimeType: "application/json"
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: SchemaType.OBJECT,
+          properties: {
+            foodDetected: {
+              type: SchemaType.ARRAY,
+              items: { type: SchemaType.STRING },
+              description: "Array of detected food names"
+            },
+            portionEstimate: {
+              type: SchemaType.STRING,
+              description: "Estimation of the portion size"
+            },
+            calories: {
+              type: SchemaType.NUMBER,
+              description: "Estimated total calories"
+            },
+            protein: {
+              type: SchemaType.NUMBER,
+              description: "Estimated total protein in grams"
+            },
+            carbs: {
+              type: SchemaType.NUMBER,
+              description: "Estimated total carbohydrates in grams"
+            },
+            fat: {
+              type: SchemaType.NUMBER,
+              description: "Estimated total fat in grams"
+            },
+            fiber: {
+              type: SchemaType.NUMBER,
+              description: "Estimated total fiber in grams"
+            },
+            adequacyNote: {
+              type: SchemaType.STRING,
+              description: "Note about nutritional adequacy for the child's age"
+            },
+            mpasiRecommendation: {
+              type: SchemaType.STRING,
+              description: "Recommendation for MPASI if applicable"
+            }
+          },
+          required: ["foodDetected", "portionEstimate", "calories", "protein", "carbs", "fat", "fiber", "adequacyNote", "mpasiRecommendation"]
+        }
       },
       // Disable safety blocks to prevent spurious errors on food photos
       safetySettings: [
@@ -143,10 +186,18 @@ export async function POST(request: Request) {
       // Find JSON block robustly
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        // Strip any weird trailing commas before closing braces if possible, though JSON5 is better if we had it.
-        // We'll rely on standard JSON parse but wrapped in try-catch
         const rawJson = jsonMatch[0];
-        parsed = { ...parsed, ...JSON.parse(rawJson) };
+        const parsedJson = JSON.parse(rawJson);
+        
+        if (parsedJson.foodDetected) parsed.foodDetected = parsedJson.foodDetected;
+        if (parsedJson.portionEstimate) parsed.portionEstimate = parsedJson.portionEstimate;
+        if (parsedJson.calories !== undefined) parsed.calories = parsedJson.calories;
+        if (parsedJson.protein !== undefined) parsed.protein = parsedJson.protein;
+        if (parsedJson.carbs !== undefined) parsed.carbs = parsedJson.carbs;
+        if (parsedJson.fat !== undefined) parsed.fat = parsedJson.fat;
+        if (parsedJson.fiber !== undefined) parsed.fiber = parsedJson.fiber;
+        if (parsedJson.adequacyNote) parsed.adequacyNote = parsedJson.adequacyNote;
+        if (parsedJson.mpasiRecommendation) parsed.mpasiRecommendation = parsedJson.mpasiRecommendation;
       }
     } catch (parseErr) {
       console.warn("JSON Parse Failed for Gemini Response:", text);

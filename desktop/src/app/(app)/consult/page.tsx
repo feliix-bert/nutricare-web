@@ -653,9 +653,9 @@ export default function ConsultPage() {
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.15 }}
                   className="flex-1 flex flex-col overflow-hidden"
-                  key="ai-view"
                 >
                   <div key={selectedChildId ?? "no-selection"} className="flex-1 flex flex-col overflow-hidden">
+
                     {!hasContext ? (
                       <div className="flex-1 flex items-center justify-center">
                         <div className="flex flex-col items-center px-6 py-12 text-center">

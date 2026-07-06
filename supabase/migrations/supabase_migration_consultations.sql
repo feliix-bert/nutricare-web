@@ -11,8 +11,8 @@ DROP TABLE IF EXISTS public.consultations CASCADE;
 CREATE TABLE public.consultations (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   child_id    UUID NOT NULL REFERENCES public.children(id) ON DELETE CASCADE,
-  medic_id    UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  parent_id   UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  medic_id    UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  parent_id   UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   status      TEXT NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN', 'CLOSED')),
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -26,7 +26,7 @@ CREATE INDEX idx_consultations_status    ON public.consultations(status);
 CREATE TABLE public.consultation_messages (
   id                UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   consultation_id   UUID        NOT NULL REFERENCES public.consultations(id) ON DELETE CASCADE,
-  sender_id         UUID        NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  sender_id         UUID        NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   content           TEXT        NOT NULL,
   created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

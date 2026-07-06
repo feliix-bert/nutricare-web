@@ -23,6 +23,8 @@ const mapChild = (row: {
   gender: string;
   created_at: string;
   updated_at: string;
+  medic_id?: string | null;
+  medic?: { name: string } | null;
 }): Child => ({
   id: row.id,
   name: row.name,
@@ -30,6 +32,8 @@ const mapChild = (row: {
   gender: row.gender as Child["gender"],
   ageMonths: calcAgeMonths(row.birth_date),
   latestPrediction: null, // filled separately if needed
+  medicId: row.medic_id ?? null,
+  medicName: (row.medic as { name: string } | null)?.name ?? null,
 });
 
 export const childrenService = {
@@ -42,7 +46,7 @@ export const childrenService = {
       (async () => {
         return await supabase
           .from("children")
-          .select("*")
+          .select("*, medic:medic_id(name)", { count: "exact" })
           .order("created_at", { ascending: false })
           .range(from, to);
       })()
@@ -68,7 +72,7 @@ export const childrenService = {
       (async () => {
         return await supabase
           .from("children")
-          .select("*")
+          .select("*, medic:medic_id(name)")
           .eq("id", childId)
           .single();
       })()
@@ -133,8 +137,9 @@ export const childrenService = {
         birth_date: data.birthDate,
         gender: data.gender,
         anon_id: anonId,
+        ...(data.medicId ? { medic_id: data.medicId } : {}),
       })
-      .select()
+      .select("*, medic:medic_id(name)")
       .single();
 
     if (error) throw error;
@@ -152,7 +157,23 @@ export const childrenService = {
         birth_date: data.birthDate,
       })
       .eq("id", childId)
-      .select()
+      .select("*, medic:medic_id(name)")
+      .single();
+
+    if (error) throw error;
+
+    return mapChild(child);
+  },
+
+  /** Update the assigned doctor for a child */
+  updateChildMedic: async (childId: string, medicId: string | null): Promise<Child> => {
+    const supabase = createClient();
+
+    const { data: child, error } = await supabase
+      .from("children")
+      .update({ medic_id: medicId, updated_at: new Date().toISOString() })
+      .eq("id", childId)
+      .select("*, medic:medic_id(name)")
       .single();
 
     if (error) throw error;
@@ -160,3 +181,4 @@ export const childrenService = {
     return mapChild(child);
   },
 };
+

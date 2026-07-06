@@ -11,7 +11,12 @@ export const fetchPatients = async (
   const from = page * size;
   const to = from + size - 1;
 
+  // Get current medic's id to filter their patients only
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
   // Build query: children joined with users (parent name) and latest prediction
+  // Filter: only children assigned to this medic
   let query = supabase
     .from("children")
     .select(
@@ -30,6 +35,7 @@ export const fetchPatients = async (
     `,
       { count: "exact" },
     )
+    .eq("medic_id", user.id)
     .order("created_at", { ascending: false })
     .range(from, to);
 

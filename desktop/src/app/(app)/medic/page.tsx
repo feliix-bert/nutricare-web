@@ -109,11 +109,29 @@ export default function MedicDashboardPage() {
 
   const todayStr = new Date().toLocaleDateString("en-US", { day: "numeric", month: "long", year: "numeric" });
   
-  // Dummy chart data representing patient visits over last 6 months
-  const chartData = [
-    { label: "Jan", value: 12 }, { label: "Feb", value: 19 }, { label: "Mar", value: 15 },
-    { label: "Apr", value: 32 }, { label: "May", value: 24 }, { label: "Jun", value: 28 },
-  ];
+  // Calculate real chart data representing patient assessments over the last 6 months
+  const chartData = React.useMemo(() => {
+    const counts = new Array(6).fill(0);
+    const labels = new Array(6).fill("");
+    const now = new Date();
+    
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      labels[5 - i] = d.toLocaleDateString("en-US", { month: "short" });
+    }
+
+    patients.forEach((p) => {
+      (p as any).assessments?.forEach((a: any) => {
+        const d = new Date(a.created_at);
+        const monthDiff = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth());
+        if (monthDiff >= 0 && monthDiff < 6) {
+          counts[5 - monthDiff]++;
+        }
+      });
+    });
+
+    return labels.map((label, i) => ({ label, value: counts[i] }));
+  }, [patients]);
 
   return (
     <MedicShell>

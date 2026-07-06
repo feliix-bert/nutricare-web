@@ -17,13 +17,43 @@ export const consultationKeys = {
   messages: (id: string) => ["consultations", "messages", id] as const,
 };
 
-// ─── List of consultations (for medic) ──────────────────────────────────────
+// ─── List of consultations (for medic) with Realtime ────────────────────────
 
 export const useConsultationList = () => {
-  return useQuery({
+  const queryClient = useQueryClient();
+
+  const query = useQuery({
     queryKey: consultationKeys.all,
     queryFn: fetchMedicConsultations,
   });
+
+  // Realtime: refresh list when a consultation is inserted or updated
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("consultations-list-medic")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "consultations" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: consultationKeys.all });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "consultations" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: consultationKeys.all });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
+  return query;
 };
 
 // ─── Messages for a consultation ─────────────────────────────────────────────

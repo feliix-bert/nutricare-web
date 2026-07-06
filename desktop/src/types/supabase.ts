@@ -56,6 +56,7 @@ export interface Database {
           birth_date: string;
           gender: GenderEnum;
           anon_id: string;
+          medic_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -66,6 +67,7 @@ export interface Database {
           birth_date: string;
           gender: GenderEnum;
           anon_id: string;
+          medic_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -76,6 +78,7 @@ export interface Database {
           birth_date?: string;
           gender?: GenderEnum;
           anon_id?: string;
+          medic_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };

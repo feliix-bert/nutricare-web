@@ -15,6 +15,8 @@ export type Child = {
   gender: Gender;
   ageMonths: number;
   latestPrediction: LatestPrediction | null;
+  medicId: string | null;
+  medicName: string | null;
 };
 
 export type ChildDetail = Child & {
@@ -34,6 +36,7 @@ export type ChildRequest = {
   name: string;
   birthDate: string;
   gender: Gender;
+  medicId?: string | null;
 };
 
 export type ChildUpdateRequest = {

@@ -90,7 +90,7 @@ export async function POST(request: Request) {
     const systemPrompt = buildChatSystemPrompt(context);
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       systemInstruction: systemPrompt,
       generationConfig: { maxOutputTokens: 2048 },
     });

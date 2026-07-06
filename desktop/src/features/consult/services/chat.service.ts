@@ -16,7 +16,13 @@ export const chatService = {
     const res = await fetch("/api/gemini/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        predictionId: payload.predictionId,
+        childId: payload.childId,
+        message: payload.message,
+        history: payload.history,
+        context: payload.context,
+      }),
     });
 
     if (!res.ok) {

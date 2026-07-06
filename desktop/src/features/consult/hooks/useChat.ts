@@ -23,34 +23,39 @@ export const useChatHistory = (predictionId: string | null) =>
   });
 
 // ---------------------------------------------------------------------------
-// Hook: kirim pesan ke Next.js /api/chat
+// Hook: build PredictionContext dari predictionId (mode prediksi)
 // ---------------------------------------------------------------------------
 
 type SendMessagePayload = {
-  predictionId: string;
+  predictionId?: string;
+  childId: string;
   message: string;
   context: PredictionContext;
 };
 
-export const useSendMessage = (predictionId: string | null) => {
+export const useSendMessage = (predictionId: string | null, childId: string | null) => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (
       payload: SendMessagePayload,
     ): Promise<ChatRouteResponse> => {
-      // Load actual chat history from cache untuk dikirim sebagai context
-      const historyData = queryClient.getQueryData<{
-        messages: { role: "user" | "assistant"; content: string }[];
-      }>(chatHistoryQueryKey(payload.predictionId));
+      // Load actual chat history from cache (only for prediction mode)
+      const historyData = predictionId
+        ? queryClient.getQueryData<{
+            messages: { role: "user" | "assistant"; content: string }[];
+          }>(chatHistoryQueryKey(predictionId))
+        : null;
 
-      const history = historyData?.messages?.map((m) => ({
-        role: m.role as "user" | "assistant",
-        content: typeof m.content === "string" ? m.content : "",
-      })) ?? [];
+      const history =
+        historyData?.messages?.map((m) => ({
+          role: m.role as "user" | "assistant",
+          content: typeof m.content === "string" ? m.content : "",
+        })) ?? [];
 
       return chatService.sendMessage({
         predictionId: payload.predictionId,
+        childId: payload.childId,
         message: payload.message,
         history,
         context: payload.context,
@@ -104,7 +109,6 @@ export const usePredictionContextQuery = (predictionId: string | null) =>
       };
       const child = assessment.child;
 
-      // Calculate age in months
       const birth = new Date(child.birth_date);
       const now = new Date();
       const ageMonths =
@@ -127,5 +131,49 @@ export const usePredictionContextQuery = (predictionId: string | null) =>
       return ctx;
     },
     enabled: !!predictionId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+// ---------------------------------------------------------------------------
+// Hook: build context minimal dari childId saja (mode umum — tanpa prediksi)
+// ---------------------------------------------------------------------------
+
+export const useChildBasicContextQuery = (childId: string | null) =>
+  useQuery({
+    queryKey: ["child-basic-context", childId],
+    queryFn: async () => {
+      const supabase = createClient();
+
+      const { data: child } = await supabase
+        .from("children")
+        .select("id, name, birth_date, gender")
+        .eq("id", childId!)
+        .single();
+
+      if (!child) throw new Error("Child not found");
+
+      const birth = new Date(child.birth_date);
+      const now = new Date();
+      const ageMonths =
+        (now.getFullYear() - birth.getFullYear()) * 12 +
+        (now.getMonth() - birth.getMonth());
+
+      // Kembalikan PredictionContext kosong — AI tetap bisa menjawab pertanyaan gizi umum
+      const ctx: PredictionContext = {
+        predictionId: "",
+        childName: child.name,
+        ageMonths: Math.max(0, ageMonths),
+        gender: child.gender as "MALE" | "FEMALE",
+        status: "NORMAL",
+        zscoreHa: 0,
+        zscoreWa: 0,
+        zscoreWh: 0,
+        summary: "",
+        recommendations: [],
+      };
+
+      return ctx;
+    },
+    enabled: !!childId,
     staleTime: 5 * 60 * 1000,
   });

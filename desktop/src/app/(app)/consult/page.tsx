@@ -1,12 +1,17 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Info, Send, ChevronDown, Bot, AlertCircle, RefreshCw, ShieldCheck } from "lucide-react";
+import { Info, Send, ChevronDown, Bot, AlertCircle, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Avatar } from "@/components/common/Avatar";
 import { PageShell } from "@/components/layout/PageShell";
-import { useChatHistory, useSendMessage, usePredictionContextQuery } from "@/features/consult/hooks/useChat";
-import { useSearchParams } from "next/navigation";
+import {
+  useChatHistory,
+  useSendMessage,
+  usePredictionContextQuery,
+  useChildBasicContextQuery,
+} from "@/features/consult/hooks/useChat";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useChildrenList } from "@/features/children/hooks/useChildren";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -27,10 +32,10 @@ function formatTimeLocal(iso?: string) {
 }
 
 const STATUS_LABEL: Record<string, { label: string; color: string }> = {
-  NORMAL:            { label: "Normal",          color: "text-secondary" },
-  AT_RISK:           { label: "Berisiko",         color: "text-orange-500" },
-  STUNTED:           { label: "Stunting",          color: "text-red-500" },
-  SEVERELY_STUNTED:  { label: "Stunting Berat",   color: "text-red-700" },
+  NORMAL:           { label: "Normal",        color: "text-secondary" },
+  AT_RISK:          { label: "Berisiko",       color: "text-orange-500" },
+  STUNTED:          { label: "Stunting",       color: "text-red-500" },
+  SEVERELY_STUNTED: { label: "Stunting Berat", color: "text-red-700" },
 };
 
 // ---------------------------------------------------------------------------
@@ -108,7 +113,7 @@ function TypingIndicator() {
 }
 
 // ---------------------------------------------------------------------------
-// Sub-komponen: Selector Prediksi (Anak)
+// Sub-komponen: Selector Anak
 // ---------------------------------------------------------------------------
 
 type SelectorItem = {
@@ -119,15 +124,15 @@ type SelectorItem = {
   status?: string;
 };
 
-type PredictionSelectorProps = {
+type ChildSelectorProps = {
   items: SelectorItem[];
-  selected: string | null;
-  onSelect: (predictionId: string) => void;
+  selectedChildId: string | null;
+  onSelect: (childId: string) => void;
 };
 
-function PredictionSelector({ items, selected, onSelect }: PredictionSelectorProps) {
+function ChildSelector({ items, selectedChildId, onSelect }: ChildSelectorProps) {
   const [open, setOpen] = useState(false);
-  const selectedItem = items.find((i) => i.predictionId && i.predictionId === selected);
+  const selectedItem = items.find((i) => i.childId === selectedChildId);
 
   return (
     <div className="relative">
@@ -141,7 +146,7 @@ function PredictionSelector({ items, selected, onSelect }: PredictionSelectorPro
         <span className="text-[13px] font-semibold text-on-surface max-w-[140px] truncate">
           {selectedItem ? selectedItem.childName : "Pilih Anak"}
         </span>
-        {selectedItem?.status && (
+        {selectedItem?.status && selectedItem.predictionId && (
           <span className={`text-[11px] font-bold ${STATUS_LABEL[selectedItem.status]?.color ?? "text-on-surface-variant"}`}>
             · {STATUS_LABEL[selectedItem.status]?.label}
           </span>
@@ -160,26 +165,30 @@ function PredictionSelector({ items, selected, onSelect }: PredictionSelectorPro
             className="absolute top-full left-0 mt-1.5 w-64 bg-white rounded-2xl shadow-elevated border border-outline-variant/15 overflow-hidden z-50"
           >
             {items.map((item) => {
-              const isSelected = item.predictionId === selected && !!selected;
+              const isSelected = item.childId === selectedChildId;
               const hasPrediction = !!item.predictionId;
-              
+
               return (
                 <li key={item.childId}>
                   <button
                     role="option"
                     aria-selected={isSelected}
-                    disabled={!hasPrediction}
                     onClick={() => {
-                      if (hasPrediction) {
-                        onSelect(item.predictionId!);
-                        setOpen(false);
-                      }
+                      onSelect(item.childId);
+                      setOpen(false);
                     }}
-                    className={`w-full text-left px-4 py-3 flex flex-col gap-0.5 transition-colors ${
-                      isSelected ? "bg-primary-container/20" : ""
-                    } ${hasPrediction ? "hover:bg-surface-warm cursor-pointer" : "opacity-60 cursor-not-allowed bg-surface-dim"}`}
+                    className={`w-full text-left px-4 py-3 flex flex-col gap-0.5 transition-colors cursor-pointer ${
+                      isSelected ? "bg-primary-container/20" : "hover:bg-surface-warm"
+                    }`}
                   >
-                    <span className="text-[13px] font-bold text-on-surface">{item.childName}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[13px] font-bold text-on-surface">{item.childName}</span>
+                      {!hasPrediction && (
+                        <span className="text-[10px] font-bold bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded-full">
+                          Umum
+                        </span>
+                      )}
+                    </div>
                     <span className="text-[11px] text-on-surface-variant">
                       {item.ageMonths} bulan
                       {hasPrediction && item.status ? (
@@ -190,10 +199,7 @@ function PredictionSelector({ items, selected, onSelect }: PredictionSelectorPro
                           </span>
                         </>
                       ) : (
-                        <>
-                          {" · "}
-                          <span className="italic">Belum ada hasil deteksi</span>
-                        </>
+                        <> · <span className="italic text-orange-500">Belum ada skrining</span></>
                       )}
                     </span>
                   </button>
@@ -208,7 +214,7 @@ function PredictionSelector({ items, selected, onSelect }: PredictionSelectorPro
 }
 
 // ---------------------------------------------------------------------------
-// Sub-komponen: Empty State (belum pilih anak)
+// Sub-komponen: Empty State
 // ---------------------------------------------------------------------------
 
 function EmptyState() {
@@ -217,9 +223,9 @@ function EmptyState() {
       <div className="w-16 h-16 rounded-2xl bg-primary-container/30 flex items-center justify-center mb-5">
         <Bot size={30} className="text-primary" />
       </div>
-      <h2 className="text-[17px] font-bold text-on-surface mb-2">Belum ada konteks</h2>
+      <h2 className="text-[17px] font-bold text-on-surface mb-2">Pilih anak terlebih dahulu</h2>
       <p className="text-[14px] text-on-surface-variant leading-relaxed max-w-xs">
-        Pilih anak dari daftar di atas, atau mulai dari halaman <strong>Riwayat Pemeriksaan Anak</strong> agar AI dapat membaca hasil skrining secara spesifik.
+        Pilih anak dari daftar di atas. Anak yang sudah memiliki hasil skrining akan mendapat respons yang lebih spesifik.
       </p>
       <div className="mt-5 flex items-center gap-2 px-4 py-2.5 bg-primary-container/20 rounded-full">
         <ShieldCheck size={13} className="text-primary" />
@@ -254,15 +260,21 @@ function ErrorBanner({ message, onRetry }: { message: string; onRetry: () => voi
 }
 
 // ---------------------------------------------------------------------------
-// ChatView — di-extract supaya key=predictionId reset state otomatis
+// ChatView — key=childId reset state on switch
 // ---------------------------------------------------------------------------
+
+import type { PredictionContext } from "@/features/consult/types/consult.types";
 
 function ChatView({
   context,
+  childId,
   predictionId,
+  isGeneralMode,
 }: {
-  context: NonNullable<ReturnType<typeof usePredictionContextQuery>["data"]>;
-  predictionId: string;
+  context: PredictionContext;
+  childId: string;
+  predictionId: string | null;
+  isGeneralMode: boolean;
 }) {
   const [inputText, setInputText] = useState("");
   const [localMessages, setLocalMessages] = useState<
@@ -273,9 +285,9 @@ function ChatView({
   const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
 
   const { data: historyData } = useChatHistory(predictionId);
-  const sendMutation = useSendMessage(predictionId);
+  const sendMutation = useSendMessage(predictionId, childId);
 
-  // Render-time init: sync history ke local state sekali (set-state di render aman, gak cascade)
+  // Sync prediction history ke local state (sekali saja)
   const historyMessages = useMemo(() => historyData?.messages ?? [], [historyData]);
   const initialized = useRef(false);
   if (historyMessages.length > 0 && localMessages.length === 0 && !initialized.current) {
@@ -283,7 +295,7 @@ function ChatView({
     setLocalMessages(historyMessages);
   }
 
-  // Auto-scroll ke bawah
+  // Auto-scroll
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -308,7 +320,8 @@ function ChatView({
 
       try {
         const result = await sendMutation.mutateAsync({
-          predictionId,
+          predictionId: predictionId ?? undefined,
+          childId,
           message: trimmed,
           context,
         });
@@ -337,12 +350,19 @@ function ChatView({
         setLastFailedMessage(trimmed);
       }
     },
-    [predictionId, context, sendMutation],
+    [childId, predictionId, context, sendMutation],
   );
 
   const quickPrompts =
     suggestedQuestions.length > 0
       ? suggestedQuestions
+      : isGeneralMode
+      ? [
+          "Makanan bergizi untuk anak usia saya?",
+          "Kapan harus mulai MPASI?",
+          "Jadwal makan bayi 6 bulan",
+          "Tanda anak tumbuh normal",
+        ]
       : [
           "Bagaimana cara mencegah stunting?",
           "Jadwal MPASI 6 bulan",
@@ -350,15 +370,18 @@ function ChatView({
           "Kebutuhan zat besi bayi",
         ];
 
+  const welcomeMessage = isGeneralMode
+    ? `Halo! Saya NutriBot, asisten gizi anak dari NutriCare. Saya siap membantu menjawab pertanyaan seputar gizi dan tumbuh kembang ${context.childName} (${context.ageMonths} bulan).\n\n> 💡 Untuk mendapat analisis yang lebih spesifik, lakukan **skrining stunting** melalui menu Assessment di aplikasi.`
+    : `Halo! Saya siap membantu konsultasi tumbuh kembang **${context.childName}** (${context.ageMonths} bulan). Status saat ini: **${STATUS_LABEL[context.status]?.label ?? context.status}**. Silakan ajukan pertanyaan seputar gizi, MPASI, atau tumbuh kembang si kecil.`;
+
   return (
     <>
       {/* ── Chat Area ── */}
       <div className="flex-1 overflow-y-auto px-4 py-4 bg-surface-warm">
-        {/* Pesan sapaan awal jika belum ada history */}
         {localMessages.length === 0 && (
           <MessageBubble
             role="assistant"
-            content={`Halo! Saya siap membantu konsultasi tumbuh kembang ${context.childName} (${context.ageMonths} bulan). Status saat ini: ${STATUS_LABEL[context.status]?.label ?? context.status}. Silakan ajukan pertanyaan seputar gizi, MPASI, atau tumbuh kembang si kecil.`}
+            content={welcomeMessage}
             timestamp={new Date().toISOString()}
           />
         )}
@@ -461,24 +484,44 @@ function ChatView({
 
 export default function ConsultPage() {
   const searchParams = useSearchParams();
-  const predictionIdFromUrl = searchParams.get('predictionId');
+  const router = useRouter();
+  const predictionIdFromUrl = searchParams.get("predictionId");
 
-  const [selectedPredictionId, setSelectedPredictionId] = useState<string | null>(predictionIdFromUrl);
-
-  const { data: context } = usePredictionContextQuery(selectedPredictionId);
+  // selectedChildId = primary key, predictionId is derived
+  const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
 
   const { data: childrenData } = useChildrenList(0, 50);
 
-  const availableItems: SelectorItem[] = childrenData?.data
-    .map(child => ({
-      childId: child.id,
-      predictionId: child.latestPrediction?.predictionId,
-      childName: child.name,
-      ageMonths: child.ageMonths,
-      status: child.latestPrediction?.status,
-    })) || [];
+  const availableItems: SelectorItem[] = childrenData?.data.map((child) => ({
+    childId: child.id,
+    predictionId: child.latestPrediction?.predictionId,
+    childName: child.name,
+    ageMonths: child.ageMonths,
+    status: child.latestPrediction?.status,
+  })) ?? [];
 
-  const hasContext = !!selectedPredictionId && !!context;
+  // Resolve from URL param (predictionId → childId)
+  useEffect(() => {
+    if (predictionIdFromUrl && availableItems.length > 0 && !selectedChildId) {
+      const match = availableItems.find((i) => i.predictionId === predictionIdFromUrl);
+      if (match) setSelectedChildId(match.childId);
+    }
+  }, [predictionIdFromUrl, availableItems, selectedChildId]);
+
+  const selectedItem = availableItems.find((i) => i.childId === selectedChildId) ?? null;
+  const hasPrediction = !!selectedItem?.predictionId;
+
+  // Load contexts in parallel — only one will be enabled at a time
+  const { data: predictionContext } = usePredictionContextQuery(
+    hasPrediction ? (selectedItem?.predictionId ?? null) : null,
+  );
+  const { data: childContext } = useChildBasicContextQuery(
+    !hasPrediction && !!selectedChildId ? selectedChildId : null,
+  );
+
+  const context = predictionContext ?? childContext ?? null;
+  const hasContext = !!selectedChildId && !!context;
+  const isGeneralMode = hasContext && !predictionContext;
 
   return (
     <PageShell flush>
@@ -490,21 +533,29 @@ export default function ConsultPage() {
             <div className="flex items-center gap-3">
               <Avatar seed="gemini-ai" variant="ai" size="sm" className="bg-primary-container border-none shadow-none text-primary" />
               <div className="flex flex-col">
-                <h1 className="text-[15px] font-bold text-on-surface tracking-tight leading-none mb-1">
-                  TumbuhSehat Advisor
-                </h1>
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
+                  <h1 className="text-[15px] font-bold text-on-surface tracking-tight leading-none">
+                    NutriBot
+                  </h1>
+                  {isGeneralMode && (
+                    <span className="flex items-center gap-1 text-[10px] font-bold bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">
+                      <Sparkles size={9} />
+                      Mode Umum
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 mt-0.5">
                   <span className="w-2 h-2 rounded-full bg-secondary" />
                   <span className="text-[11px] text-on-surface-variant font-semibold">Aktif</span>
                 </div>
               </div>
             </div>
 
-            {/* Selector Prediksi */}
-            <PredictionSelector
+            {/* Selector Anak */}
+            <ChildSelector
               items={availableItems}
-              selected={selectedPredictionId}
-              onSelect={setSelectedPredictionId}
+              selectedChildId={selectedChildId}
+              onSelect={setSelectedChildId}
             />
           </div>
 
@@ -516,14 +567,19 @@ export default function ConsultPage() {
             </p>
           </div>
 
-          {/* ── Chat Area — key= selectedPredictionId resets state on switch ── */}
-          <div key={selectedPredictionId ?? "no-selection"} className="flex-1 flex flex-col overflow-hidden">
+          {/* ── Chat Area — key=childId resets state on switch ── */}
+          <div key={selectedChildId ?? "no-selection"} className="flex-1 flex flex-col overflow-hidden">
             {!hasContext ? (
               <div className="flex-1 flex items-center justify-center">
                 <EmptyState />
               </div>
             ) : (
-              <ChatView context={context} predictionId={selectedPredictionId} />
+              <ChatView
+                context={context!}
+                childId={selectedChildId!}
+                predictionId={selectedItem?.predictionId ?? null}
+                isGeneralMode={isGeneralMode}
+              />
             )}
           </div>
 

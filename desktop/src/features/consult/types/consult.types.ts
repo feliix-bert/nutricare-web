@@ -28,7 +28,8 @@ export type PredictionContext = {
 
 /** Request ke Next.js Route Handler /api/gemini/chat */
 export type ChatRouteRequest = {
-  predictionId: string;
+  predictionId?: string;   // Opsional — jika kosong, gunakan mode umum
+  childId: string;         // Wajib — untuk verifikasi kepemilikan
   message: string;
   history: Array<{ role: ChatRole; content: string }>;
   context: PredictionContext;

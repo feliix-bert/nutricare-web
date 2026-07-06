@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Flame, Droplet, Wheat, Search, Plus, Check, Beef, Camera, FileText, AlertTriangle } from "lucide-react";
@@ -137,6 +138,12 @@ export default function NutritionPage() {
   const deleteMutation = useDeleteNutritionLog();
 
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isMounted, setIsMounted] = useState(false);
+
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleConfirmDelete = () => {
     if (itemToDelete) {
@@ -145,6 +152,10 @@ export default function NutritionPage() {
       setItemToDelete(null);
     }
   };
+
+  const filteredLogs = logs.filter((log) =>
+    log.foodDetected.join(" ").toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   // Sync server data ke store
   React.useEffect(() => {
@@ -338,10 +349,26 @@ export default function NutritionPage() {
                   <Plus size={12} /> Tambah
                 </button>
               </div>
+
+              <div className="relative mb-4">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input 
+                  type="text" 
+                  placeholder="Cari makanan..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-100 rounded-xl text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all shadow-sm"
+                />
+              </div>
+
               <div className="flex flex-col gap-3">
-                {logs.map((log) => (
-                  <MobileMealCard key={log.id} item={log} onRemove={() => setItemToDelete(log.id)} />
-                ))}
+                {filteredLogs.length === 0 ? (
+                  <p className="text-sm text-center text-gray-500 py-4 font-medium">Makanan tidak ditemukan.</p>
+                ) : (
+                  filteredLogs.map((log) => (
+                    <MobileMealCard key={log.id} item={log} onRemove={() => setItemToDelete(log.id)} />
+                  ))
+                )}
               </div>
             </div>
           )}
@@ -398,9 +425,16 @@ export default function NutritionPage() {
                     <p className="text-sm font-medium text-gray-500 mt-0.5">Asupan gizi yang tercatat hari ini</p>
                   </div>
                   <div className="flex gap-2">
-                    <button className="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 text-sm font-bold text-gray-600 hover:bg-gray-50 transition-colors">
-                      <Search size={16} /> Cari
-                    </button>
+                    <div className="relative group hidden sm:block">
+                      <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-primary transition-colors" />
+                      <input 
+                        type="text" 
+                        placeholder="Cari makanan..." 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 pr-4 py-2 rounded-full border border-gray-200 text-sm font-medium text-gray-700 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary w-40 md:w-56 transition-all bg-white"
+                      />
+                    </div>
                     <button 
                       onClick={() => router.push("/scanner")}
                       className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-900 text-white text-sm font-bold hover:bg-gray-800 transition-colors"
@@ -425,9 +459,13 @@ export default function NutritionPage() {
                       <span className="w-[25%] text-center text-xs font-bold text-gray-400 uppercase tracking-wider">Kalori</span>
                       <span className="w-[35%] text-right text-xs font-bold text-gray-400 uppercase tracking-wider px-2">Waktu</span>
                     </div>
-                    {logs.map((log) => (
-                      <MealTrackerRow key={log.id} item={log} onRemove={() => setItemToDelete(log.id)} />
-                    ))}
+                    {filteredLogs.length === 0 ? (
+                      <p className="text-sm text-center text-gray-500 py-8 font-medium">Makanan tidak ditemukan.</p>
+                    ) : (
+                      filteredLogs.map((log) => (
+                        <MealTrackerRow key={log.id} item={log} onRemove={() => setItemToDelete(log.id)} />
+                      ))
+                    )}
                   </div>
                 )}
               </Card>
@@ -480,50 +518,55 @@ export default function NutritionPage() {
       </motion.div>
 
       {/* Delete Confirmation Popup */}
-      <AnimatePresence>
-        {itemToDelete && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-              onClick={() => setItemToDelete(null)}
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="relative w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl flex flex-col items-center text-center overflow-hidden"
-            >
-              <div className="absolute top-0 left-0 w-full h-1.5 bg-red-500" />
-              <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-5">
-                <AlertTriangle size={32} strokeWidth={2.5} />
-              </div>
-              <h3 className="text-lg font-extrabold text-gray-900 mb-2">Hapus Riwayat Makan?</h3>
-              <p className="text-sm text-gray-500 font-medium mb-8 leading-relaxed">
-                Tindakan ini tidak dapat dibatalkan. Riwayat nutrisi yang telah dihapus akan hilang secara permanen.
-              </p>
-              
-              <div className="flex gap-3 w-full">
-                <button
-                  onClick={() => setItemToDelete(null)}
-                  className="flex-1 py-3.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl font-bold text-sm transition-colors"
-                >
-                  Batal
-                </button>
-                <button
-                  onClick={handleConfirmDelete}
-                  disabled={deleteMutation.isPending}
-                  className="flex-1 py-3.5 px-4 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-bold text-sm transition-colors disabled:opacity-70 flex justify-center items-center gap-2"
-                >
-                  {deleteMutation.isPending ? "Menghapus..." : "Ya, Hapus"}
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {isMounted && createPortal(
+        <AnimatePresence>
+          {itemToDelete && (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
+                onClick={() => setItemToDelete(null)}
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 15 }}
+                transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                className="relative w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl flex flex-col items-center text-center overflow-hidden"
+              >
+                <div className="absolute top-0 left-0 w-full h-1.5 bg-red-500" />
+                <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-5 shadow-sm">
+                  <AlertTriangle size={32} strokeWidth={2.5} />
+                </div>
+                <h3 className="text-lg font-extrabold text-gray-900 mb-2">Hapus Riwayat Makan?</h3>
+                <p className="text-sm text-gray-500 font-medium mb-8 leading-relaxed">
+                  Tindakan ini tidak dapat dibatalkan. Riwayat nutrisi yang telah dihapus akan hilang secara permanen.
+                </p>
+                
+                <div className="flex gap-3 w-full">
+                  <button
+                    onClick={() => setItemToDelete(null)}
+                    className="flex-1 py-3.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl font-bold text-sm transition-colors active:scale-[0.98]"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={handleConfirmDelete}
+                    disabled={deleteMutation.isPending}
+                    className="flex-1 py-3.5 px-4 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-bold text-sm transition-colors active:scale-[0.98] disabled:opacity-70 flex justify-center items-center gap-2"
+                  >
+                    {deleteMutation.isPending ? "Menghapus..." : "Ya, Hapus"}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </PageShell>
   );
 }

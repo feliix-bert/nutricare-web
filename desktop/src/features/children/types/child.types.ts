@@ -3,9 +3,9 @@ export type Gender = 'MALE' | 'FEMALE';
 export type StuntStatus = 'NORMAL' | 'AT_RISK' | 'STUNTED' | 'SEVERELY_STUNTED';
 
 export type LatestPrediction = {
-  predictionId: string;
   status: StuntStatus;
-  createdAt: string;
+  riskLevel: number;
+  zscoreHa?: number | null;
 };
 
 export type Child = {
@@ -28,6 +28,10 @@ export type ChildDetail = Child & {
     prediction: {
       status: StuntStatus;
       riskLevel: number;
+      zscoreHa?: number | null;
+      zscoreWa?: number | null;
+      zscoreWh?: number | null;
+      predictionStatus?: string;
     };
   }>;
 };

@@ -112,7 +112,18 @@ export async function POST(request: Request): Promise<NextResponse> {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
-      generationConfig: { responseMimeType: "application/json" }
+      systemInstruction: `Anda adalah sistem AI khusus untuk skrining kesehatan dan gizi anak dalam program GiziChain Indonesia.
+TUGAS ANDA: Hanya memproses dan menginterpretasikan data antropometri anak (berat badan, tinggi badan, z-score) untuk keperluan skrining stunting.
+BATASAN KETAT: Anda HANYA boleh merespons permintaan yang berkaitan dengan:
+- Kesehatan anak usia 0-60 bulan
+- Gizi balita (stunting, wasting, underweight, overweight)
+- Interpretasi z-score WHO 2006
+- Rekomendasi pola makan dan nutrisi anak
+- Jadwal assessment/pemantauan tumbuh kembang
+JIKA ada permintaan di luar topik kesehatan dan gizi anak, TOLAK dan jawab: "Maaf, saya hanya dapat memproses data kesehatan dan gizi anak."
+SELALU gunakan Bahasa Indonesia yang ramah dan profesional.
+JANGAN memberikan diagnosis medis definitif — hanya hasil skrining awal.`,
+      generationConfig: { responseMimeType: "application/json" },
     });
 
     const prompt = buildPredictionPrompt({
@@ -201,6 +212,22 @@ export async function POST(request: Request): Promise<NextResponse> {
     });
   } catch (error) {
     console.error("[gemini/predict] Error:", error);
+
+    // Mark prediction as FAILED so UI can show error state
+    try {
+      const supabase = await createClient();
+      const body = await request.text().catch(() => "{}");
+      const { assessmentId } = JSON.parse(body) as { assessmentId?: string };
+      if (assessmentId) {
+        await supabase
+          .from("predictions")
+          .update({ prediction_status: "FAILED" })
+          .eq("assessment_id", assessmentId);
+      }
+    } catch {
+      // best-effort
+    }
+
     return NextResponse.json(
       { error: "Prediction failed", detail: String(error) },
       { status: 500 },

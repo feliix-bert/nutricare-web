@@ -5,6 +5,7 @@ import {
   fetchMedicConsultations,
   fetchMessages,
   sendMessage,
+  deleteMessage,
   createConsultation,
   closeConsultation,
 } from "../services/consultation.service";
@@ -142,6 +143,23 @@ export const useCloseConsultation = () => {
     mutationFn: (consultationId: string) => closeConsultation(consultationId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: consultationKeys.all });
+    },
+  });
+};
+
+// ─── Delete message mutation ──────────────────────────────────────────────────
+
+export const useDeleteConsultationMessage = (consultationId: string | null) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (messageId: string) => deleteMessage(messageId),
+    onSuccess: () => {
+      if (consultationId) {
+        queryClient.invalidateQueries({
+          queryKey: consultationKeys.messages(consultationId),
+        });
+      }
     },
   });
 };

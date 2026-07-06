@@ -8,10 +8,9 @@ import { Avatar } from "@/components/common/Avatar";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { HomeIcon } from "@/components/icons/home";
 import { FileTextIcon } from "@/components/icons/file-text";
-import { ScanLineIcon } from "@/components/icons/scan-line";
 import { MessageCircleIcon } from "@/components/icons/message-circle";
 import { UserIcon } from "@/components/icons/user";
-import { Bell, Users } from "lucide-react";
+import { Bell, Users, Vault } from "lucide-react";
 
 import { useAuthStore } from "@/stores/authStore";
 import { LogoutConfirmModal } from "@/components/common/LogoutConfirmModal";
@@ -25,7 +24,7 @@ type NavRoute = {
 const PARENT_ROUTES: NavRoute[] = [
   { name: "Beranda", href: "/", Icon: HomeIcon },
   { name: "Nutrisi", href: "/nutrition", Icon: FileTextIcon },
-  { name: "Scanner", href: "/scanner", Icon: ScanLineIcon },
+  { name: "Vault", href: "/vault", Icon: Vault as React.FC<{ size?: number; className?: string }> },
   { name: "Tanya AI", href: "/consult", Icon: MessageCircleIcon },
   { name: "Profil", href: "/profile", Icon: UserIcon },
 ];

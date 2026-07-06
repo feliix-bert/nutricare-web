@@ -1,22 +1,21 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
 import { HomeIcon } from "@/components/icons/home";
 import { FileTextIcon } from "@/components/icons/file-text";
 import { MessageCircleIcon } from "@/components/icons/message-circle";
-import { ScanLineIcon } from "@/components/icons/scan-line";
 import { UserIcon } from "@/components/icons/user";
-import { Bell, Users } from "lucide-react";
-
+import { Bell, Users, Vault } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
 
 const PARENT_TABS = [
   { name: "Beranda", path: "/", Icon: HomeIcon },
   { name: "Nutrisi", path: "/nutrition", Icon: FileTextIcon },
   { name: "Tanya AI", path: "/consult", Icon: MessageCircleIcon },
-  { name: "Scanner", path: "/scanner", Icon: ScanLineIcon },
+  { name: "Vault", path: "/vault", Icon: Vault as React.FC<{ size?: number; className?: string }> },
   { name: "Profil", path: "/profile", Icon: UserIcon },
 ];
 

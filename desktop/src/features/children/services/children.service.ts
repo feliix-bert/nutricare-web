@@ -25,13 +25,13 @@ const mapChild = (row: {
   updated_at: string;
   medic_id?: string | null;
   medic?: { name: string } | null;
-}): Child => ({
+}, latestPrediction?: Child["latestPrediction"]): Child => ({
   id: row.id,
   name: row.name,
   birthDate: row.birth_date,
   gender: row.gender as Child["gender"],
   ageMonths: calcAgeMonths(row.birth_date),
-  latestPrediction: null, // filled separately if needed
+  latestPrediction: latestPrediction ?? null,
   medicId: row.medic_id ?? null,
   medicName: (row.medic as { name: string } | null)?.name ?? null,
 });
@@ -80,7 +80,7 @@ export const childrenService = {
 
     if (error) throw error;
 
-    // Fetch assessments + predictions
+    // Fetch assessments + predictions (with zscore fields)
     const { data: assessments } = await withTimeout(
       (async () => {
         return await supabase
@@ -91,7 +91,7 @@ export const childrenService = {
             weight,
             height,
             created_at,
-            predictions ( stunt_status, risk_level )
+            predictions ( stunt_status, risk_level, zscore_ha, zscore_wa, zscore_wh, prediction_status )
           `
           )
           .eq("child_id", childId)
@@ -99,21 +99,35 @@ export const childrenService = {
       })()
     );
 
+    const mappedAssessments = (assessments ?? []).map((a: any) => {
+      const pred = Array.isArray(a.predictions) ? a.predictions[0] : a.predictions;
+      return {
+        id: a.id,
+        weight: a.weight,
+        height: a.height,
+        createdAt: a.created_at,
+        prediction: {
+          status: (pred?.stunt_status as ChildDetail["assessments"][number]["prediction"]["status"]) ?? "NORMAL",
+          riskLevel: pred?.risk_level ?? 0,
+          zscoreHa: pred?.zscore_ha ?? null,
+          zscoreWa: pred?.zscore_wa ?? null,
+          zscoreWh: pred?.zscore_wh ?? null,
+          predictionStatus: pred?.prediction_status ?? "PENDING",
+        },
+      };
+    });
+
+    // Build latestPrediction for dashboard
+    const latestPred = mappedAssessments[0]?.prediction ?? null;
+    const latestPrediction: Child["latestPrediction"] = latestPred ? {
+      status: latestPred.status,
+      riskLevel: latestPred.riskLevel,
+      zscoreHa: (latestPred as any).zscoreHa ?? null,
+    } : null;
+
     return {
-      ...mapChild(child),
-      assessments: (assessments ?? []).map((a: any) => {
-        const pred = Array.isArray(a.predictions) ? a.predictions[0] : a.predictions;
-        return {
-          id: a.id,
-          weight: a.weight,
-          height: a.height,
-          createdAt: a.created_at,
-          prediction: {
-            status: (pred?.stunt_status as ChildDetail["assessments"][number]["prediction"]["status"]) ?? "NORMAL",
-            riskLevel: pred?.risk_level ?? 0,
-          },
-        };
-      }),
+      ...mapChild(child, latestPrediction),
+      assessments: mappedAssessments,
     };
   },
 

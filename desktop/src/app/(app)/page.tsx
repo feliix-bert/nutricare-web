@@ -6,7 +6,7 @@ import { motion } from "motion/react";
 import { ChevronRight, Weight, Ruler, TrendingUp, Search, Bell, Plus, CalendarDays, Flame } from "lucide-react";
 import { ReminderCard } from "@/components/home/ReminderCard";
 import { ActivityTimeline } from "@/components/home/ActivityTimeline";
-import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent, EmptyMedia } from "@/components/ui/Empty";
+import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent } from "@/components/ui/Empty";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/common/Avatar";
 import { PageShell } from "@/components/layout/PageShell";
@@ -15,6 +15,8 @@ import { useChildrenList, useChild } from "@/features/children/hooks/useChildren
 import { useNutritionHistory } from "@/features/nutrition/hooks/useNutrition";
 import { useAuthStore } from "@/stores/authStore";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
+import { SearchModal } from "@/components/common/SearchModal";
+import { NotificationPanel } from "@/components/common/NotificationPanel";
 
 /* ── Small bar chart inside metric card ── */
 const SparkBars = React.memo(({ color }: { color: string }) => (
@@ -97,6 +99,9 @@ function HomePageInner() {
   const { data: childDetail } = useChild(activeChild?.id ?? "");
   const { data: nutritionData } = useNutritionHistory(activeChild?.id ?? "");
 
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+
   // If user is medic, render null while redirecting to avoid flashing
   if (user?.role === "MEDIC") return null;
 
@@ -156,7 +161,8 @@ function HomePageInner() {
   const sortedAssessments = [...assessments].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   const latestAssessment = hasAssessment ? sortedAssessments[0] : null;
 
-  const latestPred = activeChild.latestPrediction;
+  // Use childDetail's latestPrediction (has zscore) if available, else activeChild's
+  const latestPred = childDetail?.latestPrediction ?? activeChild.latestPrediction;
 
   const statusLabel = latestPred
     ? latestPred.status === 'NORMAL' ? 'Tumbuh Optimal'
@@ -164,7 +170,22 @@ function HomePageInner() {
       : 'Butuh Tindakan Medis'
     : 'Belum Ada Data';
 
-  const growthPct = latestPred ? (latestPred.status === 'NORMAL' ? 94 : latestPred.status === 'AT_RISK' ? 70 : 45) : 0;
+  // growthPct: calculate from zscore_ha (Height-for-Age z-score)
+  // WHO reference: zscore >= 0 = excellent (90-100%), -1 = 75%, -2 = 50%, <-3 = 20%
+  const growthPct = (() => {
+    if (!latestPred) return 0;
+    const z = (latestPred as any).zscoreHa;
+    if (z !== null && z !== undefined) {
+      // Map z-score to percentage: clamp to 0-100
+      const pct = Math.round(Math.min(100, Math.max(0, ((z + 3) / 6) * 100)));
+      return pct;
+    }
+    // Fallback to status-based
+    if (latestPred.status === 'NORMAL') return 85;
+    if (latestPred.status === 'AT_RISK') return 60;
+    if (latestPred.status === 'STUNTED') return 40;
+    return 20;
+  })();
 
   const weightVal = latestAssessment ? latestAssessment.weight.toFixed(1) : "—";
   const heightVal = latestAssessment ? latestAssessment.height.toFixed(1) : "—";
@@ -237,6 +258,7 @@ function HomePageInner() {
                 <button
                   id="home-search-btn"
                   aria-label="Cari"
+                  onClick={() => setIsSearchOpen(true)}
                   className="flex items-center gap-2 px-3 py-2 sm:px-3.5 sm:py-2 rounded-full bg-white border border-outline-variant/12 shadow-sm text-on-surface-variant/60 hover:border-primary/20 hover:text-on-surface-variant transition-all duration-200 text-sm"
                 >
                   <Search size={14} />
@@ -246,10 +268,13 @@ function HomePageInner() {
                 <button
                   id="home-notif-btn"
                   aria-label="Notifikasi"
+                  onClick={() => setIsNotifOpen((v) => !v)}
                   className="relative w-9 h-9 rounded-full bg-white border border-outline-variant/12 shadow-sm flex items-center justify-center text-on-surface-variant hover:border-primary/20 hover:text-primary transition-all duration-200"
                 >
                   <Bell size={16} />
-                  <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-danger border border-white" />
+                  {children.some((c: any) => !c.latestPrediction || ["STUNTED","SEVERELY_STUNTED","AT_RISK"].includes(c.latestPrediction?.status)) && (
+                    <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-danger border border-white" />
+                  )}
                 </button>
               </div>
             </div>
@@ -497,6 +522,10 @@ function HomePageInner() {
           </div>
         </div>
       </PageShell>
+
+      {/* Modals */}
+      <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      <NotificationPanel isOpen={isNotifOpen} onClose={() => setIsNotifOpen(false)} />
     </motion.div>
   );
 }

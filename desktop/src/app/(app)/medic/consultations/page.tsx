@@ -2,12 +2,13 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Search, Send, X, MessageSquare, CheckCheck } from "lucide-react";
+import { Search, Send, X, MessageSquare, CheckCheck, Trash2 } from "lucide-react";
 import {
   useConsultationList,
   useConsultationMessages,
   useSendConsultationMessage,
   useCloseConsultation,
+  useDeleteConsultationMessage,
 } from "@/features/medic/hooks/useConsultation";
 import { MedicShell } from "@/components/layout/MedicShell";
 import { Avatar } from "@/components/common/Avatar";
@@ -35,7 +36,7 @@ function calcAge(birthDate: string) {
   return m < 24 ? `${m} mo` : `${Math.floor(m / 12)} yr`;
 }
 
-// ─── Conversation row ─────────────────────────────────────────────────────────
+// ─── Conversation Row ─────────────────────────────────────────────────────────
 function ConvRow({ c, isActive, onClick }: { c: Consultation; isActive: boolean; onClick: () => void }) {
   const child = c.children;
   return (
@@ -61,15 +62,46 @@ function ConvRow({ c, isActive, onClick }: { c: Consultation; isActive: boolean;
           </span>
         </div>
         <p className={`text-xs truncate font-bold ${isActive ? "text-teal-600" : "text-slate-400"}`}>
-          {c.status === "OPEN" ? "Waiting for reply..." : "Completed"}
+          {c.status === "OPEN" ? "Active consultation" : "Completed"}
         </p>
       </div>
     </button>
   );
 }
 
-// ─── Message bubble ───────────────────────────────────────────────────────────
-function Bubble({ content, timestamp, isSelf, senderName }: { content: string; timestamp: string; isSelf: boolean; senderName?: string }) {
+// ─── Message Bubble with Delete ───────────────────────────────────────────────
+function Bubble({
+  messageId,
+  content,
+  timestamp,
+  isSelf,
+  isDeleted,
+  senderName,
+  onDelete,
+}: {
+  messageId: string;
+  content: string;
+  timestamp: string;
+  isSelf: boolean;
+  isDeleted?: boolean;
+  senderName?: string;
+  onDelete?: (id: string) => void;
+}) {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  if (isDeleted) {
+    return (
+      <div className={`flex gap-3 ${isSelf ? "flex-row-reverse" : "flex-row"} items-end mb-4`}>
+        {!isSelf && <Avatar seed={senderName ?? "U"} variant="parent" size="sm" />}
+        <div className={`flex flex-col ${isSelf ? "items-end" : "items-start"}`}>
+          <div className="px-4 py-2.5 rounded-3xl bg-slate-100 border border-slate-200">
+            <span className="text-xs font-semibold italic text-slate-400">Pesan telah dihapus</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`flex gap-3 ${isSelf ? "flex-row-reverse" : "flex-row"} items-end group mb-4`}>
       {!isSelf && <Avatar seed={senderName ?? "U"} variant="parent" size="sm" />}
@@ -83,18 +115,48 @@ function Bubble({ content, timestamp, isSelf, senderName }: { content: string; t
         >
           {content}
         </div>
-        <div className={`flex items-center gap-1 mt-1.5 px-2 opacity-0 group-hover:opacity-100 transition-opacity ${isSelf ? "flex-row-reverse" : ""}`}>
-          <span className="text-[10px] font-bold text-slate-400">
+        <div className={`flex items-center gap-2 mt-1.5 px-2 ${isSelf ? "flex-row-reverse" : ""}`}>
+          <span className="text-[10px] font-bold text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
             {formatTime(timestamp)}
           </span>
-          {isSelf && <CheckCheck size={12} className="text-teal-500" />}
+          {isSelf && <CheckCheck size={12} className="text-teal-500 opacity-0 group-hover:opacity-100 transition-opacity" />}
+          {/* Delete button — only shows for own messages on hover */}
+          {isSelf && onDelete && (
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+              {showDeleteConfirm ? (
+                <div className="flex items-center gap-1 bg-white rounded-full px-2 py-1 shadow-md border border-rose-100">
+                  <span className="text-[10px] font-bold text-rose-500">Hapus?</span>
+                  <button
+                    onClick={() => { onDelete(messageId); setShowDeleteConfirm(false); }}
+                    className="text-[10px] font-extrabold text-rose-600 hover:text-rose-700 px-1"
+                  >
+                    Ya
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="text-[10px] font-extrabold text-slate-400 hover:text-slate-600 px-1"
+                  >
+                    Batal
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="p-1 rounded-full hover:bg-rose-50 text-slate-300 hover:text-rose-400 transition-colors"
+                  title="Hapus pesan"
+                >
+                  <Trash2 size={12} />
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Main ────────────────────────────────────────────────────────────────────
+// ─── Main ─────────────────────────────────────────────────────────────────────
 export default function MedicConsultationsPage() {
   const user = useAuthStore((s) => s.user);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -107,6 +169,7 @@ export default function MedicConsultationsPage() {
   const { data: messages, isLoading: msgsLoading } = useConsultationMessages(selectedId);
   const sendMut = useSendConsultationMessage(selectedId);
   const closeMut = useCloseConsultation();
+  const deleteMut = useDeleteConsultationMessage(selectedId);
 
   const selected = (consultations ?? []).find((c: Consultation) => c.id === selectedId);
 
@@ -127,10 +190,14 @@ export default function MedicConsultationsPage() {
     inputRef.current?.focus();
   };
 
+  const handleDeleteMessage = (messageId: string) => {
+    deleteMut.mutate(messageId);
+  };
+
   return (
     <MedicShell noPadding>
       <div className="flex flex-col md:flex-row h-full">
-        
+
         {/* ── Left: Conversation List ── */}
         <aside className={`flex flex-col w-full md:w-80 lg:w-96 border-r border-slate-100 bg-white ${selectedId ? "hidden md:flex" : "flex"}`}>
           <div className="p-6 border-b border-slate-100">
@@ -146,7 +213,7 @@ export default function MedicConsultationsPage() {
               />
             </div>
           </div>
-          
+
           <div className="flex-1 overflow-y-auto">
             {listLoading ? (
               <div className="p-6 text-center text-slate-400 font-bold">Loading...</div>
@@ -185,13 +252,15 @@ export default function MedicConsultationsPage() {
                     </h2>
                     <p className="text-xs font-bold text-slate-400">
                       {selected?.children?.birth_date ? calcAge(selected.children.birth_date) : "—"} ·{" "}
-                      {selected?.status === "OPEN" ? "Active" : "Closed"}
+                      <span className={selected?.status === "OPEN" ? "text-lime-500" : "text-slate-400"}>
+                        {selected?.status === "OPEN" ? "Active" : "Closed"}
+                      </span>
                     </p>
                   </div>
                 </div>
                 {selected?.status === "OPEN" && (
                   <button
-                    onClick={() => { if (confirm("Close this consultation?")) closeMut.mutate(selectedId!); }}
+                    onClick={() => { if (confirm("Tutup konsultasi ini?")) closeMut.mutate(selectedId!); }}
                     disabled={closeMut.isPending}
                     className="px-4 py-2 rounded-full bg-rose-50 text-rose-600 font-bold text-xs hover:bg-rose-100 transition-colors"
                   >
@@ -205,7 +274,7 @@ export default function MedicConsultationsPage() {
                 {msgsLoading ? (
                   <div className="text-center text-slate-400 font-bold">Loading messages...</div>
                 ) : !messages || messages.length === 0 ? (
-                  <div className="text-center text-slate-400 font-bold mt-10">No messages yet. Say hello!</div>
+                  <div className="text-center text-slate-400 font-bold mt-10">No messages yet. Say hello! 👋</div>
                 ) : (
                   <>
                     <div className="text-center mb-6">
@@ -222,10 +291,13 @@ export default function MedicConsultationsPage() {
                           transition={{ duration: 0.2 }}
                         >
                           <Bubble
+                            messageId={m.id}
                             content={m.content}
                             timestamp={m.created_at}
                             isSelf={m.sender_id === user?.id}
+                            isDeleted={(m as any).is_deleted ?? false}
                             senderName={(m.users as any)?.name}
+                            onDelete={m.sender_id === user?.id ? handleDeleteMessage : undefined}
                           />
                         </motion.div>
                       ))}
@@ -245,7 +317,7 @@ export default function MedicConsultationsPage() {
                       value={msg}
                       onChange={(e) => setMsg(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); doSend(); } }}
-                      placeholder="Type your message here..."
+                      placeholder="Type your message... (Enter to send)"
                       className="flex-1 resize-none bg-slate-50 rounded-3xl px-5 py-3.5 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500/30 max-h-32 shadow-inner"
                       onInput={(e) => {
                         const t = e.target as HTMLTextAreaElement;

@@ -1,6 +1,12 @@
 import { createClient } from "@/lib/supabase/client";
 import type { PaginatedPatients, Patient, IssueVcPayload, RevokeVcPayload } from "../types/medic.types";
 
+const calcAgeMonths = (birthDate: string) => {
+  const birth = new Date(birthDate);
+  const now = new Date();
+  return (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
+};
+
 export const fetchPatients = async (
   page = 0,
   size = 10,
@@ -11,12 +17,22 @@ export const fetchPatients = async (
   const from = page * size;
   const to = from + size - 1;
 
-  // Get current medic's id to filter their patients only
+  // Get current medic's id
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  // Build query: children joined with users (parent name) and latest prediction
-  // Filter: only children assigned to this medic
+  // Step 1: Get child IDs that this medic has consultations with
+  const { data: consultedRows } = await supabase
+    .from("consultations")
+    .select("child_id")
+    .eq("medic_id", user.id);
+
+  const childIdsFromConsults: string[] = (consultedRows ?? [])
+    .map((c: { child_id: string }) => c.child_id)
+    .filter(Boolean);
+
+  // Step 2: Build child query
+  // Include children where: medic_id = me, OR child_id is in consultations list
   let query = supabase
     .from("children")
     .select(
@@ -26,34 +42,49 @@ export const fetchPatients = async (
       gender,
       birth_date,
       user_id,
+      medic_id,
       users!user_id!inner(name),
       assessments(
         id,
         created_at,
-        predictions(stunt_status, risk_level)
+        predictions(stunt_status, risk_level, zscore_ha, zscore_wa, zscore_wh)
       )
     `,
       { count: "exact" },
     )
-    .eq("medic_id", user.id)
-    .order("created_at", { ascending: false })
-    .range(from, to);
+    .order("created_at", { ascending: false });
+
+  if (childIdsFromConsults.length > 0) {
+    // OR: medic_id matches, or child is in consultation list
+    query = query.or(
+      `medic_id.eq.${user.id},id.in.(${childIdsFromConsults.join(",")})`
+    );
+  } else {
+    query = query.eq("medic_id", user.id);
+  }
 
   if (search) {
-    query = query.or(`name.ilike.%${search}%,users.name.ilike.%${search}%`);
+    query = query.ilike("name", `%${search}%`);
   }
+
+  query = query.range(from, to);
 
   const { data, error, count } = await query;
   if (error) throw error;
 
-  const calcAgeMonths = (birthDate: string) => {
-    const birth = new Date(birthDate);
-    const now = new Date();
-    return (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
-  };
-
   const patients: Patient[] = (data ?? []).map((row) => {
-    const assessments = row.assessments ?? [];
+    const assessments = (row.assessments as Array<{
+      id: string;
+      created_at: string;
+      predictions: Array<{
+        stunt_status: string;
+        risk_level: number;
+        zscore_ha?: number;
+        zscore_wa?: number;
+        zscore_wh?: number;
+      }> | null;
+    }>) ?? [];
+
     const sorted = [...assessments].sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
     );
@@ -68,7 +99,7 @@ export const fetchPatients = async (
       birthDate: row.birth_date,
       ageMonths: calcAgeMonths(row.birth_date),
       parentName: (row.users as unknown as { name: string }).name ?? "Unknown",
-      lastStatus: predData?.stunt_status ?? "NORMAL",
+      lastStatus: (predData?.stunt_status ?? "NORMAL") as Patient["lastStatus"],
       lastAssessmentDate: latestAssessment?.created_at ?? null,
       activeVcId: undefined,
       vcStatus: undefined,
@@ -110,7 +141,6 @@ export const fetchPatientSummary = async (childId: string) => {
 };
 
 export const issueVc = async (payload: IssueVcPayload) => {
-  // This still goes through Next.js API route (server-side signing + IPFS)
   const res = await fetch("/api/vc/issue", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

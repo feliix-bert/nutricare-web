@@ -120,6 +120,18 @@ export const sendMessage = async (
   return data as ConsultationMessage;
 };
 
+// ─── Delete (soft) message ───────────────────────────────────────────────────
+
+export const deleteMessage = async (messageId: string): Promise<void> => {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("consultation_messages")
+    .update({ is_deleted: true })
+    .eq("id", messageId);
+
+  if (error) throw error;
+};
+
 // ─── Close consultation ───────────────────────────────────────────────────────
 
 export const closeConsultation = async (consultationId: string): Promise<void> => {

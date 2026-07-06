@@ -537,8 +537,7 @@ export default function NutritionPage() {
                 transition={{ type: "spring", stiffness: 350, damping: 25 }}
                 className="relative w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl flex flex-col items-center text-center overflow-hidden"
               >
-                <div className="absolute top-0 left-0 w-full h-1.5 bg-red-500" />
-                <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-5 shadow-sm">
+                <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-5 shadow-sm mt-2">
                   <AlertTriangle size={32} strokeWidth={2.5} />
                 </div>
                 <h3 className="text-lg font-extrabold text-gray-900 mb-2">Hapus Riwayat Makan?</h3>

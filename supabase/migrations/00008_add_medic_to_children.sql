@@ -5,7 +5,14 @@
 
 -- 1. Add medic_id column (nullable — anak bisa belum punya dokter)
 ALTER TABLE public.children
-  ADD COLUMN IF NOT EXISTS medic_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS medic_id UUID;
+
+-- Drop foreign key constraint if it exists (in case previously linked to auth.users)
+ALTER TABLE public.children DROP CONSTRAINT IF EXISTS children_medic_id_fkey;
+
+-- Add foreign key constraint to public.users
+ALTER TABLE public.children
+  ADD CONSTRAINT children_medic_id_fkey FOREIGN KEY (medic_id) REFERENCES public.users(id) ON DELETE SET NULL;
 
 -- 2. Index for performance (filter patients by medic)
 CREATE INDEX IF NOT EXISTS idx_children_medic_id ON public.children(medic_id);

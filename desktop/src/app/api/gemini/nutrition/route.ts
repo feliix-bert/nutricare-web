@@ -95,7 +95,7 @@ export async function POST(request: Request) {
     const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
       generationConfig: { 
-        maxOutputTokens: 1024
+        maxOutputTokens: 8192
       },
       // Disable safety blocks to prevent spurious errors on food photos
       safetySettings: [

@@ -19,6 +19,8 @@ import {
   determineRiskLevel,
 } from "@/lib/zscore";
 
+export const maxDuration = 60;
+
 export async function POST(request: Request): Promise<NextResponse> {
   try {
     // ── Auth ────────────────────────────────────────────────────────────
@@ -109,7 +111,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: "gemini-3.5-flash",
+      model: "gemini-1.5-flash",
       generationConfig: { responseMimeType: "application/json" }
     });
 

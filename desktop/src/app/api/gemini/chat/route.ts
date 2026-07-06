@@ -11,6 +11,8 @@ import { after } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createClient } from "@/lib/supabase/server";
 
+export const maxDuration = 60;
+
 type ChatMessage = {
   role: "user" | "assistant";
   content: string;
@@ -88,7 +90,7 @@ export async function POST(request: Request) {
     const systemPrompt = buildChatSystemPrompt(context);
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: "gemini-3.5-flash",
+      model: "gemini-1.5-flash",
       systemInstruction: systemPrompt,
       generationConfig: { maxOutputTokens: 2048 },
     });

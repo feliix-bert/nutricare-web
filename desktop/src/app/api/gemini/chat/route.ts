@@ -88,28 +88,13 @@ export async function POST(request: Request) {
     const systemPrompt = buildChatSystemPrompt(context);
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.0-flash-latest",
+      systemInstruction: systemPrompt,
       generationConfig: { maxOutputTokens: 2048 },
     });
 
     const chat = model.startChat({
       history: [
-        {
-          role: "user",
-          parts: [
-            {
-              text: "Halo, tolong pandu saya tentang gizi anak.",
-            },
-          ],
-        },
-        {
-          role: "model",
-          parts: [
-            {
-              text: "Saya siap membantu! Silakan tanya seputar tumbuh kembang dan gizi anak berdasarkan hasil skrining.",
-            },
-          ],
-        },
         // ── Riwayat chat dari session ──────────────────────────────────
         ...history.map((h) => ({
           role: (h.role === "assistant" ? "model" : "user") as "user" | "model",

@@ -19,7 +19,16 @@ export const chatService = {
       body: JSON.stringify(payload),
     });
 
-    if (!res.ok) throw new Error("Chat request failed");
+    if (!res.ok) {
+      let detail = `Chat request failed (${res.status})`;
+      try {
+        const errBody = await res.json() as { error?: string; detail?: string };
+        detail = errBody.error ?? errBody.detail ?? detail;
+      } catch {
+        // ignore parse error, keep default message
+      }
+      throw new Error(detail);
+    }
     return res.json();
   },
 

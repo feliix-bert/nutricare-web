@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Info, Send, ChevronDown, Bot, AlertCircle, RefreshCw } from "lucide-react";
+import { Info, Send, ChevronDown, Bot, AlertCircle, RefreshCw, ShieldCheck } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Avatar } from "@/components/common/Avatar";
 import { PageShell } from "@/components/layout/PageShell";
@@ -10,6 +10,12 @@ import { useSearchParams } from "next/navigation";
 import { useChildrenList } from "@/features/children/hooks/useChildren";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const MAX_MESSAGE_LENGTH = 600;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -213,8 +219,12 @@ function EmptyState() {
       </div>
       <h2 className="text-[17px] font-bold text-on-surface mb-2">Belum ada konteks</h2>
       <p className="text-[14px] text-on-surface-variant leading-relaxed max-w-xs">
-        Pilih anak dari daftar di atas, atau mulai dari halaman Riwayat Pemeriksaan Anak agar AI dapat membaca hasil secara spesifik.
+        Pilih anak dari daftar di atas, atau mulai dari halaman <strong>Riwayat Pemeriksaan Anak</strong> agar AI dapat membaca hasil skrining secara spesifik.
       </p>
+      <div className="mt-5 flex items-center gap-2 px-4 py-2.5 bg-primary-container/20 rounded-full">
+        <ShieldCheck size={13} className="text-primary" />
+        <span className="text-[12px] font-semibold text-primary">Percakapan diproteksi & tidak dapat dimanipulasi</span>
+      </div>
     </div>
   );
 }
@@ -401,14 +411,15 @@ function ChatView({
         </div>
 
         <div className="flex items-center gap-2 mt-1">
-          <div className="flex-1 bg-surface-high rounded-full flex items-center px-5 py-3.5 shadow-inner">
+          <div className="flex-1 bg-surface-high rounded-2xl flex flex-col px-4 py-3 shadow-inner">
             <input
               id="chat-input"
               type="text"
               value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
+              onChange={(e) => setInputText(e.target.value.slice(0, MAX_MESSAGE_LENGTH))}
               placeholder={`Tanya soal ${context.childName}...`}
               disabled={sendMutation.isPending}
+              maxLength={MAX_MESSAGE_LENGTH}
               className="flex-1 bg-transparent outline-none text-[14px] text-on-surface font-medium placeholder:text-on-surface-variant/40 disabled:cursor-not-allowed"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -417,19 +428,26 @@ function ChatView({
                 }
               }}
             />
-            <button
-              id="chat-send-button"
-              onClick={() => void handleSend(inputText)}
-              disabled={!inputText.trim() || sendMutation.isPending}
-              aria-label="Kirim pesan"
-              className={`ml-2 w-7 h-7 flex items-center justify-center transition-all ${
-                inputText.trim() && !sendMutation.isPending
-                  ? "text-primary scale-110"
-                  : "text-on-surface-variant/30"
-              }`}
-            >
-              <Send size={18} strokeWidth={2.5} />
-            </button>
+            <div className="flex items-center justify-between mt-1.5">
+              <span className={`text-[10px] font-medium ${
+                inputText.length > MAX_MESSAGE_LENGTH * 0.9 ? "text-orange-500" : "text-on-surface-variant/30"
+              }`}>
+                {inputText.length}/{MAX_MESSAGE_LENGTH}
+              </span>
+              <button
+                id="chat-send-button"
+                onClick={() => void handleSend(inputText)}
+                disabled={!inputText.trim() || sendMutation.isPending}
+                aria-label="Kirim pesan"
+                className={`w-7 h-7 flex items-center justify-center transition-all ${
+                  inputText.trim() && !sendMutation.isPending
+                    ? "text-primary scale-110"
+                    : "text-on-surface-variant/30"
+                }`}
+              >
+                <Send size={18} strokeWidth={2.5} />
+              </button>
+            </div>
           </div>
         </div>
       </div>

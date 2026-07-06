@@ -7,7 +7,7 @@
  * 3. Parse response → simpan ke nutrition_logs
  */
 import { NextResponse } from "next/server";
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createClient } from "@/lib/supabase/server";
 
 export const maxDuration = 60;
@@ -95,51 +95,7 @@ export async function POST(request: Request) {
     const model = genAI.getGenerativeModel({
       model: "gemini-2.5-flash",
       generationConfig: { 
-        maxOutputTokens: 1024,
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: SchemaType.OBJECT,
-          properties: {
-            foodDetected: {
-              type: SchemaType.ARRAY,
-              items: { type: SchemaType.STRING },
-              description: "Array of detected food names"
-            },
-            portionEstimate: {
-              type: SchemaType.STRING,
-              description: "Estimation of the portion size"
-            },
-            calories: {
-              type: SchemaType.NUMBER,
-              description: "Estimated total calories"
-            },
-            protein: {
-              type: SchemaType.NUMBER,
-              description: "Estimated total protein in grams"
-            },
-            carbs: {
-              type: SchemaType.NUMBER,
-              description: "Estimated total carbohydrates in grams"
-            },
-            fat: {
-              type: SchemaType.NUMBER,
-              description: "Estimated total fat in grams"
-            },
-            fiber: {
-              type: SchemaType.NUMBER,
-              description: "Estimated total fiber in grams"
-            },
-            adequacyNote: {
-              type: SchemaType.STRING,
-              description: "Note about nutritional adequacy for the child's age"
-            },
-            mpasiRecommendation: {
-              type: SchemaType.STRING,
-              description: "Recommendation for MPASI if applicable"
-            }
-          },
-          required: ["foodDetected", "portionEstimate", "calories", "protein", "carbs", "fat", "fiber", "adequacyNote", "mpasiRecommendation"]
-        }
+        maxOutputTokens: 1024
       },
       // Disable safety blocks to prevent spurious errors on food photos
       safetySettings: [

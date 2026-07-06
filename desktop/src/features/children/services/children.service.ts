@@ -54,7 +54,7 @@ export const childrenService = {
 
     if (error) throw error;
 
-    const children = (data ?? []).map(mapChild);
+    const children = (data ?? []).map(row => mapChild(row));
 
     return {
       data: children,

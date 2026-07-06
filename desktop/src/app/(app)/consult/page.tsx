@@ -536,7 +536,7 @@ export default function ConsultPage() {
 
   const availableItems: SelectorItem[] = childrenData?.data.map((child) => ({
     childId: child.id,
-    predictionId: child.latestPrediction?.predictionId,
+    predictionId: child.latestPrediction?.predictionId ?? undefined,
     childName: child.name,
     ageMonths: child.ageMonths,
     status: child.latestPrediction?.status,

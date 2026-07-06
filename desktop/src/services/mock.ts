@@ -33,7 +33,7 @@ let mockChildren: Child[] = [
     birthDate: '2023-01-15',
     gender: 'MALE',
     ageMonths: 18,
-    latestPrediction: { predictionId: 'clx_pred_001', status: 'AT_RISK', createdAt: '2025-07-01T00:00:00Z' },
+    latestPrediction: { predictionId: 'clx_pred_001', status: 'AT_RISK', riskLevel: 2 },
   },
   {
     id: 'child_002',
@@ -41,7 +41,7 @@ let mockChildren: Child[] = [
     birthDate: '2024-03-10',
     gender: 'FEMALE',
     ageMonths: 6,
-    latestPrediction: { predictionId: 'clx_pred_002', status: 'NORMAL', createdAt: '2025-07-10T00:00:00Z' },
+    latestPrediction: { predictionId: 'clx_pred_002', status: 'NORMAL', riskLevel: 0 },
   },
 ];
 
@@ -235,7 +235,7 @@ export const addMockAssessment = (req: AssessmentRequestDTO): AssessmentResponse
     latestPrediction: {
       predictionId: predId,
       status,
-      createdAt: newAssessment.createdAt,
+      riskLevel,
     },
   });
 

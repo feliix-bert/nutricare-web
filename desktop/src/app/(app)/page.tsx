@@ -6,7 +6,7 @@ import { motion } from "motion/react";
 import { ChevronRight, Weight, Ruler, TrendingUp, Search, Bell, Plus, CalendarDays, Flame } from "lucide-react";
 import { ReminderCard } from "@/components/home/ReminderCard";
 import { ActivityTimeline } from "@/components/home/ActivityTimeline";
-import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent } from "@/components/ui/Empty";
+import { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent, EmptyMedia } from "@/components/ui/Empty";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/common/Avatar";
 import { PageShell } from "@/components/layout/PageShell";

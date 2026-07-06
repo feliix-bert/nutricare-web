@@ -126,7 +126,7 @@ export const deleteMessage = async (messageId: string): Promise<void> => {
   const supabase = createClient();
   const { error } = await supabase
     .from("consultation_messages")
-    .update({ is_deleted: true })
+    .update({ is_deleted: true } as any)
     .eq("id", messageId);
 
   if (error) throw error;

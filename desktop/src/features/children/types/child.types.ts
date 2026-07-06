@@ -3,7 +3,7 @@ export type Gender = 'MALE' | 'FEMALE';
 export type StuntStatus = 'NORMAL' | 'AT_RISK' | 'STUNTED' | 'SEVERELY_STUNTED';
 
 export type LatestPrediction = {
-  predictionId?: string | null;
+  predictionId?: string;
   status: StuntStatus;
   riskLevel: number;
   zscoreHa?: number | null;

@@ -19,7 +19,7 @@ export const fetchMedicConsultations = async (): Promise<Consultation[]> => {
     .select(`
       *,
       children(id, name, birth_date, gender),
-      users!consultations_parent_id_fkey(name)
+      users!parent_id(name)
     `)
     .order("updated_at", { ascending: false });
 
@@ -36,7 +36,7 @@ export const fetchParentConsultations = async (parentId: string): Promise<Consul
     .select(`
       *,
       children(id, name, birth_date, gender),
-      users!consultations_medic_id_fkey(name)
+      users!medic_id(name)
     `)
     .eq("parent_id", parentId)
     .order("updated_at", { ascending: false });

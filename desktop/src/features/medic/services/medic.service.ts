@@ -26,7 +26,7 @@ export const fetchPatients = async (
       gender,
       birth_date,
       user_id,
-      users!children_user_id_fkey!inner(name),
+      users!user_id!inner(name),
       assessments(
         id,
         created_at,
@@ -95,7 +95,7 @@ export const fetchPatientSummary = async (childId: string) => {
     .select(
       `
       *,
-      users!children_user_id_fkey(name, wallet_address),
+      users!user_id(name, wallet_address),
       assessments(
         *,
         predictions(*),

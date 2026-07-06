@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { nutritionService } from '@/features/nutrition/services/nutrition.service';
 
 export const NUTRITION_QUERY_KEY = ['nutrition'] as const;
@@ -9,3 +9,13 @@ export const useNutritionHistory = (childId: string, page = 0, size = 100) =>
     queryFn: () => nutritionService.getNutritionHistory(childId, page, size),
     enabled: !!childId,
   });
+
+export const useDeleteNutritionLog = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (logId: string) => nutritionService.deleteNutritionLog(logId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: NUTRITION_QUERY_KEY });
+    },
+  });
+};

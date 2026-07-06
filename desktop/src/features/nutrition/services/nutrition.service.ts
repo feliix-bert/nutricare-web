@@ -97,4 +97,14 @@ export const nutritionService = {
       totalElements: count ?? 0,
     };
   },
+
+  deleteNutritionLog: async (logId: string) => {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("nutrition_logs")
+      .delete()
+      .eq("id", logId);
+
+    if (error) throw error;
+  },
 };

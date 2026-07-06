@@ -1,10 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Flame, Droplet, Wheat, Search, Plus, Check, Beef, Camera, FileText } from "lucide-react";
-import { motion } from "motion/react";
+import { Flame, Droplet, Wheat, Search, Plus, Check, Beef, Camera, FileText, AlertTriangle } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 import { Card } from "@/components/ui/Card";
 import { Avatar } from "@/components/common/Avatar";
 import { PageShell } from "@/components/layout/PageShell";
@@ -12,7 +12,7 @@ import { useNutritionStore, type NutritionLog } from "@/stores/nutritionStore";
 import { getAvatarUri } from "@/utils/avatar";
 import { ScanLineIcon } from "@/components/icons/scan-line";
 import { useChildrenList } from "@/features/children/hooks/useChildren";
-import { useNutritionHistory } from "@/features/nutrition/hooks/useNutrition";
+import { useNutritionHistory, useDeleteNutritionLog } from "@/features/nutrition/hooks/useNutrition";
 
 type SuggestionItem = {
   id: string;
@@ -134,6 +134,17 @@ export default function NutritionPage() {
   const { data: childrenData } = useChildrenList(0, 1);
   const childId = childrenData?.data?.[0]?.id ?? "";
   const { data: nutritionData } = useNutritionHistory(childId, 0, 100);
+  const deleteMutation = useDeleteNutritionLog();
+
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+
+  const handleConfirmDelete = () => {
+    if (itemToDelete) {
+      deleteMutation.mutate(itemToDelete);
+      removeLog(itemToDelete);
+      setItemToDelete(null);
+    }
+  };
 
   // Sync server data ke store
   React.useEffect(() => {
@@ -329,7 +340,7 @@ export default function NutritionPage() {
               </div>
               <div className="flex flex-col gap-3">
                 {logs.map((log) => (
-                  <MobileMealCard key={log.id} item={log} onRemove={() => removeLog(log.id)} />
+                  <MobileMealCard key={log.id} item={log} onRemove={() => setItemToDelete(log.id)} />
                 ))}
               </div>
             </div>
@@ -415,7 +426,7 @@ export default function NutritionPage() {
                       <span className="w-[35%] text-right text-xs font-bold text-gray-400 uppercase tracking-wider px-2">Waktu</span>
                     </div>
                     {logs.map((log) => (
-                      <MealTrackerRow key={log.id} item={log} onRemove={() => removeLog(log.id)} />
+                      <MealTrackerRow key={log.id} item={log} onRemove={() => setItemToDelete(log.id)} />
                     ))}
                   </div>
                 )}
@@ -467,6 +478,52 @@ export default function NutritionPage() {
         </div>
 
       </motion.div>
+
+      {/* Delete Confirmation Popup */}
+      <AnimatePresence>
+        {itemToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              onClick={() => setItemToDelete(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="relative w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl flex flex-col items-center text-center overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-1.5 bg-red-500" />
+              <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-5">
+                <AlertTriangle size={32} strokeWidth={2.5} />
+              </div>
+              <h3 className="text-lg font-extrabold text-gray-900 mb-2">Hapus Riwayat Makan?</h3>
+              <p className="text-sm text-gray-500 font-medium mb-8 leading-relaxed">
+                Tindakan ini tidak dapat dibatalkan. Riwayat nutrisi yang telah dihapus akan hilang secara permanen.
+              </p>
+              
+              <div className="flex gap-3 w-full">
+                <button
+                  onClick={() => setItemToDelete(null)}
+                  className="flex-1 py-3.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-2xl font-bold text-sm transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleConfirmDelete}
+                  disabled={deleteMutation.isPending}
+                  className="flex-1 py-3.5 px-4 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-bold text-sm transition-colors disabled:opacity-70 flex justify-center items-center gap-2"
+                >
+                  {deleteMutation.isPending ? "Menghapus..." : "Ya, Hapus"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </PageShell>
   );
 }

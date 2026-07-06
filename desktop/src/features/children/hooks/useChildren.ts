@@ -56,3 +56,15 @@ export const useUpdateChild = (childId: string) => {
     },
   });
 };
+
+export const useUpdateChildMedic = (childId: string) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (medicId: string | null) => childrenService.updateChildMedic(childId, medicId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: CHILDREN_QUERY_KEY });
+      void queryClient.invalidateQueries({ queryKey: childQueryKey(childId) });
+    },
+  });
+};
+

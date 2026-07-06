@@ -483,7 +483,7 @@ function DoctorConsultTab({ parentId }: { parentId: string }) {
                 </button>
               ) : (
                 <button
-                  onClick={() => router.push(`/children/${child.id}`)}
+                  onClick={() => router.push(`/children/${child.id}/doctor`)}
                   className="flex items-center gap-1 text-[12px] font-bold text-primary hover:underline"
                 >
                   Pilih <ChevronRight size={12} />

@@ -1,4 +1,4 @@
-# CONTEXT.md — Tumbuh Sehat (GiziChain)
+# CONTEXT.md — Tumbuh Sehat 
 
 ## Gambaran Proyek
 

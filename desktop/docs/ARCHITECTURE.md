@@ -1,4 +1,4 @@
-# ARCHITECTURE.md — Tumbuh Sehat (GiziChain)
+# ARCHITECTURE.md — Tumbuh Sehat 
 
 **Update:** 2026-07-02 — Migrasi dari Java Spring Boot → Fullstack Next.js + Supabase.
 

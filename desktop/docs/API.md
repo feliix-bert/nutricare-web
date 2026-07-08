@@ -1,4 +1,4 @@
-# API.md — Tumbuh Sehat (GiziChain)
+# API.md — Tumbuh Sehat
 
 **Update:** 2026-07-02 — Migrasi dari Java Spring Boot → Next.js + Supabase.
 

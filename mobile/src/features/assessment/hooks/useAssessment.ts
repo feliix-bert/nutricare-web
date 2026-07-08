@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { assessmentService } from '@/features/assessment/services/assessment.service';
-import type { AssessmentRequestDTO } from '@/features/assessment/types/assessment.types';
+import { assessmentService } from '@/features/assessment/services/assessment-service';
+import type { AssessmentRequestDTO } from '@/features/assessment/types/assessment-types';
 import { CHILDREN_QUERY_KEY, childQueryKey } from '@/features/children/hooks/useChildren';
 
 export const ASSESSMENTS_QUERY_KEY = ['assessments'] as const;
@@ -14,10 +14,7 @@ export const useAssessment = (assessmentId: string) =>
     queryKey: assessmentQueryKey(assessmentId),
     queryFn: () => assessmentService.getAssessment(assessmentId),
     enabled: !!assessmentId,
-    refetchInterval: (query) => {
-      const status = query.state.data?.prediction.predictionStatus;
-      return status === 'PENDING' ? 1500 : false;
-    },
+    // Tidak perlu polling — predict() selalu INSERT COMPLETED sebelum navigasi
   });
 
 export const useChildAssessments = (childId: string, page = 0, size = 10) =>
@@ -38,3 +35,20 @@ export const useCreateAssessment = () => {
     },
   });
 };
+
+// ── Prediction polling (lightweight: hanya query tabel predictions) ─────
+
+export const PREDICTION_QUERY_KEY = ['predictions'] as const;
+export const predictionQueryKey = (assessmentId: string) =>
+  [...PREDICTION_QUERY_KEY, assessmentId] as const;
+
+export const usePrediction = (assessmentId: string) =>
+  useQuery({
+    queryKey: predictionQueryKey(assessmentId),
+    queryFn: () => assessmentService.getPrediction(assessmentId),
+    enabled: !!assessmentId,
+    refetchInterval: (query) => {
+      const status = query.state.data?.predictionStatus;
+      return status === 'PENDING' ? 3000 : false;
+    },
+  });

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { chatService } from '@/features/chat/services/chat.service';
-import type { ChatRequest } from '@/features/chat/types/chat.types';
+import { chatService } from '@/features/chat/services/chat-service';
+import type { ChatRequest } from '@/features/chat/types/chat-types';
 
 export const CHAT_QUERY_KEY = ['chat'] as const;
 export const chatHistoryQueryKey = (predictionId: string) =>

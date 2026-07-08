@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { vcService } from '../services/vc.service';
+import { vcService } from '../services/vc-service';
 
 const VC_QUERY_KEY = 'vc';
 

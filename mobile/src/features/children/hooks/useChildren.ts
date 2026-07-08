@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { childrenService } from '@/features/children/services/children.service';
-import type { ChildRequest, ChildUpdateRequest } from '@/features/children/types/child.types';
+import { childrenService } from '@/features/children/services/children-service';
+import type { ChildRequest, ChildUpdateRequest } from '@/features/children/types/child-types';
 
 export const CHILDREN_QUERY_KEY = ['children'] as const;
 export const childQueryKey = (id: string) => ['children', id] as const;

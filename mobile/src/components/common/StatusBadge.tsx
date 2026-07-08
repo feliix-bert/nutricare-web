@@ -1,6 +1,6 @@
 import React from "react";
 import { Badge } from "@/components/ui/Badge";
-import type { StuntStatus } from "@/features/children/types/child.types";
+import type { StuntStatus } from "@/features/children/types/child-types";
 
 type StatusBadgeProps = {
   status: StuntStatus;

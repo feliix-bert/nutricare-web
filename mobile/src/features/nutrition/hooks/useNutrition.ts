@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { nutritionService } from '@/features/nutrition/services/nutrition.service';
-import type { NutritionUploadRequest } from '@/features/nutrition/types/nutrition.types';
+import { nutritionService } from '@/features/nutrition/services/nutrition-service';
+import type { NutritionUploadRequest } from '@/features/nutrition/types/nutrition-types';
 
 export const NUTRITION_QUERY_KEY = ['nutrition'] as const;
 export const nutritionLogsQueryKey = (childId: string, page = 0, size = 10) =>

@@ -8,7 +8,7 @@ import { InputField } from "@/components/common/InputField";
 import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useChild, useUpdateChild } from "@/features/children/hooks/useChildren";
-import type { Gender } from "@/features/children/types/child.types";
+import type { Gender } from "@/features/children/types/child-types";
 
 type FormErrors = { name?: string; birthDate?: string };
 

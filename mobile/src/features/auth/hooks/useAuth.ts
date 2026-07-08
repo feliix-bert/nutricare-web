@@ -1,14 +1,15 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 
-import { authService } from '@/features/auth/services/auth.service';
+import { authService } from '@/features/auth/services/auth-service';
 import { useAuthStore } from '@/stores/authStore';
-import type { LoginRequest, RegisterRequest } from '@/features/auth/types/auth.types';
+import type { LoginRequest, RegisterRequest } from '@/features/auth/types/auth-types';
 
 type AuthError = { message: string } | null;
 
 export const useAuth = () => {
-  const setAuth = useAuthStore((s) => s.setAuth);
+  const setSession = useAuthStore((s) => s.setSession);
+  const setUser = useAuthStore((s) => s.setUser);
   const storeLogout = useAuthStore((s) => s.logout);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
@@ -20,13 +21,12 @@ export const useAuth = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await authService.login(data);
-      setAuth(response.accessToken, response.refreshToken, response.user);
+      const result = await authService.login(data);
+      if (result.user) setUser(result.user);
+      if (result.session) setSession(result.session);
       router.replace('/(app)/(tabs)/' as never);
     } catch (err) {
-      const msg =
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (err as any)?.response?.data?.message ?? 'Terjadi kesalahan. Coba lagi.';
+      const msg = (err as Error)?.message ?? 'Terjadi kesalahan. Coba lagi.';
       setError({ message: msg });
     } finally {
       setIsLoading(false);
@@ -37,14 +37,14 @@ export const useAuth = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await authService.register(data);
-      setAuth(response.accessToken, response.refreshToken, response.user);
-      router.replace('/(app)/(tabs)/' as never);
+      const result = await authService.register(data);
+      if (result.session && result.user) {
+        setSession(result.session);
+        setUser(result.user);
+      }
       return true;
     } catch (err) {
-      const msg =
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (err as any)?.response?.data?.message ?? 'Registrasi gagal. Coba lagi.';
+      const msg = (err as Error)?.message ?? 'Registrasi gagal. Coba lagi.';
       setError({ message: msg });
       return false;
     } finally {

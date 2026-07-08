@@ -56,7 +56,7 @@ export const ScannerScreen = () => {
     // Real implementation would upload first, then navigate
     // Or navigate first, then upload in the background
     
-    // Using mock behavior for now to maintain flow, but setting up the real mutation structure
+    // TODO: implement real camera
     try {
       // In real implementation, this would be uncommented
       /* 

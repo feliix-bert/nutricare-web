@@ -5,6 +5,9 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useChild } from "@/features/children/hooks/useChildren";
 import { useAssessmentFormStore } from "@/stores/assessmentFormStore";
 import { useCreateAssessment } from "@/features/assessment/hooks/useAssessment";
+import { useGeminiPrediction } from "@/features/gemini/hooks/useGeminiPrediction";
+import { CHILDREN_QUERY_KEY, childQueryKey } from "@/features/children/hooks/useChildren";
+import { useQueryClient } from "@tanstack/react-query";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Button } from "@/components/ui/Button";
 import { LoadingOverlay } from "@/components/ui/LoadingOverlay";
@@ -14,6 +17,8 @@ export const ReviewScreen = () => {
   const { childId } = useLocalSearchParams<{ childId: string }>();
   const { data: child, isLoading } = useChild(childId ?? "");
   const { mutateAsync: createAssessment, isPending } = useCreateAssessment();
+  const { mutateAsync: triggerPrediction } = useGeminiPrediction();
+  const queryClient = useQueryClient();
 
   const {
     weight,
@@ -36,6 +41,9 @@ export const ReviewScreen = () => {
   const freqNum = parseInt(mealFreq || "3", 10);
 
   const handleConfirmSubmit = async () => {
+    let assessmentId: string | null = null;
+
+    // Step 1 — Simpan assessment ke Supabase (wajib berhasil)
     try {
       const resDto = await createAssessment({
         childId: child.id,
@@ -47,22 +55,30 @@ export const ReviewScreen = () => {
         mealFreq: freqNum,
         illnessHistory: illnessHistory,
       });
-
-      // Reset store data
-      resetForm();
-
-      // Navigate to results page with assessmentId for polling
-      router.push({
-        pathname: `/(app)/children/${child.id}/assessment/results`,
-        params: {
-          assessmentId: resDto.id,
-        },
-      } as any);
-    } catch (err: any) {
-      const msg = err?.response?.data?.message ?? 'Gagal mengirim assessment. Coba lagi.';
-      Alert.alert('Gagal', msg);
+      assessmentId = resDto.id;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Gagal mengirim assessment. Coba lagi.';
+      console.error('[ReviewScreen] createAssessment error:', err);
+      Alert.alert('Gagal Menyimpan', msg);
+      return;
     }
+
+    try {
+      await triggerPrediction({ assessmentId });
+      void queryClient.invalidateQueries({ queryKey: CHILDREN_QUERY_KEY });
+      void queryClient.invalidateQueries({ queryKey: childQueryKey(child.id) });
+    } catch (err: unknown) {
+      console.error('[ReviewScreen] triggerPrediction error:', err);
+      // Tetap navigasi — Z-score bisa dihitung ulang atau user coba lagi
+    }
+
+    resetForm();
+    router.push({
+      pathname: `/(app)/children/${child.id}/assessment/results`,
+      params: { assessmentId },
+    } as any);
   };
+
 
   return (
     <SafeAreaView className="flex-1 bg-background">

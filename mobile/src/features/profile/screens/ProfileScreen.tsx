@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react';
 import { Alert, ScrollView, Text, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 
+import { supabase } from '@/utils/supabase';
 import { Button } from '@/components/ui/Button';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAuth } from '@/features/auth/hooks/useAuth';
@@ -24,6 +26,18 @@ const InfoRow = ({ label, value }: { label: string; value: string }) => (
 export const ProfileScreen = () => {
   const user = useAuthStore((s) => s.user);
   const { logout } = useAuth();
+  const [doctorName, setDoctorName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user?.doctorId) {
+      supabase
+        .from('users')
+        .select('name')
+        .eq('id', user.doctorId)
+        .single()
+        .then(({ data }) => setDoctorName(data?.name ?? null));
+    }
+  }, [user?.doctorId]);
 
   const initials =
     user?.name
@@ -74,6 +88,32 @@ export const ProfileScreen = () => {
           <InfoRow label="Role" value={ROLE_LABELS[user?.role ?? ''] ?? '-'} />
         </View>
 
+        {/* Doctor Info — only for PARENT */}
+        {user?.role === 'PARENT' && (
+          <View className="py-2 px-5 bg-white rounded-2xl gap-1 mb-2">
+            <Text className="text-base font-bold text-gray-900 px-0 py-2">Dokter Saya</Text>
+            {doctorName ? (
+              <Pressable
+                onPress={() => router.push("/(app)/chat/my-doctor" as never)}
+                className="flex-row items-center py-3 border-b border-gray-100"
+              >
+                <View className="w-8 h-8 rounded-full bg-secondary/10 items-center justify-center mr-3">
+                  <IconSymbol name="message.fill" size={16} color="#506444" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-sm font-semibold text-gray-900">{doctorName}</Text>
+                  <Text className="text-xs text-gray-400">Ketuk untuk chat</Text>
+                </View>
+                <IconSymbol name="chevron.right" size={16} color="#9ca3af" />
+              </Pressable>
+            ) : user.doctorId ? (
+              <Text className="text-sm text-gray-500 px-0 py-3">Memuat...</Text>
+            ) : (
+              <Text className="text-sm text-gray-500 px-0 py-3">Belum terdaftar ke dokter</Text>
+            )}
+          </View>
+        )}
+
         {/* Action Menu */}
         <View className="py-2 px-5 bg-white rounded-2xl gap-1 mb-2">
           <Pressable
@@ -101,3 +141,4 @@ export const ProfileScreen = () => {
     </SafeAreaView>
   );
 };
+

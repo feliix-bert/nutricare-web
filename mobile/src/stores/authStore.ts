@@ -1,90 +1,47 @@
-import * as SecureStore from 'expo-secure-store';
-import { Platform } from 'react-native';
 import { create } from 'zustand';
-
-import type { User } from '@/features/auth/types/auth.types';
-
-const ACCESS_TOKEN_KEY = 'tumbuh_access_token';
-const REFRESH_TOKEN_KEY = 'tumbuh_refresh_token';
-
-// ---------------------------------------------------------------------------
-// Storage helpers (SecureStore on native, localStorage on web)
-// ---------------------------------------------------------------------------
-
-const storage = {
-  async get(key: string): Promise<string | null> {
-    if (Platform.OS === 'web') {
-      return typeof localStorage !== 'undefined' ? localStorage.getItem(key) : null;
-    }
-    return SecureStore.getItemAsync(key);
-  },
-  async set(key: string, value: string): Promise<void> {
-    if (Platform.OS === 'web') {
-      if (typeof localStorage !== 'undefined') localStorage.setItem(key, value);
-      return;
-    }
-    await SecureStore.setItemAsync(key, value);
-  },
-  async delete(key: string): Promise<void> {
-    if (Platform.OS === 'web') {
-      if (typeof localStorage !== 'undefined') localStorage.removeItem(key);
-      return;
-    }
-    await SecureStore.deleteItemAsync(key);
-  },
-};
-
-// ---------------------------------------------------------------------------
-// Store
-// ---------------------------------------------------------------------------
+import type { Session } from '@supabase/supabase-js';
+import { supabase } from '@/utils/supabase';
+import { authService } from '@/features/auth/services/auth-service';
+import type { User } from '@/features/auth/types/auth-types';
 
 type AuthState = {
   user: User | null;
-  accessToken: string | null;
-  refreshToken: string | null;
+  session: Session | null;
   isAuthenticated: boolean;
-  /** True until the initial hydration from SecureStore completes */
   isHydrated: boolean;
-  // Actions
-  setAuth: (accessToken: string, refreshToken: string, user: User) => void;
+  setSession: (session: Session | null) => void;
   setUser: (user: User) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   hydrate: () => Promise<void>;
 };
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
-  accessToken: null,
-  refreshToken: null,
+  session: null,
   isAuthenticated: false,
   isHydrated: false,
 
-  setAuth: (accessToken, refreshToken, user) => {
-    // Persist asynchronously — fire and forget
-    void storage.set(ACCESS_TOKEN_KEY, accessToken);
-    void storage.set(REFRESH_TOKEN_KEY, refreshToken);
-    set({ accessToken, refreshToken, user, isAuthenticated: true });
+  setSession: (session) => {
+    set({ session, isAuthenticated: !!session });
   },
 
   setUser: (user) => set({ user }),
 
-  logout: () => {
-    void storage.delete(ACCESS_TOKEN_KEY);
-    void storage.delete(REFRESH_TOKEN_KEY);
-    set({
-      user: null,
-      accessToken: null,
-      refreshToken: null,
-      isAuthenticated: false,
-    });
+  logout: async () => {
+    await supabase.auth.signOut();
+    set({ user: null, session: null, isAuthenticated: false });
   },
 
   hydrate: async () => {
-    const accessToken = await storage.get(ACCESS_TOKEN_KEY);
-    const refreshToken = await storage.get(REFRESH_TOKEN_KEY);
-    if (accessToken && refreshToken) {
-      set({ accessToken, refreshToken, isAuthenticated: true, isHydrated: true });
-    } else {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const user = await authService.getMe();
+        set({ session, user, isAuthenticated: true, isHydrated: true });
+      } else {
+        set({ isHydrated: true });
+      }
+    } catch {
       set({ isHydrated: true });
     }
   },

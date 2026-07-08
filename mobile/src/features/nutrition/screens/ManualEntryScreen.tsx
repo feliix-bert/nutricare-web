@@ -61,7 +61,7 @@ export const ManualEntryScreen = () => {
   const handleSaveLog = () => {
     if (!selectedFood) return;
 
-    // Mock fiber calculation based roughly on carbs
+    // Fiber calculation based roughly on carbs
     const calculatedFiber = Math.round(selectedFood.carbs * portion * 0.1 * 10) / 10;
 
     addLog({

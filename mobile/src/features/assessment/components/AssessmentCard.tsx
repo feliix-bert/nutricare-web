@@ -4,7 +4,7 @@ import { Text, View } from 'react-native';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { Card } from '@/components/ui/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import type { AssessmentResponseDTO } from '@/features/assessment/types/assessment.types';
+import type { AssessmentResponseDTO } from '@/features/assessment/types/assessment-types';
 import { formatTime } from '@/utils/format';
 
 type AssessmentCardProps = {

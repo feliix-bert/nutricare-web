@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { posyanduService } from '../services/posyandu.service';
+import { posyanduService } from '../services/posyandu-service';
 
 export const usePosyanduSessions = () => {
   return useQuery({

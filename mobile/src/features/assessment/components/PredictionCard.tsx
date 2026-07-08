@@ -5,7 +5,7 @@ import { StatusBadge } from '@/components/common/StatusBadge';
 import { Card } from '@/components/ui/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { ZScoreBadge } from '@/features/assessment/components/ZScoreBadge';
-import type { AssessmentPredictionDTO } from '@/features/assessment/types/assessment.types';
+import type { AssessmentPredictionDTO } from '@/features/assessment/types/assessment-types';
 
 const PredictionCard = React.memo(({ prediction }: { prediction: AssessmentPredictionDTO }) => {
   const isPending = prediction.predictionStatus === 'PENDING';

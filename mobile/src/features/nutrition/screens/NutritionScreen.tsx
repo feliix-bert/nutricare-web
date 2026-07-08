@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useChildrenList } from "@/features/children/hooks/useChildren";
 import { useDeleteNutritionLog, useNutritionLogs } from "@/features/nutrition/hooks/useNutrition";
-import type { NutritionLog } from "@/features/nutrition/types/nutrition.types";
+import type { NutritionLog } from "@/features/nutrition/types/nutrition-types";
 import { formatTime } from "@/utils/format";
 import { Image } from "expo-image";
 import { router } from "expo-router";

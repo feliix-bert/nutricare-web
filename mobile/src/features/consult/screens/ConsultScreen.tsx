@@ -19,7 +19,7 @@ import { ChatInput } from "@/features/chat/components/ChatInput";
 import { SuggestedChips } from "@/features/chat/components/SuggestedChips";
 import { useActivePredictionForChat } from "@/features/chat/hooks/useActivePredictionForChat";
 import { useChatHistory, useSendChatMessage } from "@/features/chat/hooks/useChat";
-import type { ChatMessage } from "@/features/chat/types/chat.types";
+import type { ChatMessage } from "@/features/chat/types/chat-types";
 
 const QUICK_PROMPTS = [
   "Mencegah stunting",
@@ -66,7 +66,7 @@ export const ConsultScreen = () => {
   }, [isSending, predictionId, sendMessage]);
 
   const renderMessageItem = useCallback(
-    ({ item }: { item: ChatMessage }) => <ChatBubble message={item} />,
+    ({ item }: { item: ChatMessage }) => <ChatBubble message={item} variant="ai" />,
     []
   );
 

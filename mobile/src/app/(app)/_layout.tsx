@@ -57,6 +57,14 @@ export default function AppLayout() {
         options={{ headerShown: false }}
       />
       <Stack.Screen
+        name="chat/[parentId]"
+        options={{ title: 'Konsultasi' }}
+      />
+      <Stack.Screen
+        name="chat/my-doctor"
+        options={{ title: 'Konsultasi Dokter' }}
+      />
+      <Stack.Screen
         name="medic/dashboard"
         options={{ headerShown: false }}
       />
@@ -72,6 +80,16 @@ export default function AppLayout() {
         name="vc/[vcId]"
         options={{ headerShown: false }}
       />
+      <Stack.Screen
+        name="donate/index"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="donate/form"
+        options={{ headerShown: false }}
+      />
     </Stack>
   );
 }
+
+

@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { InputField } from "@/components/common/InputField";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useAuthStore } from "@/stores/authStore";
 
 type FormErrors = { name?: string; email?: string; password?: string };
 
@@ -21,6 +22,7 @@ const validate = (name: string, email: string, password: string): FormErrors => 
 
 export const RegisterScreen = () => {
   const { register, isLoading, error } = useAuth();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   const nameRef = useRef("");
   const emailRef = useRef("");
@@ -40,9 +42,13 @@ export const RegisterScreen = () => {
       password: passwordRef.current,
     });
     if (success) {
-      Alert.alert("Pendaftaran Berhasil! 🎉", "Akun kamu sudah dibuat. Silakan masuk.", [
-        { text: "Masuk", onPress: () => router.replace("/sign-in") },
-      ]);
+      if (isAuthenticated) {
+        router.replace("/(app)/(tabs)/" as never);
+      } else {
+        Alert.alert("Pendaftaran Berhasil!", "Akun kamu sudah dibuat. Silakan masuk.", [
+          { text: "Masuk", onPress: () => router.replace("/sign-in") },
+        ]);
+      }
     }
   };
 

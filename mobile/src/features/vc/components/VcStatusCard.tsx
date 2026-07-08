@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Card } from '@/components/ui/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import type { VcRecord } from '../types/vc.types';
+import type { VcRecord } from '../types/vc-types';
 
 export const VcStatusCard = ({ vc, hasActiveVc, isLoading, onViewDetails }: { vc: VcRecord | null | undefined, hasActiveVc: boolean, isLoading?: boolean, onViewDetails?: () => void }) => {
   if (isLoading) return <Card className="p-4 mb-4"><Text>Memuat status VC...</Text></Card>;

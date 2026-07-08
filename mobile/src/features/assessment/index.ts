@@ -3,5 +3,5 @@ export * from './components/DisclaimerText';
 export * from './components/PredictionCard';
 export * from './components/ZScoreBadge';
 export * from './hooks/useAssessment';
-export * from './services/assessment.service';
-export * from './types/assessment.types';
+export * from './services/assessment-service';
+export * from './types/assessment-types';

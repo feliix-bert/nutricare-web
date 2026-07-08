@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> Dokumen master untuk AI agent yang bekerja di `mobile/`.
+> Dokumen master untuk AI agent yang bekerja di `mobile/`. Tidak perlu membaca `docx/*` global — semua konteks penting sudah dirangkum di sini.
 
 ---
 
@@ -12,13 +12,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - **Tagline**: *"Data Gizi Anak: Teranalisis oleh AI, Dijamin oleh Blockchain."*
 - **Target**: Orang tua (PARENT), tenaga medis (MEDIC), kader posyandu (POSYANDU), admin (ADMIN)
+- **Arsitektur**: Expo standalone — **dual client**: `supabase-js` (CRUD via RLS) + **Gemini API langsung** (Z-score + Chat + Nutrition)
+- **Backend**: Supabase (PostgreSQL + Auth + Storage + Realtime)
 - **Mobile**: React Native / Expo SDK 54
-- **Web**: Next.js (App Router) — server untuk Gemini/blockchain/PDF
-- **Backend**: Supabase (Auth, PostgreSQL, Storage, Realtime) — **tidak ada Java server**
-- **Blockchain**: Polygon (testnet Amoy, chainId=80002)
-- **AI**: Google Gemini (Flash + Pro Vision)
-- **Storage**: Supabase Storage
+- **Blockchain**: Polygon (testnet Amoy chainId=80002, mainnet chainId=137)
+- **AI**: Google Gemini (Flash) — **langsung dari mobile** via `fetch()`, tanpa server perantara
+- **Storage**: Supabase Storage (RLS-protected) — upload langsung dari client
 - **VC**: Verifiable Credential W3C — IPFS via Pinata
+- **Consultation Chat**: Realtime Broadcast via Supabase Realtime (channel `consult_<parentId>`), bukan WebSocket manual
 
 ---
 
@@ -70,6 +71,8 @@ _layout.tsx                           # Root: QueryClientProvider + Auth Gate
     │   ├── scanner/scan.tsx          # → ScannerScreen (camera simulasi)
     │   ├── scanner/manual.tsx        # → ManualEntryScreen
     │   ├── scanner/analysis.tsx      # → AnalysisScreen
+    │   ├── chat/[parentId].tsx       # → ConsultationParentScreen
+    │   ├── chat/my-doctor.tsx        # → ConsultationDoctorScreen
     │   ├── report.tsx                # → ReportScreen (PDF)
     │   ├── medic/dashboard.tsx       # → MedicDashboardScreen
     │   ├── blockchain/verify/[assessmentId].tsx  # → BlockchainVerifyScreen
@@ -78,7 +81,9 @@ _layout.tsx                           # Root: QueryClientProvider + Auth Gate
     │   └── vc/verify-result.tsx      # → VcVerifyResultScreen
 ```
 
-**Auth Gate**: `app/_layout.tsx` — `Stack.Protected` berdasarkan `isAuthenticated` dari authStore. SplashScreen ditahan sampai `isHydrated = true`.
+**Auth Gate**: `app/_layout.tsx` — `Stack.Protected` berdasarkan `isAuthenticated` dari authStore. `onAuthStateChange` listener sync session + profile ke store. SplashScreen ditahan sampai `isHydrated = true`.
+
+> **Catatan**: Next.js (desktop) adalah client independen yang mengonsumsi Supabase yang sama, bukan server gateway untuk mobile.
 
 ---
 
@@ -87,109 +92,121 @@ _layout.tsx                           # Root: QueryClientProvider + Auth Gate
 ```
 src/
 ├── app/                          # Expo Router entry points (thin wrappers)
+├── data/                         # Bundled data / skill documents
+│   └── skills/                   # 5 markdown docs for Gemini RAG
 ├── features/                     # Domain modules per fitur (semua punya barrel index.ts)
 │   ├── auth/                     # Sign in, register, refresh
 │   ├── children/                 # CRUD anak + growth tracker
 │   ├── home/                     # Dashboard beranda
 │   ├── profile/                  # Profil user
-│   ├── assessment/               # Assessment 5-langkah + prediksi
+│   ├── assessment/               # Assessment 5-langkah + prediksi + polling
 │   ├── nutrition/                # Log gizi, scanner, analisis
-│   ├── chat/                     # Chatbot AI (lebih baru dari consult/)
+│   ├── chat/                     # Chatbot AI + Realtime consultation (menggantikan consult/)
+│   ├── gemini/                   # Gemini AI service + hooks (predict, nutrition, chat)
 │   ├── vault/                    # Blockchain ledger (Zustand store)
-│   ├── consult/                  # (legacy — masih ada screens/, prefer chat/)
+│   ├── consult/                  # (legacy — screens still used, prefer chat/)
 │   ├── blockchain/               # Verifikasi on-chain
 │   ├── vc/                       # Verifiable Credential W3C
-│   ├── medic/                    # Dashboard tenaga medis
+│   ├── medic/                    # Dashboard tenaga medis + conversation list
 │   ├── posyandu/                 # Modul kader posyandu
 │   └── report/                   # Unduh laporan PDF
 │
 ├── components/                   # Shared UI (global atomik, stateless)
-│   └── ui/                       # Button, Input, Card, StatusBadge, EmptyState, dll
+│   ├── ui/                       # Button, Input, Card, StatusBadge, EmptyState, dll
+│   └── common/                   # ConversationCard, InputField, StatusBadge
 ├── services/                     # Shared networking
-│   ├── api.ts                    # Axios instance + interceptor
-│   └── mock.ts                   # Mock backend in-memory
+│   └── api.ts                    # Axios instance + interceptor
 ├── stores/                       # Zustand stores
 │   ├── authStore.ts
 │   ├── assessmentFormStore.ts
 │   ├── nutritionStore.ts
 │   └── vaultStore.ts
 ├── types/                        # Shared types
-│   └── api.types.ts              # ApiError, PageResponse<T>
+│   ├── api-types.ts              # ApiError, PageResponse<T>
+│   └── conversation-types.ts     # Conversation type
 ├── constants/                    # Theme colors & spacing
 │   └── theme.ts
-└── utils/                        # Helpers
-    └── cn.ts                     # className utility
+├── utils/                        # Helpers
+│   ├── cn.ts                     # className utility
+│   ├── random.ts                 # generateId, randomHex
+│   ├── who-zscore.ts             # WHO LMS Z-score engine (HAZ/WAZ/WHZ) — local
+│   └── gemini-client.ts          # Gemini API wrapper with system_instruction
 ```
 
 ---
 
-## 5. API / DATA ACCESS
+## 5. API ENDPOINTS — Arsitektur Dua Jalur
 
-### Arsitektur: Supabase + Next.js (bukan Java Spring Boot)
+Expo standalone akses data via **dua jalur**:
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                    MOBILE (Expo)                      │
-│                                                       │
-│  ┌───────────────────────────────────────────┐       │
-│  │  supabase-js (anon key + RLS)             │       │
-│  │  → CRUD langsung ke Supabase              │       │
-│  │  → Auth: signUp, signIn, signOut           │       │
-│  │  → Realtime subscribe                     │       │
-│  └───────────────────────────────────────────┘       │
-│                                                       │
-│  ┌───────────────────────────────────────────┐       │
-│  │  Axios / fetch (ke Next.js:3000)          │       │
-│  │  → Gemini AI predict/chat/nutrition       │       │
-│  │  → Blockchain anchor/verify               │       │
-│  │  → VC issue/revoke                        │       │
-│  │  → PDF report download                    │       │
-│  └───────────────────────────────────────────┘       │
-└─────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────┐
+│                     EXPO MOBILE                            │
+│                                                           │
+│  ┌──────────────────────┐                                 │
+│  │   supabase-js SDK    │                                 │
+│  │   (anon + RLS)       │                                 │
+│  │                      │                                 │
+│  │  — CRUD langsung     │                                 │
+│  │  — Auth              │                                 │
+│  │  — Storage upload    │                                 │
+│  │  — Realtime subscribe│                                 │
+│  │  — Chat persist      │                                 │
+│  └──────────────────────┘                                 │
+│                                                           │
+│  ┌────────────────────────────────────────────────────┐  │
+│  │   fetch() → Gemini API langsung                     │  │
+│  │   (EXPO_PUBLIC_GEMINI_API_KEY)                      │  │
+│  │                                                     │  │
+│  │  — Z-score + interpretasi (predict)                 │  │
+│  │  — Analisis foto makanan (nutrition)                │  │
+│  │  — Chatbot AI (chat)                               │  │
+│  └────────────────────────────────────────────────────┘  │
+└───────────────────────────────────────────────────────────┘
 ```
 
 ### Base URL
 ```
-Supabase: EXPO_PUBLIC_SUPABASE_URL (dari project Supabase)
-Next.js:  EXPO_PUBLIC_API_URL = http://<laptop-ip>:3000
+Supabase:  EXPO_PUBLIC_SUPABASE_URL       (https://[project].supabase.co)
+Gemini:    EXPO_PUBLIC_GEMINI_API_KEY        (langsung dari mobile)
 ```
 
-### Error Format (Next.js API)
-```json
-{ "status": 400, "error": "BAD_REQUEST", "message": "...", "timestamp": "...", "path": "..." }
-```
+### Jalur 1: Langsung ke Supabase (via `supabase-js`)
 
-### Auth — Supabase Auth (no custom endpoints)
+Semua operasi ini lewat `supabase.from('table').*()` — RLS enforce otomatis per session.
 
-| Operasi | Cara | Keterangan |
-|---------|------|-----------|
-| Register | `supabase.auth.signUp({ email, password, options })` | Auto-create user + trigger ke `public.users` |
-| Login | `supabase.auth.signInWithPassword({ email, password })` | Return session (access + refresh) |
-| Logout | `supabase.auth.signOut()` | Revoke session |
-| Session | `supabase.auth.getSession()` | Auto-refresh by SDK |
-| User data | `supabase.from('users').select('*').eq('id', userId).single()` | Dari `public.users` |
-
-**Ga perlu refresh token manual.** SDK handle otomatis.
-
-### Children — via `supabase-js` langsung
-
-| Operasi | Cara |
+| Operasi | Kode |
 |---------|------|
-| List | `supabase.from('children').select('*').order('created_at', { ascending: false })` |
-| Create | `supabase.from('children').insert({ name, birth_date, gender }).select().single()` |
-| Detail | `supabase.from('children').select('*, assessments(*, prediction:predictions(*))').eq('id', childId).single()` |
-| Update | `supabase.from('children').update({...}).eq('id', childId).select().single()` |
+| **Register** | `supabase.auth.signUp({ email, password, options: { data: { name } } })` |
+| **Login** | `supabase.auth.signInWithPassword({ email, password })` |
+| **Logout** | `supabase.auth.signOut()` |
+| **Session** | `supabase.auth.getSession()` |
+| **Profile** | `supabase.from('users').select('*').eq('id', user.id).single()` |
+| **List Children** | `supabase.from('children').select('*').order('created_at', { ascending: false })` |
+| **Add Child** | `supabase.from('children').insert({ name, birth_date, gender, user_id, anon_id }).select().single()` |
+| **Detail Child** | `supabase.from('children').select('*, assessments(*, prediction:predictions(*))').eq('id', childId).single()` |
+| **Submit Assessment** | `supabase.from('assessments').insert({ ...assessmentData }).select().single()` |
+| **List Nutrition** | `supabase.from('nutrition_logs').select('*').eq('child_id', childId).order('created_at', { ascending: false })` |
+| **Upload Photo** | `supabase.storage.from('nutrition-photos').upload(path, file)` |
+| **Chat Sessions** | `supabase.from('chat_sessions').select('*').eq('prediction_id', predictionId).single()` |
 
-### Assessments — Insert via `supabase-js`, predict via Next.js
+### Jalur 2: Gemini Langsung (via `fetch()`)
 
-| Operasi | Cara |
-|---------|------|
-| Create | `supabase.from('assessments').insert({...}).select().single()` |
-| Predict | `POST /api/gemini/predict` → { assessmentId } → return prediction |
-| Get detail | `supabase.from('assessments').select('*, prediction:predictions(*)').eq('id', id).single()` |
-| Get by child | `supabase.from('assessments').select('*, prediction:predictions(*)').eq('child_id', childId).order('created_at', { ascending: false })` |
+Semua AI lewat `generateContent()` dari `utils/gemini-client.ts` — `system_instruction` + skill documents (RAG lite).
 
-**Validasi Assessment:**
+| Operasi | Fungsi | System Instruction |
+|---------|--------|-------------------|
+| **Predict (Z-score + interpretasi)** | `geminiService.predict()` | "analis gizi anak" + 5 dokumen skill |
+| **Nutrition Analysis** | `geminiService.analyzeNutrition()` | "analis gizi anak" + 5 dokumen skill |
+| **Chatbot AI** | `chatService.sendMessage()` | "BundaSehat" + 5 dokumen skill + 10 aturan perilaku |
+
+**Error Handling Gemini (predict)**: Semua error path (429, quota, network, JSON parse) ditangkap dengan catch-all. INSERT `predictions` **selalu berhasil** dengan summary fallback + `ai_limited = true`. Tidak ada kasus dimana prediction row tidak dibuat → polling di ResultsScreen tidak pernah infinite.
+
+**Alur predict**: INSERT assessment → baca assessment+child dari Supabase → hitung Z-score lokal (`who-zscore.ts`) → call Gemini untuk interpretasi → INSERT prediction (`COMPLETED`) ke Supabase — semuanya client-side.
+
+**Alur predict jika Gemini gagal**: Z-score tetap dihitung lokal → catch-all error handler → INSERT prediction dengan `ai_limited = true` + summary/rekomendasi fallback → `predictionStatus = COMPLETED` → polling berhenti normal → `ResultsScreen` tampilkan banner kuning "Analisis AI Tidak Tersedia".
+
+### Assessment Validation
 | Field | Rule |
 |-------|------|
 | weight | 0.5 – 50 kg |
@@ -199,54 +216,17 @@ Next.js:  EXPO_PUBLIC_API_URL = http://<laptop-ip>:3000
 | mealFreq | 1 – 10 kali/hari |
 | illnessHistory | max 500 karakter (opsional) |
 
-### Nutrition — Upload ke Supabase Storage, analisis via Next.js
-
-| Operasi | Cara |
-|---------|------|
-| Upload foto | `supabase.storage.from('food-photos').upload(path, file)` |
-| Analisis | `POST /api/gemini/nutrition` → { childId, photoUrl } → return nutrition data |
-| Simpan log | `supabase.from('nutrition_logs').insert({...}).select().single()` |
-| Riwayat | `supabase.from('nutrition_logs').select('*').eq('child_id', childId).order('created_at', { ascending: false })` |
-
-### Chat — via Next.js API
-
-| Operasi | Cara |
-|---------|------|
-| Send message | `POST /api/gemini/chat` → { predictionId, message } |
-| Riwayat | `supabase.from('chat_sessions').select('*').eq('prediction_id', predictionId).single()` |
-
-**Guard:** Chat hanya bisa jika prediction status = COMPLETED.
-
-### Blockchain
-| Operasi | Cara |
-|---------|------|
-| Verify | `GET /api/blockchain/verify/{assessmentId}` → public |
-| Anchor | `POST /api/blockchain/anchor` → server internal |
-
-### Reports
-| Operasi | Cara |
-|---------|------|
-| Download PDF | `GET /api/reports/{childId}?from=&to=` → download blob |
-
-### Verifiable Credential
-| Operasi | Cara |
-|---------|------|
-| Issue | `POST /api/vc/issue` → MEDIC/ADMIN |
-| Revoke | `POST /api/vc/revoke` → MEDIC/ADMIN |
-| Get detail | `supabase.from('verifiable_credentials').select('*').eq('id', vcId).single()` |
-| Get by child | `supabase.from('verifiable_credentials').select('*').eq('child_id', childId).single()` |
-
 ---
 
 ## 6. TYPES / DTOs
 
-### api.types.ts
+### api-types.ts
 ```typescript
 type ApiError = { status: number; error: string; message: string; timestamp: string; path: string }
 type PageResponse<T> = { data: T[]; page: number; size: number; totalElements: number; totalPages: number }
 ```
 
-### auth.types.ts
+### auth-types.ts
 ```typescript
 type Role = 'PARENT' | 'MEDIC' | 'POSYANDU' | 'ADMIN'
 type User = { id: string; email: string; name: string; role: Role; walletAddress: string | null; isActive?: boolean }
@@ -256,7 +236,7 @@ type AuthResponse = { accessToken: string; refreshToken: string; user: User }  /
 type RefreshResponse = { accessToken: string; refreshToken: string; user: User }  // refresh return full tokens
 ```
 
-### child.types.ts
+### child-types.ts
 ```typescript
 type Gender = 'MALE' | 'FEMALE'
 type StuntStatus = 'NORMAL' | 'AT_RISK' | 'STUNTED' | 'SEVERELY_STUNTED'
@@ -276,7 +256,7 @@ type ChildRequest = { name: string; birthDate: string; gender: Gender }
 type ChildUpdateRequest = { name: string; birthDate: string }
 ```
 
-### assessment.types.ts — flat ServerPredictionResponse → nested DTOs
+### assessment-types.ts — flat ServerPredictionResponse → nested DTOs
 ```typescript
 // — Server raw —
 type ServerPredictionResponse = {
@@ -295,6 +275,7 @@ type AssessmentPredictionDTO = {
   zscoreWa: number; zscoreHa: number; zscoreWh: number;
   riskLevel: number; summary: string; recommendations: string[];
   nextAssessmentDate: string; disclaimer: string;
+  aiLimited?: boolean;  // true jika Gemini tidak tersedia saat analisis
 }
 type BlockchainAnchorDTO = {
   id: string; anchored: boolean; recordHash: string; txHash: string;
@@ -313,6 +294,17 @@ type AssessmentResponseDTO = {
 type AssessmentRequestDTO = {
   childId: string; weight: number; height: number; headCircumference?: number;
   bfExclusive: boolean; mpasiAge?: number; mealFreq: number; illnessHistory?: string;
+}
+```
+
+### Conversation (conversation-types.ts)
+```typescript
+type Conversation = {
+  parentId: string;
+  parentName: string;
+  lastMessage: string;
+  lastMessageAt: string;
+  unread: number;
 }
 ```
 
@@ -340,14 +332,29 @@ type BlockchainRecord = {
 
 ## 7. STATE MANAGEMENT
 
-### authStore (Zustand + SecureStore)
+### authStore (Zustand + SecureStore) — Supabase Session Based
 ```
-State: user, accessToken, refreshToken, isAuthenticated, isHydrated
-Actions: setAuth, setUser, logout, hydrate
-Storage: expo-secure-store (native) / localStorage (web)
-Keys: 'tumbuh_access_token', 'tumbuh_refresh_token'
+State: user, session, isAuthenticated, isHydrated
+Actions: setSession, setUser, logout, hydrate
 ```
-Hydration dipanggil di `app/_layout.tsx` useEffect. Auth gate menunggu `isHydrated = true`.
+- **setSession(session)**: update session + derive `isAuthenticated`
+- **setUser(user)**: update profile dari `public.users`
+- **logout()**: panggil `supabase.auth.signOut()` + reset store
+- **hydrate()**: panggil `supabase.auth.getSession()` → fetch profile dari `public.users` → `isHydrated = true`
+- Session persist via SecureStore (otomatis oleh supabase-js adapter)
+- **Tidak ada token manual** — Supabase SDK handle auto-refresh
+
+`app/_layout.tsx` subscribe ke `supabase.auth.onAuthStateChange()` untuk sync session + profile ke store.
+
+### Assessment Prediction Polling
+```
+State: {
+  predictions: Map<assessmentId, { status: 'PENDING'|'COMPLETED'|'FAILED', result: PredictionDTO | null }>
+}
+Actions: startPolling(assessmentId), stopPolling(assessmentId)
+Mechanism: poll supabase.from('predictions').select('*').eq('assessment_id', id) every 3s via TanStack Query refetchInterval
+```
+Polling dilakukan lewat TanStack Query `refetchInterval: 3000`, bukan Zustand.
 
 ### assessmentFormStore (Zustand, non-persistent)
 ```
@@ -364,7 +371,7 @@ Actions: addLog, removeLog, getLogsByChild
 ### vaultStore (Zustand, in-memory)
 ```
 State: records[] (with 2 seed entries)
-Actions: addRecord → generates mock blockNumber, txHash, gasFee
+Actions: addRecord → generates blockNumber, txHash, gasFee
 ```
 
 ---
@@ -372,43 +379,44 @@ Actions: addRecord → generates mock blockNumber, txHash, gasFee
 ## 8. MOCK SYSTEM
 
 ### Mechanism
-- Flag `USE_MOCK = false` di `services/mock.ts` (sekarang real API)
-- Service files toggle: `if (USE_MOCK) { ... } else { apiClient.get(...) }`
-- **Tidak ada** fungsi `mockXxx`/`realXxx` terpisah — query method tunggal per method
+- Semua service langsung menggunakan **Supabase** — tidak ada mock
+- Setiap service module mengikuti pola dual-mode (supabase/axios) dengan satu fungsi per method
 
-### Mock Data
-```
-Seeded users: 1 (orang.tua@email.com / password123)
-Seeded children: 2 (Andi Santoso, Sari Dewi)
-Seeded assessments: 2 (with mock predictions + blockchain anchors)
-```
-
-### Mock Prediction Logic (simplified)
-```typescript
-// BUKAN kalkulasi WHO riil — hanya threshold tinggi:
-status = height < 60 ? 'SEVERELY_STUNTED'
-       : height < 75 ? 'STUNTED'
-       : height < 85 ? 'AT_RISK'
-       : 'NORMAL'
-```
-
-### Mock Auth
-- Fake JWT: `base64(JSON.stringify({ sub, role, exp })).fakesig`
-- Refresh token selalu dianggap valid
-
-### Switch to Real API
-Set `USE_MOCK = true` untuk fallback ke mock in-memory. Saat `USE_MOCK = false` service pakai `apiClient` yang mengarah ke `EXPO_PUBLIC_API_URL`.
+### Seed Data
+- Tidak ada seed data in-memory — semua data dari Supabase langsung
 
 ---
 
-## 9. AXIOS CLIENT (`services/api.ts`)
+## 9. HTTP CLIENTS
+
+### Supabase Client — CRUD Utama (`services/supabase.ts`)
 
 ```typescript
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8080'
-apiClient = axios.create({ baseURL: BASE_URL, timeout: 15000 })
+import * as SecureStore from 'expo-secure-store'
+import { createClient } from '@supabase/supabase-js'
+
+const ExpoSecureStoreAdapter = {
+  getItem: (key) => SecureStore.getItemAsync(key),
+  setItem: (key, value) => SecureStore.setItemAsync(key, value),
+  removeItem: (key) => SecureStore.deleteItemAsync(key),
+};
+
+export const supabase = createClient(
+  process.env.EXPO_PUBLIC_SUPABASE_URL!,
+  process.env.EXPO_PUBLIC_SUPABASE_KEY!,
+  {
+    auth: {
+      storage: ExpoSecureStoreAdapter,
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false,
+    },
+  },
+)
 ```
-- **Request interceptor**: Attach `Authorization: Bearer <accessToken>` dari authStore
-- **Response interceptor**: On 401 → try refresh token via `/api/auth/refresh` → retry original request → on fail, logout
+- Session persist via SecureStore (native)
+- Auto-refresh token — tidak perlu manual interceptor
+- RLS enforce per query
 
 ---
 
@@ -452,14 +460,17 @@ SEVERELY_STUNTED: dark red (#93000a)
 
 1. **Satu PARENT bisa punya banyak anak**
 2. **Assessment bersifat append-only** — tidak bisa diedit setelah submit
-3. **Prediksi di-generate async** — status PENDING → COMPLETED (perlu polling)
+3. **Prediksi di-generate client-side** — INSERT assessment → baca data → hitung Z-score lokal (`who-zscore.ts`) → Gemini API → INSERT prediction (`COMPLETED`) — semuanya dari mobile
+   - Jika Gemini gagal (429 / network / timeout): catch-all fallback → INSERT prediction tetap jalan dengan `ai_limited = true` — **user tidak pernah stuck di loading**
 4. **Blockchain anchoring async** — tidak memblokir UI
-5. **Foto makanan max 5MB** — format JPEG/PNG/WebP
+5. **Foto makanan max 5MB** — format JPEG/PNG/WebP — upload ke Supabase Storage langsung
 6. **Chatbot hanya bisa diakses** jika anak punya ≥1 prediksi COMPLETED
 7. **Hanya ADMIN yang bisa buat akun MEDIC/POSYANDU** — tidak bisa self-register
 8. **PII tidak pernah masuk ke chain** — hanya hash & CID IPFS
 9. **VC hanya diterbitkan oleh MEDIC** yang punya `walletAddress`
 10. **Assessment 5 langkah**: (1) Data dasar → (2) Antropometri → (3) Riwayat makan → (4) Riwayat penyakit → (5) Review & submit
+11. **Consultation chat via Realtime Broadcast**: Setiap PARENT punya channel `consult_<parentId>` yang di-subscribe oleh MEDIC. Broadcast hanya untuk pengiriman — persist pakai `insert` ke Supabase (bukan `upsert`).
+12. **Family doctor**: PARENT bisa assign 1 MEDIC sebagai dokter keluarga. Dokter bisa melihat daftar pasien + chat inbox di dashboard-nya.
 
 **Catatan**: Di mobile, Step 1 (data dasar) di-skip karena child sudah dipilih sebelumnya. Assessment dimulai dari Step 2 (body-size).
 
@@ -479,7 +490,7 @@ Anak **0–60 bulan** (0–5 tahun).
 | SEVERELY_STUNTED | < -3 SD |
 
 ### Aturan Wajib
-1. **Z-score dihitung di server** (Spring Boot) pakai tabel WHO — bukan di mobile
+1. **Z-score dihitung di mobile** (`utils/who-zscore.ts`) pakai tabel WHO LMS — bukan oleh AI
 2. **Gemini hanya interpreter & recommendation engine** — bukan kalkulator klinis
 3. **Setiap hasil prediksi WAJIB sertakan disclaimer**:
    > "Hasil ini bersifat skrining awal dan bukan diagnosis medis. Konsultasikan dengan dokter atau tenaga kesehatan."
@@ -503,134 +514,87 @@ Di `ConsultScreen.tsx` ada banner warning sticky di bawah header:
 | Auth (Login/Register/Refresh/Logout) | ✅ Complete | Real API | Critical |
 | Children (List/Create/Detail/Edit) | ✅ Complete | Real API | Critical |
 | Assessment 5-Step (Body → Feeding → Illness → Review → Results) | ✅ Complete | Real API | Critical |
-| Loading PENDING + polling prediction | ✅ Complete | Real API | High |
+| Loading PENDING + polling prediction (usePrediction hook, 3s interval) | ✅ Complete | Real API | High |
 | WHO Growth Chart proper | ✅ Complete | Real API | High |
+| Gemini AI Predict (assessment → z-score + rekomendasi) | ✅ Complete | Real API | High |
+| Gemini AI Nutrition Analysis (foto makanan) | ✅ Complete | Real API | High |
 | Nutrition Scanner/Camera | ⚠️ Simulated UI | Real API | High |
 | Nutrition History List | ✅ Complete | Real API | Medium |
-| Chatbot AI | ✅ Complete | Real API | High |
-| Chat History Persistent | ❌ Missing | — | Medium |
+| Chatbot AI (via Gemini Chat) | ✅ Complete | Real API | High |
+| Chat History Persistent | ✅ Complete | Real API | Medium |
 | PDF Reports | ✅ Complete | Real API | Medium |
 | MEDIC Dashboard | ✅ Complete | Real API | High |
-| POSYANDU Screens | ⚠️ Partial (no server endpoint) | Fallback Mock | Medium |
+| POSYANDU Screens | ⚠️ Partial (no server endpoint) | No API | Medium |
 | ADMIN Screens | ❌ Missing | — | Low |
 | QR Scanner (VC) | ✅ Complete | Real API | High |
 | VC Status on Child Detail | ✅ Complete | Real API | High |
 | Blockchain Verification | ✅ Complete | Real API | Medium |
+| Supabase Test Script | ✅ `scripts/test-supabase.ts` | Real API | Low |
 | Push Notifications | ❌ Missing | — | Low |
 | Maps / Faskes Terdekat | ❌ Missing | — | Low |
 | Offline Mode | ❌ Missing | — | Low |
 
 ---
 
-## 15. ENVIRONMENT VARIABLES
+## 15. DEVELOPMENT RULES (dari pengalaman fatal)
+
+1. **Gunakan `npx expo install` bukan `npm install`** — hindari mismatch versi SDK
+2. **Jika terpaksa `npm install`, kunci versi dengan `~54.x.x`** (sesuai SDK 54)
+3. **Daftarkan folder baru di `tailwind.config.js` `content[]`** — setiap buat top-level dir baru
+4. **Bersihkan cache Metro** setelah ubah dependensi/config: `npx expo start -c`
+5. **Gunakan Zustand selector individual** — hindari destructuring penuh untuk cegah re-render
+6. **Ekstrak lookup tables ke konstanta modul** — jangan define di dalam komponen
+7. **Gunakan uncontrolled TextInput (`useRef`)** untuk form input — hindari re-render per keystroke
+8. **Bungkus komponen leaf/list dengan `React.memo`** — cegah re-render tidak perlu
+9. **Jangan fire-and-forget `mutateAsync` tanpa `await`** — selalu `await triggerPrediction()` dan bungkus di try/catch terpisah dari step sebelumnya. Unhandled rejection dari mutation menyebabkan polling infinite.
+10. **Gemini error = fallback, bukan crash** — `geminiService.predict()` menggunakan catch-all: semua error path (429/network/JSON) tetap INSERT prediction dengan `ai_limited = true`. Jangan ubah ke `throw err` kecuali ada alasan kuat.
+
+---
+
+## 16. ENVIRONMENT VARIABLES
 
 | Variable | Default | Keterangan |
 |----------|---------|------------|
-| `EXPO_PUBLIC_SUPABASE_URL` | — | Supabase project URL |
-| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | — | Supabase anon/public key |
-| `EXPO_PUBLIC_API_URL` | `http://localhost:3000` | Base URL Next.js (Gemini/blockchain/PDF) |
+| `EXPO_PUBLIC_SUPABASE_URL` | `https://[project].supabase.co` | Supabase project URL |
+| `EXPO_PUBLIC_SUPABASE_KEY` | — | Supabase anon/publishable key (aman utk client) |
+| `EXPO_PUBLIC_GEMINI_API_KEY` | — | Google Gemini API key (langsung dari mobile) |
 | `EXPO_PUBLIC_APP_NAME` | `Tumbuh Sehat` | Nama app |
 | `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` | — | Untuk fitur faskes (future) |
+| `EXPO_PUBLIC_PROJECT_ID` | — | Expo push notification (future) |
+| `EXPO_PUBLIC_SENTRY_DSN` | — | Error monitoring (opsional) |
 
-**⚠️ `EXPO_PUBLIC_*` = terekspose ke client.** Cuma anon key Supabase yang aman. Service_role key dan API key Gemini jangan pernah di sini.
+**Catatan**: `EXPO_PUBLIC_GEMINI_API_KEY` terekspose ke client. Aman untuk dev/preview, jangan digunakan di produksi publik tanpa proteksi server.
 
 ---
 
-## 16. SERVICE PATTERN (BARU — Supabase + Next.js)
+## 17. SERVICE PATTERN (WAJIB DIIKUTI)
 
-Setiap service module pake pola dual-provider (Supabase untuk CRUD, Next.js untuk AI/blockchain):
+Setiap service module mengikuti pola langsung ke Supabase dengan **satu fungsi per method**:
 
 ```typescript
-import { supabase } from '@/services/supabase';
+// Contoh: children/service/children-service.ts
+import { supabase } from '@/utils/supabase'
+import type { Child } from '@/types/child-types'
 
 export const childrenService = {
-  getAll: async (): Promise<Child[]> => {
+  list: async (): Promise<Child[]> => {
     const { data, error } = await supabase
       .from('children')
       .select('*')
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    return data;
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return data.map(transformChild)
   },
-
-  getById: async (childId: string): Promise<ChildDetail> => {
-    const { data, error } = await supabase
-      .from('children')
-      .select('*, assessments(*, prediction:predictions(*))')
-      .eq('id', childId)
-      .single();
-    if (error) throw error;
-    return data;
-  },
-
-  create: async (req: ChildRequest): Promise<Child> => {
-    const { data, error } = await supabase
-      .from('children')
-      .insert(req)
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
-  },
-};
+}
 ```
 
-### Pattern untuk Next.js API (Gemini/blockchain/VC)
-```typescript
-import { apiClient } from '@/services/api';
-
-export const predictionService = {
-  predict: async (assessmentId: string): Promise<PredictionResponse> => {
-    const res = await apiClient.post('/api/gemini/predict', { assessmentId });
-    return res.data;
-  },
-};
-```
-
-### Migration Plan per Service
-
-| Service | Sumber Data Lama | Sumber Data Baru | Tipe |
-|---------|-----------------|------------------|------|
-| `auth.service.ts` | POST `/api/auth/*` → Java | `supabase.auth.*()` | 🔄 Ubah total |
-| `children.service.ts` | GET/POST/PUT `/api/children` → Java | `supabase.from('children').*()` | 🔄 Ubah total |
-| `assessment.service.ts` | POST/GET `/api/assessments` → Java | Insert ke Supabase + `POST /api/gemini/predict` | 🔄 Ubah total |
-| `nutrition.service.ts` | POST `/api/nutrition` → Java | Upload Storage + `POST /api/gemini/nutrition` | 🔄 Ubah total |
-| `chat.service.ts` | POST/GET `/api/chat` → Java | `POST /api/gemini/chat` + query Supabase | 🔄 Ubah total |
-| `blockchain.service.ts` | GET `/api/blockchain/verify` → Java | `GET /api/blockchain/verify/{id}` | 🔄 Ubah endpoint |
-| `vc.service.ts` | POST/GET `/api/vc` → Java | `POST /api/vc/*` + query Supabase | 🔄 Ubah endpoint |
-| `medic.service.ts` | GET `/api/medic` → Java | `supabase.from('children').select()` | 🔄 Ubah total |
-| `report.service.ts` | GET `/api/reports` → Java | `GET /api/reports/{childId}` | 🔄 Ubah endpoint |
-| `posyandu.service.ts` | Fallback mock | `supabase.from('children').select()` | 🔄 Ubah total |
+**Aturan:**
+- Hanya 1 fungsi per method — langsung real API, tanpa cabang mock
+- Transform server→client DTO ditulis sebagai fungsi helper di file yang sama
 
 ---
 
-## 17. NEW SERVICE: `services/supabase.ts`
-
-```typescript
-import { createClient } from '@supabase/supabase-js';
-import { Database } from '@/types/database.types';
-
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
-
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    storage: {
-      getItem: async (key) => SecureStore.getItemAsync(key),
-      setItem: async (key, value) => SecureStore.setItemAsync(key, value),
-      removeItem: async (key) => SecureStore.deleteItemAsync(key),
-    },
-  },
-});
-```
-
-**Ga perlu authStore manual lagi.** Session di-persist via SecureStore, auto-refresh oleh SDK.
-
----
-
-## 18. PERFORMANCE OPTIMIZATIONS (Tetap Berlaku)
+## 18. PERFORMANCE OPTIMIZATIONS (Sudah Diterapkan)
 
 - **Zustand selectors**: `useAuthStore(s => s.field)` — subscribe ke field spesifik
 - **Uncontrolled TextInput**: Form auth & add child pakai `useRef`, bukan `useState` + `value`
@@ -640,48 +604,23 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
 
 ---
 
-## 19. HOOK MIGRATION PLAN (TanStack Query)
+## 19. SERVICE & HOOK STATUS
 
-React Query hooks tetap sama, cuma fetcher berubah:
-
-```typescript
-// ⬅️ Dulu: axios.get('/api/children')
-export function useChildren() {
-  return useQuery({
-    queryKey: ['children'],
-    queryFn: () => childrenService.getAll(),
-  });
-}
-
-// ➡️ Sekarang: supabase.from('children').select('*')
-// Sama persis! Cuma beda queryFn.
-
-export function useChildren() {
-  return useQuery({
-    queryKey: ['children'],
-    queryFn: () => supabase.from('children').select('*'),
-  });
-}
-```
-
-### Realtime Subscription (Fitur Baru — ga ada di Java)
-```typescript
-// Subscribe perubahan realtime di assessment
-useEffect(() => {
-  const channel = supabase
-    .channel('assessment-changes')
-    .on('postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: 'predictions',
-        filter: `assessment_id=eq.${assessmentId}` },
-      (payload) => {
-        queryClient.invalidateQueries({ queryKey: ['assessment', assessmentId] });
-      }
-    )
-    .subscribe();
-
-  return () => { supabase.removeChannel(channel); };
-}, [assessmentId]);
-```
+| Fitur | Service | Via | Hook | Status |
+|-------|---------|-----|------|--------|
+| Auth | `auth/services/auth-service.ts` ✅ | `supabase.auth.*()` | `auth/hooks/useAuth.ts` ✅ | Login/register via supabase, `setSession`/`setUser` di store |
+| Children | `children/services/children-service.ts` ✅ | `supabase.from('children').*()` | `children/hooks/useChildren.ts` ✅ | Mengganti GET/POST `/api/children` |
+| Assessment | `assessment/services/assessment-service.ts` ✅ | `supabase.from('assessments').*()` | `assessment/hooks/useAssessment.ts` ✅ | Insert ke Supabase, trigger backend |
+| Nutrition | `nutrition/services/nutrition-service.ts` ✅ | `supabase.from('nutrition_logs').*()` + `supabase.storage` | `nutrition/hooks/useNutrition.ts` ✅ | Storage langsung dari client |
+| Chat | `chat/services/chat-service.ts` ✅ | `supabase.from('chat_sessions').*()` | `chat/hooks/useChat.ts` ✅ | Read history dari Supabase |
+| Gemini Predict | `gemini/services/gemini-service.ts` ✅ | `fetch() → Gemini API langsung` | `gemini/hooks/useGeminiPrediction.ts` ✅ | Z-score lokal + Gemini + INSERT prediction — semua client-side |
+| Gemini Nutrition | `gemini/services/gemini-service.ts` ✅ | `fetch() → Gemini API langsung` | `gemini/hooks/useGeminiNutrition.ts` ✅ | Analisis foto makanan langsung |
+| Gemini Chat | `chat/services/chat-service.ts` ✅ | `fetch() → Gemini API langsung` | `chat/hooks/useChat.ts` ✅ | System instruction + skill dokumen, persist via Supabase |
+| Blockchain | `blockchain/services/blockchain-service.ts` ✅ | `apiClient → backend` | `blockchain/hooks/useBlockchain.ts` ✅ | Perlu migrasi ke Supabase langsung |
+| Medic | `medic/services/medic-service.ts` ✅ | `supabase.from('children').select(...)` | `medic/hooks/useMedic.ts` ✅ | Query multi-anak via RLS |
+| Vc | `vc/services/vc-service.ts` ✅ | `axios → /api/vc/*` | `vc/hooks/useVc.ts` ✅ | Perlu migrasi ke Supabase langsung |
+| Posyandu | `posyandu/services/posyandu-service.ts` ⚠️ | — | `posyandu/hooks/usePosyandu.ts` ⚠️ | Belum ada endpoint |
+| Report | `report/services/report-service.ts` ✅ | `axios → GET /api/reports/*` | `report/hooks/useReport.ts` ✅ | Perlu migrasi ke Supabase langsung |
 
 ---
 
@@ -700,6 +639,8 @@ useEffect(() => {
 | `ChatBubble` | `chat/components/` | ✅ |
 | `ChatInput` | `chat/components/` | ✅ |
 | `SuggestedChips` | `chat/components/` | ✅ |
+| `RealtimeChat` | `chat/components/` | ✅ |
+| `ConversationCard` | `components/common/` | ✅ |
 
 ---
 
@@ -710,13 +651,21 @@ useEffect(() => {
 | `app/_layout.tsx` | Root — QueryClient + Auth Gate + SplashScreen |
 | `app/(app)/_layout.tsx` | Stack navigator for protected routes |
 | `app/(app)/(tabs)/_layout.tsx` | Bottom tabs config |
-| `services/supabase.ts` | **BARU** — Supabase client (anon key + RLS) |
-| `services/api.ts` | Axios client + interceptors (tetap ada untuk Next.js API) |
-| `services/mock.ts` | Mock backend + USE_MOCK flag (🔜 akan dihapus) |
-| `stores/authStore.ts` | Zustand auth (🔜 akan dihapus — ganti `supabase.auth`) |
+| `services/api.ts` | Axios client + interceptors |
+| `services/api.ts` | Axios client + interceptors |
+| `stores/authStore.ts` | Session-based auth store — hydrate dari supabase.auth.getSession() |
+| `features/gemini/` | Gemini types, service (predict + analyzeNutrition), hooks (useGeminiPrediction, useGeminiNutrition) |
+| `features/assessment/hooks/useAssessment.ts` | Assessment queries + prediction polling via TanStack Query |
 | `stores/assessmentFormStore.ts` | Assessment wizard state |
-| `stores/nutritionStore.ts` | Nutrition logs (🔜 akan ganti ke Supabase query) |
-| `stores/vaultStore.ts` | Blockchain records (🔜 akan ganti ke Supabase query) |
+| `stores/nutritionStore.ts` | Nutrition logs |
+| `stores/vaultStore.ts` | Blockchain records |
 | `constants/theme.ts` | Color tokens & spacing |
 | `utils/cn.ts` | className helper |
+| `utils/random.ts` | generateId, randomHex |
+| `utils/who-zscore.ts` | WHO LMS Z-score engine (HAZ/WAZ/WHZ) — local |
+| `utils/gemini-client.ts` | Gemini API wrapper with system_instruction |
+| `data/skills/` | 5 skill markdown docs for Gemini RAG |
+| `types/conversation-types.ts` | Shared Conversation type |
+| `features/medic/hooks/useMedic.ts` | useConversations (refetchInterval 10s) |
+| `scripts/test-supabase.ts` | Full Supabase CRUD + RLS integration test |
 | `components/ui/icon-symbol.tsx` | Icon mapping |

@@ -6,7 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "@/components/ui/Button";
 import { InputField } from "@/components/common/InputField";
 import { useCreateChild } from "@/features/children/hooks/useChildren";
-import type { Gender } from "@/features/children/types/child.types";
+import type { Gender } from "@/features/children/types/child-types";
 
 type FormErrors = { name?: string; birthDate?: string };
 

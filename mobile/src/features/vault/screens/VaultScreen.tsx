@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { useVaultStore, BlockchainRecord } from "@/stores/vaultStore";
+import { TouchableOpacity } from "react-native";
 
 const chevronExpandedStyle = { transform: [{ rotate: "90deg" }] };
 const chevronCollapsedStyle = { transform: [{ rotate: "0deg" }] };
@@ -130,6 +131,25 @@ export const VaultScreen = () => {
             Seluruh data pengukuran berat & tinggi badan anak tersimpan permanen di jaringan GiziChain. Keamanan rekam medis dijamin dengan enkripsi kriptografi.
           </Text>
         </View>
+      </View>
+
+      {/* Donate Card */}
+      <View className="px-container-padding pt-2">
+        <TouchableOpacity
+          onPress={() => router.push("/(app)/donate" as never)}
+          className="bg-green-50 border border-green-200 rounded-[32px] p-4 flex-row items-center gap-3 mb-3"
+        >
+          <View className="w-10 h-10 rounded-full bg-green-100 items-center justify-center">
+            <IconSymbol name="heart.fill" size={20} color="#16a34a" />
+          </View>
+          <View className="flex-1">
+            <Text className="font-bold text-green-800 text-sm">💚 Community Fund</Text>
+            <Text className="text-xs text-green-600 leading-4">
+              Bantu keluarga anak stunting Indonesia
+            </Text>
+          </View>
+          <IconSymbol name="chevron.right" size={18} color="#16a34a" />
+        </TouchableOpacity>
       </View>
 
       {/* List */}

@@ -45,7 +45,6 @@ export const ResultsScreen = () => {
   const { data: assessment, isLoading: isAssessmentLoading } = useAssessment(assessmentId ?? "");
   const prediction = assessment?.prediction;
 
-  // Invalidate children queries whenever a prediction shifts to COMPLETED
   useEffect(() => {
     if (prediction?.predictionStatus === "COMPLETED" && assessment?.child.id) {
       void queryClient.invalidateQueries({ queryKey: CHILDREN_QUERY_KEY });
@@ -63,33 +62,16 @@ export const ResultsScreen = () => {
     router.replace("/(app)/(tabs)/consult" as any);
   };
 
+  const handleConsultDoctor = () => {
+    router.dismissAll();
+    router.replace("/(app)/chat/my-doctor" as any);
+  };
+
   if (isAssessmentLoading || !assessment) {
     return (
       <SafeAreaView className="flex-1 bg-background justify-center items-center gap-4">
         <ActivityIndicator size="large" color="#3e646a" />
-        <Text className="font-bold text-outline">Memuat data assessment...</Text>
-      </SafeAreaView>
-    );
-  }
-
-  // Menunggu prediksi selesai (polling PENDING -> COMPLETED)
-  const isPending = !prediction || prediction.predictionStatus === "PENDING";
-
-  if (isPending) {
-    return (
-      <SafeAreaView className="flex-1 bg-background">
-        <View className="px-container-padding py-4 border-b border-surface-container bg-surface-lowest items-center">
-          <Text className="font-bold text-lg text-primary">Analisis AI Gemini</Text>
-        </View>
-        <View className="flex-1 items-center justify-center px-8 gap-5">
-          <View className="w-20 h-20 rounded-full bg-primary-light items-center justify-center mb-2">
-            <ActivityIndicator size="large" color="#3e646a" />
-          </View>
-          <Text className="font-extrabold text-on-surface text-xl text-center tracking-tight">Memproses Data Antropometri...</Text>
-          <Text className="text-sm text-outline font-medium text-center leading-5 px-4">
-            Gemini AI sedang menghitung z-score WHO dan merumuskan rekomendasi nutrisi untuk {assessment.child.name}.
-          </Text>
-        </View>
+        <Text className="font-bold text-outline">Memuat hasil assessment...</Text>
       </SafeAreaView>
     );
   }
@@ -104,20 +86,18 @@ export const ResultsScreen = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-background">
-      {/* Header */}
       <View className="px-container-padding py-4 border-b border-surface-container bg-surface-lowest items-center">
         <Text className="font-bold text-lg text-primary">Hasil Deteksi AI</Text>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 24, gap: 20 }} showsVerticalScrollIndicator={false}>
-        {/* Diagnostic Status Card */}
         <View className="items-center py-4 gap-3 bg-surface-lowest rounded-[24px] border border-outline-variant/15 p-5">
           <Text className="text-5xl">{details.icon}</Text>
           <Text className={`font-extrabold text-lg ${details.colorClass}`}>{details.title}</Text>
           <StatusBadge status={activeStatus} />
         </View>
 
-        {/* Detailed Z-scores & Summary */}
+
         <View className="gap-2">
           <Text className="font-bold text-xs text-outline uppercase tracking-wider">Metrik Tumbuh Kembang (WHO Z-Score)</Text>
           <Card className="p-4 gap-4">
@@ -143,7 +123,6 @@ export const ResultsScreen = () => {
           </Card>
         </View>
 
-        {/* Measured params */}
         <View className="gap-2">
           <Text className="font-bold text-xs text-outline uppercase tracking-wider">Hasil Pengukuran</Text>
           <Card className="p-0">
@@ -166,9 +145,8 @@ export const ResultsScreen = () => {
           </Card>
         </View>
 
-        {/* Recommendations & Next Assessment Date */}
         <View className="gap-2">
-          <Text className="font-bold text-xs text-outline uppercase tracking-wider">Rekomendasi AI GiziChain</Text>
+          <Text className="font-bold text-xs text-outline uppercase tracking-wider">Rekomendasi Gizi</Text>
           <Card className="p-4 gap-3">
             {parsedRecs.map((rec, idx) => (
               <View key={idx} className="flex-row items-start gap-2">
@@ -183,7 +161,6 @@ export const ResultsScreen = () => {
           </Card>
         </View>
 
-        {/* Blockchain proof */}
         <View className="gap-2">
           <Text className="font-bold text-xs text-outline uppercase tracking-wider">Bukti Kriptografi Blockchain</Text>
           <Card className="p-4 gap-2">
@@ -207,13 +184,14 @@ export const ResultsScreen = () => {
           </Card>
         </View>
 
-        {/* Mandatory Clinical Disclaimer */}
         <DisclaimerText />
 
-        {/* Actions */}
         <View className="gap-3 mt-4">
           <Button onPress={handleConsult} variant="outline" className="w-full">
             Tanya AI tentang Gizi MPASI
+          </Button>
+          <Button onPress={handleConsultDoctor} variant="outline" className="w-full">
+            Konsultasi dengan Dokter
           </Button>
           <Button onPress={handleFinish} variant="primary" className="w-full">
             Selesai & Kembali ke Dashboard

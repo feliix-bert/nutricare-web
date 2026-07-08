@@ -5,7 +5,7 @@ import { Image } from 'expo-image';
 import { Card } from '@/components/ui/Card';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { FoodTagList } from '@/features/nutrition/components/FoodTagList';
-import type { NutritionLog } from '@/features/nutrition/types/nutrition.types';
+import type { NutritionLog } from '@/features/nutrition/types/nutrition-types';
 import { formatTime } from '@/utils/format';
 
 type NutritionCardProps = {
